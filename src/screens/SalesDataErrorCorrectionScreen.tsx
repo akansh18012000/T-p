@@ -1205,7 +1205,7 @@ export default function SalesDataErrorCorrectionScreen() {
             <StyledSearchContent>
               <Grid container spacing={3}>
                 {/* System Id - mandatory, Autocomplete with mock options, min 3 chars */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -1248,7 +1248,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Sales Date - mandatory, Month/Year, prepopulated Feb 2025 */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -1272,7 +1272,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Corporate Code */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <StyledInputTextField
                     fullWidth
                     size="small"
@@ -1283,7 +1283,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Sales Recording Date - Month/Year */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -1304,7 +1304,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Sales Base Code */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <StyledInputTextField
                     fullWidth
                     size="small"
@@ -1315,7 +1315,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Local Organization Code */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <StyledInputTextField
                     fullWidth
                     size="small"
@@ -1326,7 +1326,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Local Item Code */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <StyledInputTextField
                     fullWidth
                     size="small"
@@ -1337,7 +1337,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Error Classification - dropdown */}
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <StyledFormControl fullWidth size="small">
                     <InputLabel>
                       {t("errorCorrection.errorCategory")}
@@ -1365,7 +1365,7 @@ export default function SalesDataErrorCorrectionScreen() {
                 </Grid>
 
                 {/* Prefix Match / Partial Match - mandatory, radio buttons */}
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Box>
                     <StyledFormLabel component="legend" required>
                       {t("errorCorrection.matchType")}
@@ -1377,7 +1377,12 @@ export default function SalesDataErrorCorrectionScreen() {
                       onChange={(e) =>
                         setMatchType(e.target.value as "prefix" | "partial")
                       }
-                      sx={{ gap: 2, "& .MuiFormControlLabel-label": { fontSize: "0.875rem" } }}
+                      sx={{
+                        gap: 2,
+                        "& .MuiFormControlLabel-label": {
+                          fontSize: "0.875rem",
+                        },
+                      }}
                     >
                       <StyledFormControlLabel
                         value="prefix"
@@ -1582,7 +1587,9 @@ export default function SalesDataErrorCorrectionScreen() {
                                   )}
                                   $leftOffset={getLeftOffset(colIndex + 1)}
                                   $rowIndex={index}
-                                  $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                  $isLastFrozen={isLastFrozenColumn(
+                                    colIndex + 1,
+                                  )}
                                 >
                                   {isEditable ? (
                                     <StyledCellTextField

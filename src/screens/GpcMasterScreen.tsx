@@ -584,7 +584,7 @@ export default function GpcMasterScreen() {
           {searchConditionExpanded && (
             <StyledSectionContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -610,7 +610,7 @@ export default function GpcMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -619,7 +619,7 @@ export default function GpcMasterScreen() {
                     onChange={(e) => setManufacturerName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -645,7 +645,7 @@ export default function GpcMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -671,7 +671,7 @@ export default function GpcMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -680,7 +680,7 @@ export default function GpcMasterScreen() {
                     onChange={(e) => setGpcName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -698,7 +698,7 @@ export default function GpcMasterScreen() {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
@@ -844,7 +844,9 @@ export default function GpcMasterScreen() {
                                       colIndex + 1,
                                     )}
                                     $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                    $isLastFrozen={isLastFrozenColumn(
+                                      colIndex + 1,
+                                    )}
                                   >
                                     <StyledTableHeaderText variant="body2">
                                       {header}
@@ -883,7 +885,9 @@ export default function GpcMasterScreen() {
                                           colIndex + 1,
                                         )}
                                         $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                        $isLastFrozen={isLastFrozenColumn(
+                                          colIndex + 1,
+                                        )}
                                       >
                                         {colIndex === deletionFlagColIndex ? (
                                           <StyledCheckbox

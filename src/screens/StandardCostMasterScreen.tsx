@@ -90,52 +90,61 @@ const StyledTableHeaderCell = styled(TableCell)<{
   $isFrozen?: boolean;
   $leftOffset?: number;
   $isLastFrozen?: boolean;
-}>(({ theme, $indexCell, $deletionFlag, $isFrozen, $leftOffset, $isLastFrozen }) => ({
-  backgroundColor: theme.palette.table!.headerBg,
-  color: theme.palette.common.white,
-  fontWeight: 600,
-  borderBottom: `2px solid ${theme.palette.grey![200]}`,
+}>(
+  ({
+    theme,
+    $indexCell,
+    $deletionFlag,
+    $isFrozen,
+    $leftOffset,
+    $isLastFrozen,
+  }) => ({
+    backgroundColor: theme.palette.table!.headerBg,
+    color: theme.palette.common.white,
+    fontWeight: 600,
+    borderBottom: `2px solid ${theme.palette.grey![200]}`,
 
-  ...($isFrozen && {
-    position: "sticky",
-    left: $leftOffset ?? 0,
-    zIndex: 100,
-    boxShadow: $isLastFrozen
-      ? "4px 0 8px -2px rgba(0,0,0,0.25)"
-      : "2px 0 4px -2px rgba(0,0,0,0.15)",
-    ...($isLastFrozen && {
-      borderRight: `2px solid ${theme.palette.grey![600]}`,
-    }),
-  }),
-
-  ...($indexCell
-    ? {
-        width: 48,
-        minWidth: 48,
-        maxWidth: 48,
-      }
-    : {
-        paddingTop: theme.spacing(1),
-        paddingBottom: theme.spacing(1),
-        paddingLeft: theme.spacing(1.5),
-        paddingRight: theme.spacing(1.5),
-        ...($deletionFlag
-          ? {
-              width: 110,
-              minWidth: 110,
-              maxWidth: 110,
-              whiteSpace: "nowrap",
-            }
-          : {
-              width: DATA_COLUMN_WIDTH,
-              minWidth: DATA_COLUMN_WIDTH,
-              maxWidth: DATA_COLUMN_WIDTH,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }),
+    ...($isFrozen && {
+      position: "sticky",
+      left: $leftOffset ?? 0,
+      zIndex: 100,
+      boxShadow: $isLastFrozen
+        ? "4px 0 8px -2px rgba(0,0,0,0.25)"
+        : "2px 0 4px -2px rgba(0,0,0,0.15)",
+      ...($isLastFrozen && {
+        borderRight: `2px solid ${theme.palette.grey![600]}`,
       }),
-}));
+    }),
+
+    ...($indexCell
+      ? {
+          width: 48,
+          minWidth: 48,
+          maxWidth: 48,
+        }
+      : {
+          paddingTop: theme.spacing(1),
+          paddingBottom: theme.spacing(1),
+          paddingLeft: theme.spacing(1.5),
+          paddingRight: theme.spacing(1.5),
+          ...($deletionFlag
+            ? {
+                width: 110,
+                minWidth: 110,
+                maxWidth: 110,
+                whiteSpace: "nowrap",
+              }
+            : {
+                width: DATA_COLUMN_WIDTH,
+                minWidth: DATA_COLUMN_WIDTH,
+                maxWidth: DATA_COLUMN_WIDTH,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }),
+        }),
+  }),
+);
 
 const StyledTableBodyRow = styled(TableRow)<{ $index: number }>(
   ({ $index, theme }) => ({
@@ -185,59 +194,68 @@ const StyledTableDataCell = styled(TableCell)<{
   $leftOffset?: number;
   $rowIndex?: number;
   $isLastFrozen?: boolean;
-}>(({ theme, $deletionFlag, $isFrozen, $leftOffset, $rowIndex, $isLastFrozen }) => ({
-  borderBottom: `1px solid ${theme.palette.grey![200]}`,
-  padding: "4px 8px",
-  minWidth: 0,
-  whiteSpace: "normal",
-  wordWrap: "break-word",
-  overflowWrap: "break-word",
-  verticalAlign: "top",
-  ...(!$deletionFlag && {
-    width: DATA_COLUMN_WIDTH,
-    minWidth: DATA_COLUMN_WIDTH,
-    maxWidth: DATA_COLUMN_WIDTH,
-  }),
-
-  ...($isFrozen &&
-    $rowIndex !== undefined && {
-      position: "sticky",
-      left: $leftOffset ?? 0,
-      zIndex: 50,
-      backgroundColor:
-        $rowIndex % 2 === 0
-          ? theme.palette.table!.rowEven
-          : theme.palette.table!.rowOdd,
-      boxShadow: $isLastFrozen
-        ? "4px 0 8px -2px rgba(0,0,0,0.2)"
-        : "2px 0 4px -2px rgba(0,0,0,0.1)",
-      ...($isLastFrozen && {
-        borderRight: `2px solid ${theme.palette.grey![600]}`,
-      }),
-    }),
-  ...($isFrozen &&
-    $rowIndex === undefined && {
-      position: "sticky",
-      left: $leftOffset ?? 0,
-      zIndex: 50,
-      backgroundColor: theme.palette.background.paper,
-      boxShadow: $isLastFrozen
-        ? "4px 0 8px -2px rgba(0,0,0,0.2)"
-        : "2px 0 4px -2px rgba(0,0,0,0.1)",
-      ...($isLastFrozen && {
-        borderRight: `2px solid ${theme.palette.grey![600]}`,
-      }),
+}>(
+  ({
+    theme,
+    $deletionFlag,
+    $isFrozen,
+    $leftOffset,
+    $rowIndex,
+    $isLastFrozen,
+  }) => ({
+    borderBottom: `1px solid ${theme.palette.grey![200]}`,
+    padding: "4px 8px",
+    minWidth: 0,
+    whiteSpace: "normal",
+    wordWrap: "break-word",
+    overflowWrap: "break-word",
+    verticalAlign: "top",
+    ...(!$deletionFlag && {
+      width: DATA_COLUMN_WIDTH,
+      minWidth: DATA_COLUMN_WIDTH,
+      maxWidth: DATA_COLUMN_WIDTH,
     }),
 
-  /* AI Generated Code by Deloitte + Cursor (END) */
+    ...($isFrozen &&
+      $rowIndex !== undefined && {
+        position: "sticky",
+        left: $leftOffset ?? 0,
+        zIndex: 50,
+        backgroundColor:
+          $rowIndex % 2 === 0
+            ? theme.palette.table!.rowEven
+            : theme.palette.table!.rowOdd,
+        boxShadow: $isLastFrozen
+          ? "4px 0 8px -2px rgba(0,0,0,0.2)"
+          : "2px 0 4px -2px rgba(0,0,0,0.1)",
+        ...($isLastFrozen && {
+          borderRight: `2px solid ${theme.palette.grey![600]}`,
+        }),
+      }),
+    ...($isFrozen &&
+      $rowIndex === undefined && {
+        position: "sticky",
+        left: $leftOffset ?? 0,
+        zIndex: 50,
+        backgroundColor: theme.palette.background.paper,
+        boxShadow: $isLastFrozen
+          ? "4px 0 8px -2px rgba(0,0,0,0.2)"
+          : "2px 0 4px -2px rgba(0,0,0,0.1)",
+        ...($isLastFrozen && {
+          borderRight: `2px solid ${theme.palette.grey![600]}`,
+        }),
+      }),
 
-  ...($deletionFlag && {
-    width: 110,
-    minWidth: 110,
-    maxWidth: 110,
-    textAlign: "center",
+    /* AI Generated Code by Deloitte + Cursor (END) */
+
+    ...($deletionFlag && {
+      width: 110,
+      minWidth: 110,
+      maxWidth: 110,
+      textAlign: "center",
+    }),
   }),
-}));
+);
 
 const StyledTableHeaderText = styled(Typography)(({ theme }) => ({
   fontSize: "0.875rem",
@@ -950,7 +968,7 @@ export default function StandardCostMasterScreen() {
           {searchConditionExpanded && (
             <StyledSectionContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -959,7 +977,7 @@ export default function StandardCostMasterScreen() {
                     onChange={(e) => setManufacturerPartNumber(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -985,7 +1003,7 @@ export default function StandardCostMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -994,7 +1012,7 @@ export default function StandardCostMasterScreen() {
                     onChange={(e) => setManufacturerName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -1020,7 +1038,7 @@ export default function StandardCostMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -1029,7 +1047,7 @@ export default function StandardCostMasterScreen() {
                     onChange={(e) => setBaseName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -1055,7 +1073,7 @@ export default function StandardCostMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -1064,7 +1082,7 @@ export default function StandardCostMasterScreen() {
                     onChange={(e) => setCorporateName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -1082,7 +1100,7 @@ export default function StandardCostMasterScreen() {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
@@ -1228,7 +1246,9 @@ export default function StandardCostMasterScreen() {
                                       colIndex + 1,
                                     )}
                                     $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                    $isLastFrozen={isLastFrozenColumn(
+                                      colIndex + 1,
+                                    )}
                                   >
                                     <StyledTableHeaderText variant="body2">
                                       {header}
@@ -1267,7 +1287,9 @@ export default function StandardCostMasterScreen() {
                                           colIndex + 1,
                                         )}
                                         $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                        $isLastFrozen={isLastFrozenColumn(
+                                          colIndex + 1,
+                                        )}
                                       >
                                         {colIndex === deletionFlagColIndex ? (
                                           <StyledCheckbox

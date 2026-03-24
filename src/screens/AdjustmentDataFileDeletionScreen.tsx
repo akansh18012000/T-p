@@ -399,7 +399,7 @@ function AdjustmentDataFileDeletionScreen() {
           {searchConditionExpanded && (
             <StyledSectionContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledFormControl fullWidth size="small">
                     <InputLabel>
                       {t("adjustmentDataFileDeletion.correctionType")}
@@ -425,7 +425,7 @@ function AdjustmentDataFileDeletionScreen() {
                   </StyledFormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -448,7 +448,7 @@ function AdjustmentDataFileDeletionScreen() {
                   </LocalizationProvider>
                 </Grid>
 
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledSearchTextField
                     fullWidth
                     size="small"
@@ -461,7 +461,7 @@ function AdjustmentDataFileDeletionScreen() {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sx={{ marginTop: 1 }}>
+                <Grid size={12} sx={{ marginTop: 1 }}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"

@@ -638,16 +638,12 @@ TEST,GBP,JPY,185.75`;
 
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
-          <StyledPageTitle variant="h4">
-            Simulation Rate Entry
-          </StyledPageTitle>
+          <StyledPageTitle variant="h4">Simulation Rate Entry</StyledPageTitle>
         </StyledPageHeaderBox>
 
         <StyledSearchSectionBox>
           <StyledSectionTitleWithIcon>
-            <StyledPageTitle variant="h6">
-              Search Criteria
-            </StyledPageTitle>
+            <StyledPageTitle variant="h6">Search Criteria</StyledPageTitle>
             <Tooltip
               title="You can search rate names that you registered. Cannot search rates that others have registered."
               arrow
@@ -657,7 +653,7 @@ TEST,GBP,JPY,185.75`;
             </Tooltip>
           </StyledSectionTitleWithIcon>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <TextField
                 fullWidth
                 label="Rate Name"
@@ -673,7 +669,7 @@ TEST,GBP,JPY,185.75`;
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <StyledOutlinedDeleteButton
                 variant="outlined"
                 onClick={() => setRates([])}
@@ -681,7 +677,7 @@ TEST,GBP,JPY,185.75`;
                 Delete
               </StyledOutlinedDeleteButton>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <StyledSearchEndBox>
                 <StyledPrimaryContainedButton
                   variant="contained"
@@ -766,131 +762,142 @@ TEST,GBP,JPY,185.75`;
 
                   <StyledTableWrapper>
                     <TableContainer>
-                    <Table>
-                      <TableHead>
-                        <StyledTableHeaderRow>
-                          <StyledTableHeaderCell>File</StyledTableHeaderCell>
-                          <StyledTableHeaderCell>Size</StyledTableHeaderCell>
-                          <StyledTableHeaderCell>Reference</StyledTableHeaderCell>
-                          <StyledTableHeaderCell>
-                            Register with Calculation Rate
-                          </StyledTableHeaderCell>
-                          <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-                          <StyledTableHeaderCell>Actions</StyledTableHeaderCell>
-                        </StyledTableHeaderRow>
-                      </TableHead>
-                      <TableBody>
-                        {pendingUploads.map((upload, index) => {
-                          const fileIconInfo = getFileIcon(upload.file.name);
-                          const IconComponent = fileIconInfo.icon;
+                      <Table>
+                        <TableHead>
+                          <StyledTableHeaderRow>
+                            <StyledTableHeaderCell>File</StyledTableHeaderCell>
+                            <StyledTableHeaderCell>Size</StyledTableHeaderCell>
+                            <StyledTableHeaderCell>
+                              Reference
+                            </StyledTableHeaderCell>
+                            <StyledTableHeaderCell>
+                              Register with Calculation Rate
+                            </StyledTableHeaderCell>
+                            <StyledTableHeaderCell>
+                              Status
+                            </StyledTableHeaderCell>
+                            <StyledTableHeaderCell>
+                              Actions
+                            </StyledTableHeaderCell>
+                          </StyledTableHeaderRow>
+                        </TableHead>
+                        <TableBody>
+                          {pendingUploads.map((upload, index) => {
+                            const fileIconInfo = getFileIcon(upload.file.name);
+                            const IconComponent = fileIconInfo.icon;
 
-                          return (
-                            <StyledTableBodyRow key={upload.id} $index={index}>
-                              <TableCell>
-                                <StyledFileIconBox>
-                                  <StyledFileIconWrapper>
-                                    <StyledFileIcon $color={fileIconInfo.color}>
-                                      <IconComponent />
-                                    </StyledFileIcon>
-                                    <StyledFileBadge
-                                      $badgeColor={fileIconInfo.badgeColor}
-                                    >
-                                      <StyledBadgeCaption variant="caption" />
-                                    </StyledFileBadge>
-                                  </StyledFileIconWrapper>
-                                  <Box>
-                                    <StyledFileNameText variant="body2">
-                                      {upload.file.name}
-                                    </StyledFileNameText>
-                                  </Box>
-                                </StyledFileIconBox>
-                              </TableCell>
-                              <TableCell>
-                                <StyledFileSizeText variant="body2">
-                                  {formatFileSize(
-                                    upload.file.size,
-                                    upload.file.name,
-                                  )}
-                                </StyledFileSizeText>
-                              </TableCell>
-                              <TableCell>
-                                <StyledReferenceInput
-                                  size="small"
-                                  value={upload.reference}
-                                  onChange={(e) =>
-                                    handleReferenceChange(
-                                      upload.id,
-                                      e.target.value,
-                                    )
-                                  }
-                                  placeholder="Enter reference"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <StyledFormControlLabelMargin
-                                  control={
-                                    <Switch
-                                      checked={upload.useCalculationRate}
-                                      onChange={(e) =>
-                                        handleCalculationRateToggle(
-                                          upload.id,
-                                          e.target.checked,
-                                        )
-                                      }
-                                      color="primary"
-                                    />
-                                  }
-                                  label={
-                                    upload.useCalculationRate ? "Yes" : "No"
-                                  }
-                                  labelPlacement="start"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                {upload.uploadStatus === "uploading" ? (
-                                  <StyledProgressBox>
-                                    <StyledLinearProgressBar
-                                      variant="determinate"
-                                      value={upload.uploadProgress || 0}
-                                    />
-                                    <StyledProgressText variant="caption">
-                                      {upload.uploadProgress}%
-                                    </StyledProgressText>
-                                  </StyledProgressBox>
-                                ) : upload.uploadStatus === "completed" ? (
-                                  <Chip
-                                    icon={<CheckCircleIcon />}
-                                    label="Completed"
-                                    color="success"
+                            return (
+                              <StyledTableBodyRow
+                                key={upload.id}
+                                $index={index}
+                              >
+                                <TableCell>
+                                  <StyledFileIconBox>
+                                    <StyledFileIconWrapper>
+                                      <StyledFileIcon
+                                        $color={fileIconInfo.color}
+                                      >
+                                        <IconComponent />
+                                      </StyledFileIcon>
+                                      <StyledFileBadge
+                                        $badgeColor={fileIconInfo.badgeColor}
+                                      >
+                                        <StyledBadgeCaption variant="caption" />
+                                      </StyledFileBadge>
+                                    </StyledFileIconWrapper>
+                                    <Box>
+                                      <StyledFileNameText variant="body2">
+                                        {upload.file.name}
+                                      </StyledFileNameText>
+                                    </Box>
+                                  </StyledFileIconBox>
+                                </TableCell>
+                                <TableCell>
+                                  <StyledFileSizeText variant="body2">
+                                    {formatFileSize(
+                                      upload.file.size,
+                                      upload.file.name,
+                                    )}
+                                  </StyledFileSizeText>
+                                </TableCell>
+                                <TableCell>
+                                  <StyledReferenceInput
                                     size="small"
+                                    value={upload.reference}
+                                    onChange={(e) =>
+                                      handleReferenceChange(
+                                        upload.id,
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder="Enter reference"
                                   />
-                                ) : (
-                                  <Chip label="Pending" size="small" />
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isCsvFile(upload.file.name) && (
-                                  <StyledViewButtonWithMargin
+                                </TableCell>
+                                <TableCell>
+                                  <StyledFormControlLabelMargin
+                                    control={
+                                      <Switch
+                                        checked={upload.useCalculationRate}
+                                        onChange={(e) =>
+                                          handleCalculationRateToggle(
+                                            upload.id,
+                                            e.target.checked,
+                                          )
+                                        }
+                                        color="primary"
+                                      />
+                                    }
+                                    label={
+                                      upload.useCalculationRate ? "Yes" : "No"
+                                    }
+                                    labelPlacement="start"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {upload.uploadStatus === "uploading" ? (
+                                    <StyledProgressBox>
+                                      <StyledLinearProgressBar
+                                        variant="determinate"
+                                        value={upload.uploadProgress || 0}
+                                      />
+                                      <StyledProgressText variant="caption">
+                                        {upload.uploadProgress}%
+                                      </StyledProgressText>
+                                    </StyledProgressBox>
+                                  ) : upload.uploadStatus === "completed" ? (
+                                    <Chip
+                                      icon={<CheckCircleIcon />}
+                                      label="Completed"
+                                      color="success"
+                                      size="small"
+                                    />
+                                  ) : (
+                                    <Chip label="Pending" size="small" />
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {isCsvFile(upload.file.name) && (
+                                    <StyledViewButtonWithMargin
+                                      size="small"
+                                      variant="outlined"
+                                      startIcon={<VisibilityIcon />}
+                                      onClick={() => handleViewCsv(upload.file)}
+                                    >
+                                      {t("upload.view")}
+                                    </StyledViewButtonWithMargin>
+                                  )}
+                                  <StyledDeleteIconButton
+                                    onClick={() => handleRemoveFile(upload.id)}
                                     size="small"
-                                    variant="outlined"
-                                    startIcon={<VisibilityIcon />}
-                                    onClick={() => handleViewCsv(upload.file)}
                                   >
-                                    {t("upload.view")}
-                                  </StyledViewButtonWithMargin>
-                                )}
-                                <StyledDeleteIconButton
-                                  onClick={() => handleRemoveFile(upload.id)}
-                                  size="small"
-                                >
-                                  <DeleteIcon />
-                                </StyledDeleteIconButton>
-                              </TableCell>
-                            </StyledTableBodyRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                                    <DeleteIcon />
+                                  </StyledDeleteIconButton>
+                                </TableCell>
+                              </StyledTableBodyRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </TableContainer>
                   </StyledTableWrapper>
 
@@ -937,91 +944,97 @@ TEST,GBP,JPY,185.75`;
               {completedUploads.length > 0 ? (
                 <StyledTableWrapper>
                   <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <StyledTableHeaderRow>
-                        <StyledTableHeaderCell>File</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>Size</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>Reference</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>
-                          Calculation Rate
-                        </StyledTableHeaderCell>
-                        <StyledTableHeaderCell>Uploaded</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-                      </StyledTableHeaderRow>
-                    </TableHead>
-                    <TableBody>
-                      {completedUploads.map((upload, index) => {
-                        const fileIconInfo = getFileIcon(upload.file.name);
-                        const IconComponent = fileIconInfo.icon;
+                    <Table>
+                      <TableHead>
+                        <StyledTableHeaderRow>
+                          <StyledTableHeaderCell>File</StyledTableHeaderCell>
+                          <StyledTableHeaderCell>Size</StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            Reference
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            Calculation Rate
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            Uploaded
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+                        </StyledTableHeaderRow>
+                      </TableHead>
+                      <TableBody>
+                        {completedUploads.map((upload, index) => {
+                          const fileIconInfo = getFileIcon(upload.file.name);
+                          const IconComponent = fileIconInfo.icon;
 
-                        return (
-                          <StyledTableBodyRow key={upload.id} $index={index}>
-                            <TableCell>
-                              <StyledFileIconBox>
-                                <StyledFileIconWrapper>
-                                  <StyledFileIcon $color={fileIconInfo.color}>
-                                    <IconComponent />
-                                  </StyledFileIcon>
-                                </StyledFileIconWrapper>
-                                <Box>
-                                  <StyledFileNameText variant="body2">
-                                    {upload.file.name}
-                                  </StyledFileNameText>
-                                </Box>
-                              </StyledFileIconBox>
-                            </TableCell>
-                            <TableCell>
-                              <StyledFileSizeText variant="body2">
-                                {formatFileSize(
-                                  upload.file.size,
-                                  upload.file.name,
-                                )}
-                              </StyledFileSizeText>
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2">
-                                {upload.reference}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={upload.useCalculationRate ? "Yes" : "No"}
-                                color={
-                                  upload.useCalculationRate
-                                    ? "success"
-                                    : "default"
-                                }
-                                size="small"
-                                variant={
-                                  upload.useCalculationRate
-                                    ? "filled"
-                                    : "outlined"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <StyledFileSizeText variant="body2">
-                                {upload.uploadedAt?.toLocaleDateString()}{" "}
-                                {upload.uploadedAt?.toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </StyledFileSizeText>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                icon={<CheckCircleIcon />}
-                                label="Completed"
-                                color="success"
-                                size="small"
-                              />
-                            </TableCell>
-                          </StyledTableBodyRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                          return (
+                            <StyledTableBodyRow key={upload.id} $index={index}>
+                              <TableCell>
+                                <StyledFileIconBox>
+                                  <StyledFileIconWrapper>
+                                    <StyledFileIcon $color={fileIconInfo.color}>
+                                      <IconComponent />
+                                    </StyledFileIcon>
+                                  </StyledFileIconWrapper>
+                                  <Box>
+                                    <StyledFileNameText variant="body2">
+                                      {upload.file.name}
+                                    </StyledFileNameText>
+                                  </Box>
+                                </StyledFileIconBox>
+                              </TableCell>
+                              <TableCell>
+                                <StyledFileSizeText variant="body2">
+                                  {formatFileSize(
+                                    upload.file.size,
+                                    upload.file.name,
+                                  )}
+                                </StyledFileSizeText>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {upload.reference}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={
+                                    upload.useCalculationRate ? "Yes" : "No"
+                                  }
+                                  color={
+                                    upload.useCalculationRate
+                                      ? "success"
+                                      : "default"
+                                  }
+                                  size="small"
+                                  variant={
+                                    upload.useCalculationRate
+                                      ? "filled"
+                                      : "outlined"
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <StyledFileSizeText variant="body2">
+                                  {upload.uploadedAt?.toLocaleDateString()}{" "}
+                                  {upload.uploadedAt?.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </StyledFileSizeText>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  icon={<CheckCircleIcon />}
+                                  label="Completed"
+                                  color="success"
+                                  size="small"
+                                />
+                              </TableCell>
+                            </StyledTableBodyRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </TableContainer>
                 </StyledTableWrapper>
               ) : (
@@ -1042,59 +1055,63 @@ TEST,GBP,JPY,185.75`;
               {filteredRates.length > 0 ? (
                 <StyledTableWrapper>
                   <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <StyledTableHeaderRow>
-                        <StyledTableHeaderCell>Rate Name</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>
-                          From Currency
-                        </StyledTableHeaderCell>
-                        <StyledTableHeaderCell>To Currency</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>FX Rate</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>
-                          Registered By
-                        </StyledTableHeaderCell>
-                        <StyledTableHeaderCell>Date</StyledTableHeaderCell>
-                        <StyledTableHeaderCell>
-                          Deletion Flag
-                        </StyledTableHeaderCell>
-                      </StyledTableHeaderRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredRates.map((rate, index) => (
-                        <StyledTableBodyRow key={rate.id} $index={index}>
-                          <TableCell>{rate.rateName}</TableCell>
-                          <TableCell>{rate.fromCurrency}</TableCell>
-                          <TableCell>{rate.toCurrency}</TableCell>
-                          <TableCell>
-                            {rate.fxRate < 1
-                              ? rate.fxRate.toFixed(8)
-                              : rate.fxRate.toFixed(2)}
-                          </TableCell>
-                          <TableCell>{rate.registeredBy}</TableCell>
-                          <TableCell>
-                            {rate.registeredDate.toLocaleDateString()}{" "}
-                            {rate.registeredDate.toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </TableCell>
-                          <TableCell>
-                            <StyledCheckbox
-                              size="small"
-                              checked={rateDeletionFlags.has(rate.id)}
-                              onChange={(e) =>
-                                handleRateDeletionFlagToggle(
-                                  rate.id,
-                                  e.target.checked,
-                                )
-                              }
-                            />
-                          </TableCell>
-                        </StyledTableBodyRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                    <Table>
+                      <TableHead>
+                        <StyledTableHeaderRow>
+                          <StyledTableHeaderCell>
+                            Rate Name
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            From Currency
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            To Currency
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>FX Rate</StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            Registered By
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>Date</StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            Deletion Flag
+                          </StyledTableHeaderCell>
+                        </StyledTableHeaderRow>
+                      </TableHead>
+                      <TableBody>
+                        {filteredRates.map((rate, index) => (
+                          <StyledTableBodyRow key={rate.id} $index={index}>
+                            <TableCell>{rate.rateName}</TableCell>
+                            <TableCell>{rate.fromCurrency}</TableCell>
+                            <TableCell>{rate.toCurrency}</TableCell>
+                            <TableCell>
+                              {rate.fxRate < 1
+                                ? rate.fxRate.toFixed(8)
+                                : rate.fxRate.toFixed(2)}
+                            </TableCell>
+                            <TableCell>{rate.registeredBy}</TableCell>
+                            <TableCell>
+                              {rate.registeredDate.toLocaleDateString()}{" "}
+                              {rate.registeredDate.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <StyledCheckbox
+                                size="small"
+                                checked={rateDeletionFlags.has(rate.id)}
+                                onChange={(e) =>
+                                  handleRateDeletionFlagToggle(
+                                    rate.id,
+                                    e.target.checked,
+                                  )
+                                }
+                              />
+                            </TableCell>
+                          </StyledTableBodyRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </TableContainer>
                 </StyledTableWrapper>
               ) : (

@@ -204,7 +204,7 @@ export default function HomeScreen() {
         {DATA_INPUT_ITEMS.map((item: MenuItemType) => {
           const IconComponent = item.icon;
           return (
-            <Grid item key={item.id}>
+            <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <StyledMenuCard onClick={() => handleMenuItemClick(item)}>
                 <StyledIconBox>
                   {IconComponent && <IconComponent />}
@@ -226,7 +226,7 @@ export default function HomeScreen() {
         {MASTER_MAINTENANCE_ITEMS.map((item: MenuItemType) => {
           const IconComponent = item.icon;
           return (
-            <Grid item key={item.id}>
+            <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4 }}>
               <StyledMasterMenuCard onClick={() => handleMenuItemClick(item)}>
                 <StyledIconBox>
                   {IconComponent && <IconComponent />}

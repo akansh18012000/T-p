@@ -579,7 +579,7 @@ function LocalItemConversionMasterScreen() {
           {searchConditionExpanded && (
             <StyledSectionContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -607,7 +607,7 @@ function LocalItemConversionMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
@@ -630,7 +630,7 @@ function LocalItemConversionMasterScreen() {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -643,7 +643,7 @@ function LocalItemConversionMasterScreen() {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -672,7 +672,7 @@ function LocalItemConversionMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -685,7 +685,7 @@ function LocalItemConversionMasterScreen() {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -698,7 +698,7 @@ function LocalItemConversionMasterScreen() {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledFormControlLabel
                       control={
@@ -852,7 +852,9 @@ function LocalItemConversionMasterScreen() {
                                       colIndex + 1,
                                     )}
                                     $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                    $isLastFrozen={isLastFrozenColumn(
+                                      colIndex + 1,
+                                    )}
                                   >
                                     <StyledTableHeaderText variant="body2">
                                       {header}
@@ -867,7 +869,9 @@ function LocalItemConversionMasterScreen() {
                                   $leftOffset={getLeftOffset(
                                     displayData.headers.length + 1,
                                   )}
-                                  $isLastFrozen={isLastFrozenColumn(displayData.headers.length + 1)}
+                                  $isLastFrozen={isLastFrozenColumn(
+                                    displayData.headers.length + 1,
+                                  )}
                                 >
                                   Deletion Flag
                                 </StyledTableHeaderCell>
@@ -900,7 +904,9 @@ function LocalItemConversionMasterScreen() {
                                           colIndex + 1,
                                         )}
                                         $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                        $isLastFrozen={isLastFrozenColumn(
+                                          colIndex + 1,
+                                        )}
                                       >
                                         <StyledCellTextField
                                           value={cell}
@@ -928,7 +934,9 @@ function LocalItemConversionMasterScreen() {
                                         displayData.headers.length + 1,
                                       )}
                                       $rowIndex={i}
-                                      $isLastFrozen={isLastFrozenColumn(displayData.headers.length + 1)}
+                                      $isLastFrozen={isLastFrozenColumn(
+                                        displayData.headers.length + 1,
+                                      )}
                                     >
                                       <StyledCheckbox
                                         size="small"

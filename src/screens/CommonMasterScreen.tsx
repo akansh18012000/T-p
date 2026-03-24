@@ -367,7 +367,7 @@ export default function CommonMasterScreen() {
           {searchConditionExpanded && (
             <StyledSectionContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Box>
                     <Autocomplete
                       fullWidth
@@ -403,7 +403,7 @@ export default function CommonMasterScreen() {
                     )}
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
@@ -444,7 +444,7 @@ export default function CommonMasterScreen() {
                     )}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledInputBase
                     fullWidth
                     size="small"
@@ -456,7 +456,7 @@ export default function CommonMasterScreen() {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledFormControlLabel
                       control={
@@ -632,7 +632,9 @@ export default function CommonMasterScreen() {
                                       colIndex + 1,
                                     )}
                                     $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                    $isLastFrozen={isLastFrozenColumn(
+                                      colIndex + 1,
+                                    )}
                                   >
                                     <StyledTableHeaderText variant="body2">
                                       {header}
@@ -671,7 +673,9 @@ export default function CommonMasterScreen() {
                                           colIndex + 1,
                                         )}
                                         $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
+                                        $isLastFrozen={isLastFrozenColumn(
+                                          colIndex + 1,
+                                        )}
                                       >
                                         {colIndex === deletionFlagColIndex ? (
                                           <StyledCheckbox

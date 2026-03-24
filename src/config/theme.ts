@@ -2,6 +2,15 @@
  * Terumo Branding & Theme Configuration
  * Based on official Terumo color palette
  */
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+/** MUI v7 Grid uses gap-based layout; these defaults align overflow behavior with v5 Grid. */
+const muiGridV5LikeConfig = {
+  defaultProps: {
+    disableEqualOverflow: true,
+  },
+};
+// AI Generated Code by Deloitte + Cursor (END)
+
 export const terumoTheme = {
   palette: {
     common: {
@@ -123,6 +132,11 @@ export const terumoTheme = {
       fontWeight: 400,
     },
   },
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  components: {
+    MuiGrid: muiGridV5LikeConfig,
+  },
+  // AI Generated Code by Deloitte + Cursor (END)
 };
 
 export const terumoColors = {
