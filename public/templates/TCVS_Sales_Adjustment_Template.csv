@@ -1,0 +1,19 @@
+Type,Line,Sales/Cost,TC Notes,GPC,Apr23,May24,Jun24,Jul24,Aug24,Sep24,Oct24,Nov24,Dec24,Jan25,Feb25,Mar25
+Sales,1,Sales,Recognize Deferred Service Revenue,1321,110.435,102.820,97.870,82.971,75.967,62.858,38.367,38.367,34.613,,,
+Sales,2,Sales,Additional Service,1321,-54.833,-73.331,-81.760,-71.305,-64.748,101.825,78.912,60.817,77.145,,,
+Sales,3,Sales,Deferred Tails Revenue,1320,2.083,2.083,2.083,2.083,3,0,0,0,0,,,
+Sales,4,Sales,Stuck Invoice fixed Oct 1 For Sep,1667,,,,,,,,,,,,
+Sales,5,Sales,Stuck Invoice fixed Dec 1 For Nov,1304,,,,,,,,,,,,
+Sales,6,Sales,Australia DN for Heater/Cooler removal,X104,,,,,,,0,0,0,,,
+Sales,7,Sales,Offsets LT A/R,X104,0,0,0,0,0,0,0,0,0,,,
+Sales,8,Sales,Adj Rebate Reserve,X104,0,0,0,0,0,0,0,0,0,,,
+Sales,9,Sales,GPO Admin fees,X104,-50.000,-50.000,-50.000,-50.000,-50.000,-50.000,-50.000,-50.000,-50.000,,,
+Sales,10,Sales,Sales Adjustment,X104,0,0,0,0,0,0,0,0,0,,,
+Sales,11,Sales,Rev Sys 1 sold not Installed,X104,2.543,169,2.906,-427.817,95.067,-52.102,9.872,13.601,5.818,,,
+Sales,12,Sales,FY19 Loan Agrmts - IFRS Adj,X104,0,0,0,0,0,0,0,0,0,,,
+Sales,13,Sales,Centrifugal credit,1315,0,0,0,0,0,0,0,0,0,,,
+Sales,14,Sales Total,,-214.868,-228.403,-238.807,-634.837,-285.783,-266.785,-157.436,-140.582,-155.941,,,
+Cost,15,Cost,,1337,134.712,127.874,125.533,125.404,124.261,124.261,123.194,122.945,122.900,,,
+Cost,16,Cost,,1320,0,,,,,,0,,0,,,
+Cost,17,Cost,,1319,,,,,,,,,,,0,0,0
+Cost,18,Cost Total,,134.712,127.874,125.533,125.404,124.261,124.261,123.194,122.945,122.900,0,0,0

@@ -1,0 +1,6 @@
+Sales Month,Sales Entity Code,Sales Entity Name,Global Product Class,Item Name,Product Entity,Internal Company,Destination Country Code,Destination Country Name,Account Code,Account Name,Amount
+202412,E0001,Terumo Europe,X101,Product A,E0001,TEEU,GB,Great Britain,REV001,Sales Revenue,15000.00
+202412,E0001,Terumo Europe,X102,Product B,E0001,TEEU,DE,Germany,REV002,Product Sales,25000.00
+202412,E0001,Terumo Europe,X103,Product C,E0001,TEEU,FR,France,REV003,Service Revenue,8500.00
+202412,E0001,Terumo Europe,X104,Product D,E0001,TEEU,IT,Italy,REV004,License Revenue,12000.00
+202412,E0001,Terumo Europe,X105,Product E,E0001,TEEU,ES,Spain,REV005,Royalty Revenue,6750.00

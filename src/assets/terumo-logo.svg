@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <!-- Red arc -->
+  <path d="M 10 30 Q 10 10, 30 10 L 35 10 L 30 20 Q 15 20, 15 30 Q 15 40, 30 40 L 35 40 L 30 50 Q 10 50, 10 30 Z" fill="#E4002B"/>
+  
+  <!-- Green section -->
+  <rect x="35" y="25" width="15" height="10" fill="#00A85A"/>
+  <path d="M 50 25 L 60 20 L 60 40 L 50 35 Z" fill="#00A85A"/>
+  
+  <!-- TERUMO text -->
+  <text x="70" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#00A85A">TERUMO</text>
+</svg>

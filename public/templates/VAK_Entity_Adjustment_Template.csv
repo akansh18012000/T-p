@@ -1,0 +1,9 @@
+Sales Month,Sales Entity Code,Sales Entity Name,Global Product Class,Item Name,Product Entity,Internal Company,Destination Country Code,Destination Country Name,Account Code,Account Name,Amount
+202412,V0001,Vascutek,V101,Vascular Graft A,V0001,VASK,GB,Great Britain,VAS001,Product Sales,45000.00
+202412,V0001,Vascutek,V102,Vascular Graft B,V0001,VASK,DE,Germany,VAS002,Product Sales,32000.00
+202412,V0001,Vascutek,V103,Stent Graft,V0001,VASK,FR,France,VAS003,Product Sales,28500.00
+202412,V0001,Vascutek,V104,Surgical Patch,V0001,VASK,IT,Italy,VAS004,Product Sales,15600.00
+202412,V0001,Vascutek,V105,Access Kit,V0001,VASK,ES,Spain,VAS005,Product Sales,12300.00
+202412,V0001,Vascutek,V106,Delivery System,V0001,VASK,NL,Netherlands,VAS006,Product Sales,18750.00
+202412,V0001,Vascutek,V107,Guidewire,V0001,VASK,BE,Belgium,VAS007,Product Sales,8920.00
+202412,V0001,Vascutek,V108,Balloon Catheter,V0001,VASK,CH,Switzerland,VAS008,Product Sales,22100.00

@@ -1,0 +1,107 @@
+import React from "react";
+import { useLocation } from "react-router-dom";
+import { styled } from "@mui/material/styles";
+import { useSidebar } from "../context/SidebarContext.js";
+import { Box } from "@mui/material";
+import { AppHeader } from "./AppHeader";
+import { AppSidebar } from "./AppSidebar";
+import type { MenuSection } from "./AppSidebar";
+import terumoLogo from "../assets/logo.png";
+
+const StyledRootBox = styled(Box)<{ $isHomePage?: boolean }>(
+  ({ theme, $isHomePage }) => ({
+    display: "flex",
+    minHeight: "100vh",
+    backgroundColor: $isHomePage
+      ? ((theme.palette.primary as { lightest?: string }).lightest ?? "#D9EFE7")
+      : theme.palette.background.default,
+  }),
+);
+
+const StyledMainBox = styled(Box)<{ $noPadding?: boolean }>(
+  ({ theme, $noPadding }) => ({
+    flexGrow: 1,
+    padding: $noPadding ? 0 : theme.spacing(3),
+    marginTop: theme.spacing(8),
+    minWidth: 0,
+    overflow: "hidden",
+  }),
+);
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+  sections?: MenuSection[];
+  onSectionToggle?: (sectionId: string) => void;
+  onMenuItemClick?: (item: {
+    id: string;
+    label: string;
+    icon: React.ComponentType<any>;
+  }) => void;
+  showSidebar?: boolean;
+  logoutRedirectPath?: string;
+  sidebarProps?: Partial<{
+    width: number;
+    collapsedWidth: number;
+    showLogo: boolean;
+    logoSrc: string;
+    logoAlt: string;
+    showFooter: boolean;
+    footerVersion: string;
+    footerTitle: string;
+  }>;
+}
+
+/**
+ * Shared layout with AppHeader + AppSidebar. Use for all screens that need the standard header and navigation.
+ */
+export const AppLayout: React.FC<AppLayoutProps> = ({
+  children,
+  sections = [],
+  onSectionToggle,
+  onMenuItemClick,
+  showSidebar = true,
+  logoutRedirectPath,
+  sidebarProps = {},
+}) => {
+  const { pathname } = useLocation();
+  const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
+  const isHomePage = pathname === "/home";
+
+  const defaultSidebarProps = {
+    width: 360,
+    collapsedWidth: 72,
+    showLogo: true,
+    logoSrc: terumoLogo,
+    logoAlt: "Terumo",
+    showFooter: true,
+    footerVersion: "1.0",
+    footerTitle: "Terumo Performance Management",
+    ...sidebarProps,
+  };
+
+  return (
+    <StyledRootBox $isHomePage={isHomePage}>
+      <AppHeader
+        onMenuToggle={
+          showSidebar
+            ? () => (sidebarOpen ? closeSidebar() : openSidebar())
+            : () => {}
+        }
+        showMenuButton={showSidebar}
+        logoutRedirectPath={logoutRedirectPath}
+      />
+      {showSidebar && (
+        <AppSidebar
+          open={sidebarOpen}
+          sections={sections}
+          onSectionToggle={onSectionToggle}
+          onMenuItemClick={onMenuItemClick}
+          {...defaultSidebarProps}
+        />
+      )}
+      <StyledMainBox component="main" $noPadding={isHomePage}>
+        {children}
+      </StyledMainBox>
+    </StyledRootBox>
+  );
+};
