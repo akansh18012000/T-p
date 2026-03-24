@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -63,27 +62,15 @@ import {
   StyledEmptyStateSubtitle,
   StyledResultTableContainer,
   StyledResultTable,
-  StyledTableHeaderText,
   StyledSnackbarAlert,
   StyledRemoveButton,
   StyledTableCellTypography,
 } from "../components/shared/StyledComponents.js";
 import { useSidebar } from "../context/SidebarContext.js";
+import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
 
-// Screen-specific table components (checkbox column, delete column, white borders)
-const StyledTableHeaderCheckboxCell = styled(TableCell)(({ theme }) => ({
-  width: 48,
-  minWidth: 48,
-  maxWidth: 48,
-  backgroundColor: theme.palette.table!.headerBg,
-  color: theme.palette.common.white,
-  fontWeight: 600,
-  border: `1px solid ${theme.palette.common.white}`,
-  position: "sticky",
-  left: 0,
-  zIndex: 2,
-}));
-
+// Screen-specific table components (delete column, white borders)
+// AI Generated Code by Deloitte + Cursor (BEGIN)
 const StyledTableHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   fontWeight: 600,
@@ -101,6 +88,39 @@ const StyledTableHeaderTypography = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.common.white,
 }));
+
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+/** Leading # column — matches SalesDataErrorCorrectionScreen index column styling */
+const StyledTableHeaderIndexCell = styled(TableCell)(({ theme }) => ({
+  width: 48,
+  minWidth: 48,
+  maxWidth: 48,
+  backgroundColor: theme.palette.table!.headerBg,
+  color: theme.palette.common.white,
+  fontWeight: 600,
+  border: `1px solid ${theme.palette.common.white}`,
+  position: "sticky",
+  left: 0,
+  zIndex: 2,
+}));
+
+const StyledTableBodyIndexCell = styled(TableCell)<{ $rowIndex: number }>(
+  ({ theme, $rowIndex }) => ({
+    width: 48,
+    minWidth: 48,
+    maxWidth: 48,
+    fontWeight: 600,
+    border: `1px solid ${theme.palette.common.white}`,
+    position: "sticky",
+    left: 0,
+    zIndex: 1,
+    backgroundColor:
+      $rowIndex % 2 === 0
+        ? theme.palette.table!.rowEven
+        : theme.palette.table!.rowOdd,
+  }),
+);
+// AI Generated Code by Deloitte + Cursor (END)
 
 const StyledTableHeaderDeleteCell = styled(TableCell)(({ theme }) => ({
   width: 80,
@@ -137,18 +157,6 @@ const StyledTableBodyRow = styled(TableRow)<{ $index: number }>(
   }),
 );
 
-const StyledTableRowNumberCell = styled(TableCell)(({ theme }) => ({
-  width: 48,
-  minWidth: 48,
-  maxWidth: 48,
-  backgroundColor: theme.palette.background.default,
-  fontWeight: 600,
-  border: `1px solid ${theme.palette.common.white}`,
-  position: "sticky",
-  left: 0,
-  zIndex: 1,
-}));
-
 const StyledTableDataCell = styled(TableCell)(({ theme }) => ({
   border: `1px solid ${theme.palette.common.white}`,
   padding: "8px",
@@ -176,34 +184,53 @@ const StyledDeleteButtonArea = styled(Box)(({ theme }) => ({
 }));
 
 const StyledDeleteButton = StyledRemoveButton;
+// AI Generated Code by Deloitte + Cursor (END)
 
+// AI Generated Code by Deloitte + Cursor (BEGIN)
 const CORRECTION_TYPE_OPTIONS = [
-  { value: "Sales Detail", labelKey: "adjustmentDataFileDeletion.salesDetail" },
-  { value: "Entity", labelKey: "adjustmentDataFileDeletion.entity" },
   {
-    value: "Consolidated",
-    labelKey: "adjustmentDataFileDeletion.consolidated",
+    value: "achievementDetails",
+    labelKey: "adjustmentDataFileDeletion.achievementDetails",
+  },
+  {
+    value: "basePl",
+    labelKey: "adjustmentDataFileDeletion.basePl",
+  },
+  {
+    value: "consolidatedPl",
+    labelKey: "adjustmentDataFileDeletion.consolidatedPl",
   },
 ];
+// AI Generated Code by Deloitte + Cursor (END)
 
+// AI Generated Code by Deloitte + Cursor (BEGIN)
 interface ResultRow {
   id: number;
-  data: string[];
+  correctionType: string;
+  yearMonth: string;
+  fileName: string;
+  userId: string;
+  dateTime: string;
   selected: boolean;
 }
+// AI Generated Code by Deloitte + Cursor (END)
 
 function AdjustmentDataFileDeletionScreen() {
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
 
   // Search condition state
-  const [correctionType, setCorrectionType] = useState("");
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const [correctionType, setCorrectionType] = useState("basePl");
+  // AI Generated Code by Deloitte + Cursor (END)
   const [yearMonth, setYearMonth] = useState<Date | null>(null);
   const [fileName, setFileName] = useState("");
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
 
   const searchConditionsRef = useRef({
-    correctionType: "",
+    // AI Generated Code by Deloitte + Cursor (BEGIN)
+    correctionType: "basePl",
+    // AI Generated Code by Deloitte + Cursor (END)
     yearMonth: null as Date | null,
     fileName: "",
   });
@@ -233,73 +260,71 @@ function AdjustmentDataFileDeletionScreen() {
       const yearMonthStr = conditions.yearMonth
         ? `${conditions.yearMonth.getFullYear()}-${String(conditions.yearMonth.getMonth() + 1).padStart(2, "0")}`
         : "";
+      // AI Generated Code by Deloitte + Cursor (BEGIN)
       const allRows: ResultRow[] = [
         {
           id: 1,
-          data: [
-            "Sales Detail",
-            "2026-01",
-            "sales_detail_jan_2026.csv",
-            "2026-01-05 10:30",
-          ],
+          correctionType: "achievementDetails",
+          yearMonth: "2026-01",
+          fileName: "sales_detail_jan_2026.csv",
+          userId: "USR001",
+          dateTime: "2026-01-05 10:30",
           selected: false,
         },
         {
           id: 2,
-          data: [
-            "Sales Detail",
-            "2026-01",
-            "sales_detail_jan_2026_v2.csv",
-            "2026-01-06 14:20",
-          ],
+          correctionType: "achievementDetails",
+          yearMonth: "2026-01",
+          fileName: "sales_detail_jan_2026_v2.csv",
+          userId: "USR002",
+          dateTime: "2026-01-06 14:20",
           selected: false,
         },
         {
           id: 3,
-          data: [
-            "Entity",
-            "2026-01",
-            "entity_data_jan_2026.csv",
-            "2026-01-07 09:15",
-          ],
+          correctionType: "basePl",
+          yearMonth: "2026-01",
+          fileName: "entity_data_jan_2026.csv",
+          userId: "USR001",
+          dateTime: "2026-01-07 09:15",
           selected: false,
         },
         {
           id: 4,
-          data: [
-            "Consolidated",
-            "2026-02",
-            "consolidated_feb_2026.csv",
-            "2026-02-01 11:00",
-          ],
+          correctionType: "consolidatedPl",
+          yearMonth: "2026-02",
+          fileName: "consolidated_feb_2026.csv",
+          userId: "USR003",
+          dateTime: "2026-02-01 11:00",
           selected: false,
         },
         {
           id: 5,
-          data: [
-            "Entity",
-            "2026-02",
-            "entity_feb_2026.csv",
-            "2026-02-02 16:45",
-          ],
+          correctionType: "basePl",
+          yearMonth: "2026-02",
+          fileName: "entity_feb_2026.csv",
+          userId: "USR002",
+          dateTime: "2026-02-02 16:45",
           selected: false,
         },
       ];
       const filteredRows = allRows.filter((row) => {
-        const [rowType, rowYm, rowFile] = row.data;
         if (
           conditions.correctionType.trim() &&
-          rowType !== conditions.correctionType
+          row.correctionType !== conditions.correctionType
         )
           return false;
-        if (yearMonthStr && rowYm !== yearMonthStr) return false;
+        if (yearMonthStr && row.yearMonth !== yearMonthStr) return false;
         if (
           conditions.fileName.trim() &&
-          !rowFile.toLowerCase().includes(conditions.fileName.toLowerCase())
+          !row.fileName
+            .toLowerCase()
+            .includes(conditions.fileName.toLowerCase())
         )
           return false;
         return true;
       });
+      // AI Generated Code by Deloitte + Cursor (END)
       setResultRows(filteredRows.map((r) => ({ ...r, selected: false })));
       setSnackbarMessage(
         filteredRows.length > 0
@@ -352,13 +377,16 @@ function AdjustmentDataFileDeletionScreen() {
     setSnackbarOpen(true);
   };
 
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
   const filteredRows = searchTerm.trim()
-    ? resultRows.filter((row) =>
-        row.data.some((cell) =>
-          cell.toLowerCase().includes(searchTerm.toLowerCase()),
-        ),
-      )
+    ? resultRows.filter((row) => {
+        const hay = [row.yearMonth, row.fileName, row.userId, row.dateTime]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(searchTerm.toLowerCase());
+      })
     : resultRows;
+  // AI Generated Code by Deloitte + Cursor (END)
   const selectedCount = resultRows.filter((r) => r.selected).length;
   const allSelected =
     resultRows.length > 0 && resultRows.every((r) => r.selected);
@@ -413,14 +441,13 @@ function AdjustmentDataFileDeletionScreen() {
                         searchConditionsRef.current.correctionType = val;
                       }}
                     >
-                      <MenuItem value="">
-                        <em>{t("adjustmentDataFileDeletion.all")}</em>
-                      </MenuItem>
+                      {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
                       {CORRECTION_TYPE_OPTIONS.map((opt) => (
                         <MenuItem key={opt.value} value={opt.value}>
                           {t(opt.labelKey)}
                         </MenuItem>
                       ))}
+                      {/* AI Generated Code by Deloitte + Cursor (END) */}
                     </Select>
                   </StyledFormControl>
                 </Grid>
@@ -554,27 +581,22 @@ function AdjustmentDataFileDeletionScreen() {
                           <StyledResultTable stickyHeader size="small">
                             <TableHead>
                               <TableRow>
-                                <StyledTableHeaderCheckboxCell></StyledTableHeaderCheckboxCell>
-                                {[
-                                  t(
-                                    "adjustmentDataFileDeletion.correctionTypeHeader",
+                                {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
+                                <StyledTableHeaderIndexCell>
+                                  <StyledTableHeaderTypography variant="body2">
+                                    #
+                                  </StyledTableHeaderTypography>
+                                </StyledTableHeaderIndexCell>
+                                {ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS.map(
+                                  (col) => (
+                                    <StyledTableHeaderCell key={col.key}>
+                                      <StyledTableHeaderTypography variant="body2">
+                                        {t(col.labelKey)}
+                                      </StyledTableHeaderTypography>
+                                    </StyledTableHeaderCell>
                                   ),
-                                  t(
-                                    "adjustmentDataFileDeletion.yearMonthHeader",
-                                  ),
-                                  t(
-                                    "adjustmentDataFileDeletion.fileNameHeader",
-                                  ),
-                                  t(
-                                    "adjustmentDataFileDeletion.uploadDateHeader",
-                                  ),
-                                ].map((header, colIndex) => (
-                                  <StyledTableHeaderCell key={colIndex}>
-                                    <StyledTableHeaderTypography variant="body2">
-                                      {header}
-                                    </StyledTableHeaderTypography>
-                                  </StyledTableHeaderCell>
-                                ))}
+                                )}
+                                {/* AI Generated Code by Deloitte + Cursor (END) */}
                                 <StyledTableHeaderDeleteCell>
                                   <StyledDeleteHeaderContent>
                                     <StyledTableHeaderTypography variant="body2">
@@ -597,16 +619,32 @@ function AdjustmentDataFileDeletionScreen() {
                             <TableBody>
                               {filteredRows.map((row, i) => (
                                 <StyledTableBodyRow key={row.id} $index={i}>
-                                  <StyledTableRowNumberCell>
-                                    {i + 1}
-                                  </StyledTableRowNumberCell>
-                                  {row.data.map((cell, colIndex) => (
-                                    <StyledTableDataCell key={colIndex}>
-                                      <StyledTableCellTypography variant="body2">
-                                        {cell}
-                                      </StyledTableCellTypography>
-                                    </StyledTableDataCell>
-                                  ))}
+                                  {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
+                                  <StyledTableBodyIndexCell $rowIndex={i}>
+                                    <StyledTableCellTypography variant="body2">
+                                      {i + 1}
+                                    </StyledTableCellTypography>
+                                  </StyledTableBodyIndexCell>
+                                  {ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS.map(
+                                    (col) => (
+                                      <StyledTableDataCell key={col.key}>
+                                        <StyledTableCellTypography variant="body2">
+                                          {
+                                            row[
+                                              col.key as keyof Pick<
+                                                ResultRow,
+                                                | "yearMonth"
+                                                | "fileName"
+                                                | "userId"
+                                                | "dateTime"
+                                              >
+                                            ]
+                                          }
+                                        </StyledTableCellTypography>
+                                      </StyledTableDataCell>
+                                    ),
+                                  )}
+                                  {/* AI Generated Code by Deloitte + Cursor (END) */}
                                   <StyledTableCheckboxCell>
                                     <StyledRowCheckbox
                                       size="small"

@@ -281,9 +281,9 @@
     "yearAndMonth": "年月",
     "fileName": "ファイル名",
     "all": "すべて",
-    "salesDetail": "売上詳細",
-    "entity": "エンティティ",
-    "consolidated": "統合",
+    "achievementDetails": "1. 実績詳細",
+    "basePl": "2. ベースPL",
+    "consolidatedPl": "3. 連結PL",
     "search": "検索",
     "resultData": "結果データ",
     "refresh": "更新",
@@ -296,10 +296,10 @@
     "searchCompletedNoResults": "検索完了。結果がありません。",
     "noRowsSelectedForDeletion": "削除対象の行が選択されていません。",
     "filesDeletedSuccess": "{{count}}件のファイルが正常に削除されました。",
-    "correctionTypeHeader": "修正タイプ",
     "yearMonthHeader": "年月",
     "fileNameHeader": "ファイル名",
-    "uploadDateHeader": "アップロード日"
+    "userIdHeader": "ユーザーID",
+    "dateTimeHeader": "日時"
   },
   "planningDataIngestion": {
     "title": "計画データ取込",

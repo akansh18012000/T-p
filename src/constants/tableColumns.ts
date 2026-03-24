@@ -192,6 +192,36 @@ export const SALES_DATA_ERROR_CORRECTION_FREEZE_CONFIG: FreezeColumnItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Adjustment Data File Deletion Screen (search results)
+// ---------------------------------------------------------------------------
+
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+export const ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS: I18nColumnConfig[] =
+  [
+    {
+      key: "yearMonth",
+      labelKey: "adjustmentDataFileDeletion.yearMonthHeader",
+      editable: false,
+    },
+    {
+      key: "fileName",
+      labelKey: "adjustmentDataFileDeletion.fileNameHeader",
+      editable: false,
+    },
+    {
+      key: "userId",
+      labelKey: "adjustmentDataFileDeletion.userIdHeader",
+      editable: false,
+    },
+    {
+      key: "dateTime",
+      labelKey: "adjustmentDataFileDeletion.dateTimeHeader",
+      editable: false,
+    },
+  ];
+// AI Generated Code by Deloitte + Cursor (END)
+
+// ---------------------------------------------------------------------------
 // Year Month Master Screen
 // ---------------------------------------------------------------------------
 

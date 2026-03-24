@@ -282,9 +282,9 @@
     "yearAndMonth": "Year and Month",
     "fileName": "File Name",
     "all": "All",
-    "salesDetail": "Sales Detail",
-    "entity": "Entity",
-    "consolidated": "Consolidated",
+    "achievementDetails": "1. Achievement Details",
+    "basePl": "2. Base PL",
+    "consolidatedPl": "3. Consolidated PL",
     "search": "Search",
     "resultData": "Result Data",
     "refresh": "Refresh",
@@ -297,10 +297,10 @@
     "searchCompletedNoResults": "Search completed with no results.",
     "noRowsSelectedForDeletion": "No rows selected for deletion.",
     "filesDeletedSuccess": "{{count}} file(s) deleted successfully.",
-    "correctionTypeHeader": "Correction Type",
-    "yearMonthHeader": "Year Month",
+    "yearMonthHeader": "Year and Month",
     "fileNameHeader": "File Name",
-    "uploadDateHeader": "Upload Date"
+    "userIdHeader": "User ID",
+    "dateTimeHeader": "Date and Time"
   },
   "planningDataIngestion": {
     "title": "Planning Data Ingestion",
