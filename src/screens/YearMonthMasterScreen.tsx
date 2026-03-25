@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
@@ -16,7 +16,9 @@ import {
   AppRegistration as AppRegistrationIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { YEAR_MONTH_MASTER_HEADERS } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
@@ -115,6 +117,17 @@ function createNewRow(): string[] {
 
 function YearMonthMasterScreen() {
   const { t } = useTranslation();
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.yearMonthMasterMaintenance") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const [rows, setRows] = useState<string[][]>(() => [...MOCK_INITIAL_ROWS]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -189,13 +202,6 @@ function YearMonthMasterScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.yearMonthMasterMaintenance") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">

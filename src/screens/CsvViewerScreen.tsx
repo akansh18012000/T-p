@@ -31,7 +31,9 @@ import {
   Download as DownloadIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import {
   StyledMainPaperBordered,
   StyledToolbar,
@@ -207,6 +209,23 @@ export default function CsvViewerScreen({}: CsvViewerScreenProps) {
     direction: "asc" | "desc";
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    if (loading) {
+      setBreadcrumbItems([]);
+      return;
+    }
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.salesDataUpload"), onClick: () => navigate(-1) },
+      { label: fileName },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [loading, fileName, t, setBreadcrumbItems, navigate]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Load CSV data - in a real app, this would fetch from an API
   useEffect(() => {
@@ -422,14 +441,6 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.salesDataUpload"), onClick: () => navigate(-1) },
-          { label: fileName },
-        ]}
-      />
-
       <StyledMainPaperBordered elevation={0}>
         <StyledToolbar>
           <StyledToolbarTitleBox>

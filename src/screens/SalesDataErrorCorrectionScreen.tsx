@@ -45,7 +45,9 @@ import {
   ExpandLess as ExpandLessIcon,
   AppRegistration as AppRegistrationIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import {
   SALES_DATA_ERROR_CORRECTION_COLUMNS,
@@ -278,6 +280,18 @@ export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("errorCorrection.title") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Search and filter state
   const [systemIdInput, setSystemIdInput] = useState("");
@@ -1169,13 +1183,6 @@ export default function SalesDataErrorCorrectionScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("errorCorrection.title") },
-        ]}
-      />
-
       {/* Main Content Card */}
       <StyledMainPaper elevation={2}>
         {/* Page Header */}

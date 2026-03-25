@@ -54,7 +54,9 @@ import {
   Close as CloseIcon,
   Business as BusinessIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import {
   useUploadContext,
   type UploadEntry,
@@ -646,6 +648,18 @@ export default function AdjustmentDataEntityScreen() {
 
   const fileUploads = getUploadState(screenKey).entries;
 
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.adjustmentDataEntity") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
+
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
 
@@ -1077,13 +1091,6 @@ export default function AdjustmentDataEntityScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.adjustmentDataEntity") },
-        ]}
-      />
-
       {/* Main Content */}
       <StyledMainPaper elevation={2}>
         {/* Header Section */}

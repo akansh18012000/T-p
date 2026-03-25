@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -16,7 +16,9 @@ import {
   Toolbar,
 } from "@mui/material";
 import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -213,6 +215,17 @@ const MOCK_INGESTION_DATA: IngestionRow[] = [
 
 export default function PlanningDataIngestionScreen() {
   const { t } = useTranslation();
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("planningDataIngestion.title") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const [ingestionData, setIngestionData] = useState<IngestionRow[]>([]);
   const [ingestionLoading, setIngestionLoading] = useState(false);
@@ -227,13 +240,6 @@ export default function PlanningDataIngestionScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("planningDataIngestion.title") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         {/* Page Header */}
         <StyledHeaderBox>

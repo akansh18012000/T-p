@@ -15,6 +15,9 @@ import { terumoTheme } from "./config/theme.js";
 import { msalConfig } from "./config/msal.js";
 import { SidebarProvider } from "./context/SidebarContext.js";
 import { UploadProvider } from "./context/UploadContext.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { AppLayout } from "./components/AppLayout.js";
 import {
   createMenuSections,
@@ -104,6 +107,7 @@ export default function App() {
         <Router>
           <UploadProvider>
             <SidebarProvider>
+              <BreadcrumbProvider>
               <Routes>
                 {/* Routes WITHOUT layout: Login only */}
                 <Route path="/" element={<LoginScreen />} />
@@ -182,6 +186,7 @@ export default function App() {
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </BreadcrumbProvider>
             </SidebarProvider>
           </UploadProvider>
         </Router>

@@ -26,7 +26,6 @@ import {
 } from "@mui/material";
 import { styled, alpha } from "@mui/material/styles";
 import {
-  CloudUpload as CloudUploadIcon,
   Delete as DeleteIcon,
   GetApp as GetAppIcon,
   CheckCircle as CheckCircleIcon,
@@ -84,12 +83,9 @@ import {
   StyledFilesListBox,
   StyledSectionTitle,
 } from "../components/shared/StyledComponents.js";
-import { AppLayout, AppBreadcrumbs } from "../components";
-import {
-  DATA_INPUT_ITEMS,
-  MASTER_MAINTENANCE_ITEMS,
-  handleMenuItemNavigation,
-} from "../config/menuConfig";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { useSidebar } from "../context/SidebarContext.js";
 import {
   useUploadContext,
@@ -370,50 +366,19 @@ const SimulationRateEntryScreen = () => {
     },
   ]);
 
-  // Sidebar state management
-  const {
-    dataInputExpanded,
-    setDataInputExpanded,
-    masterMaintenanceExpanded,
-    setMasterMaintenanceExpanded,
-    currentScreenId,
-    closeSidebar,
-  } = useSidebar();
+  const { closeSidebar } = useSidebar();
 
-  const menuSections = [
-    {
-      id: "data-input",
-      label: t("home.dataInput"),
-      icon: CloudUploadIcon,
-      items: DATA_INPUT_ITEMS.map((item) => ({
-        ...item,
-        label: t(item.label),
-      })),
-      expanded: dataInputExpanded,
-    },
-    {
-      id: "master-maintenance",
-      label: t("home.masterMaintenance"),
-      icon: CloudUploadIcon,
-      items: MASTER_MAINTENANCE_ITEMS.map((item) => ({
-        ...item,
-        label: t(item.label),
-      })),
-      expanded: masterMaintenanceExpanded,
-    },
-  ];
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
 
-  const handleSectionToggle = (sectionId: string) => {
-    if (sectionId === "data-input") {
-      setDataInputExpanded(!dataInputExpanded);
-    } else if (sectionId === "master-maintenance") {
-      setMasterMaintenanceExpanded(!masterMaintenanceExpanded);
-    }
-  };
-
-  const handleMenuItemClick = (item: any) => {
-    handleMenuItemNavigation(item, navigate, currentScreenId);
-  };
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.simulationRateEntry") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -624,18 +589,7 @@ TEST,GBP,JPY,185.75`;
   );
 
   return (
-    <AppLayout
-      sections={menuSections}
-      onSectionToggle={handleSectionToggle}
-      onMenuItemClick={handleMenuItemClick}
-    >
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.simulationRateEntry") },
-        ]}
-      />
-
+    <>
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">Simulation Rate Entry</StyledPageTitle>
@@ -1143,7 +1097,7 @@ TEST,GBP,JPY,185.75`;
           )}
         </StyledUploadSectionBox>
       </StyledMainPaper>
-    </AppLayout>
+    </>
   );
 };
 

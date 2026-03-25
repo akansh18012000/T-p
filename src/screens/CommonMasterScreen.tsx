@@ -20,7 +20,9 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { COMMON_MASTER_HEADERS } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
@@ -104,6 +106,18 @@ const listboxProps = {
 export default function CommonMasterScreen() {
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.commonMasterMaintenance") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Search condition state
   const [groupId, setGroupId] = useState("");
@@ -335,13 +349,6 @@ export default function CommonMasterScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.commonMasterMaintenance") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">

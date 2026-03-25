@@ -30,11 +30,13 @@ import {
   GetApp as GetAppIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
 import {
   useUploadContext,
   type UploadEntry,
 } from "../context/UploadContext.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import {
   navigateToCsvView,
   isCsvFile,
@@ -687,6 +689,17 @@ export default function SalesDataUploadScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setEntries, addEntries, removeEntry, updateEntry } =
     useUploadContext();
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("upload.home"), path: "/home" },
+      { label: t("home.salesDataUpload") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const fileUploads = getUploadState(screenKey).entries;
 
@@ -893,13 +906,6 @@ export default function SalesDataUploadScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("upload.home"), path: "/home" },
-          { label: t("home.salesDataUpload") },
-        ]}
-      />
-
       {/* Main Upload Card */}
       <StyledMainPaper elevation={2}>
         {/* Page Header - matches Adjustment Data screens */}

@@ -2,10 +2,16 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import { useSidebar } from "../context/SidebarContext.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { Box } from "@mui/material";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
 import type { MenuSection } from "./AppSidebar";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { AppBreadcrumbs } from "./AppBreadcrumbs";
+// AI Generated Code by Deloitte + Cursor (END)
 import terumoLogo from "../assets/logo.png";
 
 const StyledRootBox = styled(Box)<{ $isHomePage?: boolean }>(
@@ -65,7 +71,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   const { pathname } = useLocation();
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { items: breadcrumbItems } = useBreadcrumbItems();
   const isHomePage = pathname === "/home";
+  const showBreadcrumbs = !isHomePage && breadcrumbItems.length > 0;
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const defaultSidebarProps = {
     width: 360,
@@ -100,6 +110,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       )}
       <StyledMainBox component="main" $noPadding={isHomePage}>
+        {showBreadcrumbs && <AppBreadcrumbs items={breadcrumbItems} />}
         {children}
       </StyledMainBox>
     </StyledRootBox>

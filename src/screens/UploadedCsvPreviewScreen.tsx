@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled, alpha } from "@mui/material/styles";
@@ -18,7 +19,9 @@ import {
   ArrowBack as ArrowBackIcon,
   GetApp as GetAppIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import type { CsvData } from "../utils/csvUtils.js";
 
 /* Local styled components */
@@ -218,6 +221,9 @@ export default function UploadedCsvPreviewScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const state = location.state as LocationState | null;
   const csvData = state?.csvData;
@@ -226,9 +232,29 @@ export default function UploadedCsvPreviewScreen() {
   const returnLabel = state?.returnLabel ?? t("home.home");
   const sourceScreen = state?.sourceScreen;
 
-  const handleBack = () => {
-    navigate(returnPath);
-  };
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  useEffect(() => {
+    if (!state || !csvData) {
+      setBreadcrumbItems([]);
+      return;
+    }
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: returnLabel, onClick: () => navigate(returnPath) },
+      { label: fileName },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [
+    state,
+    csvData,
+    fileName,
+    returnLabel,
+    t,
+    setBreadcrumbItems,
+    navigate,
+    returnPath,
+  ]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const handleDownload = () => {
     if (!csvData) return;
@@ -271,20 +297,12 @@ export default function UploadedCsvPreviewScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: returnLabel, onClick: handleBack },
-          { label: fileName },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledHeaderBox>
           <StyledOutlinedBackButton
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
+            onClick={() => navigate(returnPath)}
           >
             {t("uploadedCsvPreview.back")}
           </StyledOutlinedBackButton>

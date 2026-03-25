@@ -99,7 +99,9 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { FX_RATE_ENTRY_MASTER_HEADERS } from "../constants/tableColumns.js";
@@ -291,6 +293,18 @@ function FxRateEntryMasterScreen() {
   const { getUploadState, setSelectedFile, setUploadedCsvData } =
     useUploadContext();
   const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.fxRateEntryDaily") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Search condition state
   const [processingDate, setProcessingDate] = useState<Date | null>(null);
@@ -571,13 +585,6 @@ function FxRateEntryMasterScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.fxRateEntryDaily") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">

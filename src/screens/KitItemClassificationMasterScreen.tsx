@@ -101,7 +101,9 @@ import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS } from "../constants/tableColumns.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
@@ -137,6 +139,18 @@ export default function KitItemClassificationMasterScreen() {
   const { getUploadState, setSelectedFile, setUploadedCsvData } =
     useUploadContext();
   const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.kitItemClassificationMaster") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Search condition state
   const [kitManufacturerPartNumber, setKitManufacturerPartNumber] =
@@ -458,13 +472,6 @@ export default function KitItemClassificationMasterScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.kitItemClassificationMaster") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">

@@ -36,7 +36,9 @@ import {
   DescriptionOutlined as DescriptionOutlinedIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import {
   useUploadContext,
   type UploadEntry,
@@ -148,6 +150,18 @@ const AdjustmentConsolidatedScreen = () => {
   const { getUploadState, setEntries, addEntries, removeEntry, updateEntry } =
     useUploadContext();
   const fileUploads = getUploadState(screenKey).entries;
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.adjustmentDataConsolidated") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasSeededRef = useRef(false);
@@ -339,13 +353,6 @@ const AdjustmentConsolidatedScreen = () => {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.adjustmentDataConsolidated") },
-        ]}
-      />
-
       {/* Main Content */}
       <StyledMainPaper elevation={2}>
         {/* Header Section */}

@@ -25,7 +25,9 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
-import { AppBreadcrumbs } from "../components/index.js";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { GLOBAL_DAD_MASTER_HEADERS } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
@@ -139,6 +141,18 @@ const ScrollableTableDataCell = styled(StyledTableDataCell)(
 export default function GlobalDadMasterScreen() {
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const { setBreadcrumbItems } = useBreadcrumbItems();
+
+  useEffect(() => {
+    setBreadcrumbItems([
+      { label: t("home.home"), path: "/home" },
+      { label: t("home.globalDandDMaster") },
+    ]);
+    return () => setBreadcrumbItems([]);
+  }, [t, setBreadcrumbItems]);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Search condition state
   const [systemId, setSystemId] = useState("");
@@ -533,13 +547,6 @@ export default function GlobalDadMasterScreen() {
 
   return (
     <>
-      <AppBreadcrumbs
-        items={[
-          { label: t("home.home"), path: "/home" },
-          { label: t("home.globalDandDMaster") },
-        ]}
-      />
-
       <StyledMainPaper elevation={2}>
         <StyledPageHeaderBox>
           <StyledPageTitle variant="h4">
