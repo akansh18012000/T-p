@@ -239,7 +239,8 @@ const StyledBodyCell = styled(TableCell)<{
 }));
 // AI Generated Code by Deloitte + Cursor (END)
 
-const MOCK_SYSTEM_IDS = ["TEX", "TE", "TA", "SAP", "ERP"];
+// Mock autocomplete options until a system-id search API exists (TEX → MVC for API testing)
+const MOCK_SYSTEM_IDS = ["MVC", "TE", "TA", "SAP", "ERP"];
 
 interface ErrorData {
   rowCode: string;
@@ -270,11 +271,105 @@ interface ErrorData {
   reserved1: string;
   reserved2: string;
   reserved3: string;
-  dataTypeCategory: number;
+  /** API `DATA_CLS_TYPE` (string); legacy mock rows used numeric codes */
+  dataTypeCategory: string | number;
   correctionCategory: number;
   errorCategory: string;
   summary: string;
 }
+
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+/** POST /api/v1/databricks/sales/error-corrections — top-level JSON shape */
+interface SalesErrorCorrectionApiEnvelope {
+  ["number of records"]: number;
+  response: SalesErrorCorrectionApiRow[];
+}
+
+/** Single row from Databricks error-corrections response (field names as returned by API) */
+interface SalesErrorCorrectionApiRow {
+  SYSTEM_ID: string;
+  CREATION_DATE: string;
+  CREATION_DATETIME: string;
+  COMPANY_CODE: string;
+  SALES_ENTITY_CODE: string;
+  LOCAL_ORGANIZATION_CODE: string;
+  SALES_MONTH: string;
+  SALES_DATE: string;
+  LOCAL_ITEM_CODE: string;
+  ITEM_CODE: string;
+  ITEM_CLS_CODE: string;
+  BU_LAYER_3: string;
+  LOCAL_ITEM_CLASS: string;
+  PROD_FACT_CODE: string;
+  LOCAL_CUSTOM_CODE: string;
+  INTER_TRAN_FIRST_PARTY_CODE: string;
+  DESTINATION_COUNTRY: string;
+  QUANTITY: number;
+  SALES_CURRENCY_TRAN: string;
+  SALES_AMNT_TRAN: number;
+  SALES_CURRENCY_BOOK: string;
+  SALES_AMNT_BOOK: number;
+  SALES_COST_BOOK: number;
+  RESERVE1: string;
+  RESERVE2: string;
+  RESERVE3: string;
+  DATA_CLS_TYPE: string;
+}
+
+const SALES_ERROR_CORRECTION_API_URL =
+  "/api/v1/databricks/sales/error-corrections";
+
+function stripDateDashes(isoDate: string): string {
+  return isoDate.replace(/-/g, "");
+}
+
+function mapReserve(v: string | undefined): string {
+  if (v === undefined || v === null || v === "NULL") return "";
+  return String(v);
+}
+
+function mapApiRowToErrorData(
+  raw: SalesErrorCorrectionApiRow,
+  rowIndex: number,
+): ErrorData {
+  return {
+    rowCode: `R${rowIndex + 1}`,
+    fileName: "",
+    systemId: raw.SYSTEM_ID ?? "",
+    dataCreationDate: raw.CREATION_DATE
+      ? stripDateDashes(raw.CREATION_DATE)
+      : "",
+    dataCreationTime: raw.CREATION_DATETIME ?? "",
+    entityCode: raw.COMPANY_CODE ?? "",
+    salesEntityCode: raw.SALES_ENTITY_CODE ?? "",
+    localOrganizationCode: raw.LOCAL_ORGANIZATION_CODE ?? "",
+    salesMonth: String(raw.SALES_MONTH ?? ""),
+    salesDate: raw.SALES_DATE ? stripDateDashes(raw.SALES_DATE) : "",
+    localItemCode: raw.LOCAL_ITEM_CODE ?? "",
+    itemCode: raw.ITEM_CODE ?? "",
+    gpc: raw.ITEM_CLS_CODE ?? "",
+    bu3: raw.BU_LAYER_3 ?? "",
+    localProductCategory: raw.LOCAL_ITEM_CLASS ?? "",
+    productionPlantCode: raw.PROD_FACT_CODE ?? "",
+    localCustomerCode: raw.LOCAL_CUSTOM_CODE ?? "",
+    interCompanyEntityCode: raw.INTER_TRAN_FIRST_PARTY_CODE ?? "",
+    destinationCountry: raw.DESTINATION_COUNTRY ?? "",
+    quantity: raw.QUANTITY ?? 0,
+    salesCurrency: raw.SALES_CURRENCY_TRAN ?? "",
+    salesAmount: raw.SALES_AMNT_TRAN ?? 0,
+    salesCurrencyBook: raw.SALES_CURRENCY_BOOK ?? "",
+    salesAmountBookCurrency: raw.SALES_AMNT_BOOK ?? 0,
+    salesCost: raw.SALES_COST_BOOK ?? 0,
+    reserved1: mapReserve(raw.RESERVE1),
+    reserved2: mapReserve(raw.RESERVE2),
+    reserved3: mapReserve(raw.RESERVE3),
+    dataTypeCategory: raw.DATA_CLS_TYPE ?? "",
+    correctionCategory: 0,
+    errorCategory: "",
+    summary: "",
+  };
+}
+// AI Generated Code by Deloitte + Cursor (END)
 
 export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
@@ -296,7 +391,8 @@ export default function SalesDataErrorCorrectionScreen() {
   // Search and filter state
   const [systemIdInput, setSystemIdInput] = useState("");
   const [systemId, setSystemId] = useState("");
-  const [salesDate, setSalesDate] = useState<Date | null>(new Date(2025, 1, 1)); // Feb 2025
+  // Default month/year aligned with API sample payload (sales_month: 202410) for local testing
+  const [salesDate, setSalesDate] = useState<Date | null>(new Date(2024, 9, 1)); // Oct 2024 → 202410
   const [corporateCode, setCorporateCode] = useState("");
   const [salesRecordingDate, setSalesRecordingDate] = useState<Date | null>(
     null,
@@ -402,12 +498,13 @@ export default function SalesDataErrorCorrectionScreen() {
     };
   }, [systemIdInput]);
 
-  // Sample error data for demonstration
+  // LEGACY: mock search-result rows (offline demo). Uncomment the block below to use without calling the API.
+  /*
   const sampleErrorData: ErrorData[] = [
     {
       rowCode: "67045",
-      fileName: "GT001_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT001_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250225",
       dataCreationTime: "010039",
       entityCode: "C0013",
@@ -440,8 +537,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "67055",
-      fileName: "GT001_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT001_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250225",
       dataCreationTime: "010039",
       entityCode: "C0013",
@@ -474,8 +571,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "85972",
-      fileName: "GT001_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT001_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250225",
       dataCreationTime: "010041",
       entityCode: "C0013",
@@ -610,8 +707,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "67099",
-      fileName: "GT001_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT001_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250220",
       dataCreationTime: "080025",
       entityCode: "C0015",
@@ -644,8 +741,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "67100",
-      fileName: "GT001_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT001_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250218",
       dataCreationTime: "120050",
       entityCode: "C0013",
@@ -712,8 +809,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "91234",
-      fileName: "GT004_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT004_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250226",
       dataCreationTime: "160045",
       entityCode: "C0013",
@@ -746,8 +843,8 @@ export default function SalesDataErrorCorrectionScreen() {
     },
     {
       rowCode: "91235",
-      fileName: "GT004_TEX.csv",
-      systemId: "TEX",
+      fileName: "GT004_MVC.csv",
+      systemId: "MVC",
       dataCreationDate: "20250226",
       dataCreationTime: "160045",
       entityCode: "C0014",
@@ -812,7 +909,7 @@ export default function SalesDataErrorCorrectionScreen() {
       errorCategory: "Exchange Rate Error",
       summary: "Exchange Rate Calculation Error",
     },
-    /* AI Generated Code by Deloitte + Cursor (BEGIN) */
+    // AI Generated Code by Deloitte + Cursor (BEGIN)
     {
       rowCode: "23456",
       fileName: "GT006_SAP.csv",
@@ -950,6 +1047,7 @@ export default function SalesDataErrorCorrectionScreen() {
       summary: "Currency Conversion Error",
     },
   ];
+  */
 
   const validateMandatoryFields = (): boolean => {
     const errors: Record<string, string> = {};
@@ -978,83 +1076,134 @@ export default function SalesDataErrorCorrectionScreen() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSearch = () => {
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  /** Additional filters applied after POST /api/v1/databricks/sales/error-corrections returns (same rules as legacy mock). */
+  const applyClientSideFilters = (items: ErrorData[]): ErrorData[] => {
+    const searchSystemId =
+      searchConditionsRef.current.systemIdInput.trim().length >=
+      SYSTEM_ID_MIN_CHARS
+        ? searchConditionsRef.current.systemIdInput.trim()
+        : searchConditionsRef.current.systemId;
+    return items.filter((item) => {
+      const matchesSystem = searchSystemId
+        ? item.systemId === searchSystemId
+        : true;
+      let matchesSalesDate = true;
+      if (salesDate) {
+        const searchMonth = `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`;
+        matchesSalesDate = item.salesMonth === searchMonth;
+      }
+      let matchesRecordingDate = true;
+      if (salesRecordingDate) {
+        const searchYM = `${salesRecordingDate.getFullYear()}${String(salesRecordingDate.getMonth() + 1).padStart(2, "0")}`;
+        matchesRecordingDate = item.dataCreationDate.startsWith(searchYM);
+      }
+      const matchesCorporate =
+        !corporateCode || item.entityCode.includes(corporateCode);
+      const matchesSalesBase =
+        !salesBaseCode || item.salesEntityCode.includes(salesBaseCode);
+      const matchesLocalOrg =
+        !localOrganizationCode ||
+        item.localOrganizationCode.includes(localOrganizationCode);
+      const matchesLocalItem =
+        !localItemCode ||
+        (matchType === "prefix"
+          ? item.localItemCode.startsWith(localItemCode)
+          : item.localItemCode.includes(localItemCode));
+      let matchesErrorCategory = true;
+      if (errorCategory && errorCategory !== "All") {
+        const searchTerms: Record<string, string[]> = {
+          Normal: ["success", "normal"],
+          Caveat: ["caution", "caveat"],
+          "Sales Error": [
+            "sales error",
+            "sales data",
+            "data validation",
+            "currency conversion",
+          ],
+        };
+        const terms = searchTerms[errorCategory] || [
+          errorCategory.toLowerCase(),
+        ];
+        const itemCat = item.errorCategory.toLowerCase();
+        matchesErrorCategory = terms.some((term) => itemCat.includes(term));
+      }
+      return (
+        matchesSystem &&
+        matchesSalesDate &&
+        matchesRecordingDate &&
+        matchesCorporate &&
+        matchesSalesBase &&
+        matchesLocalOrg &&
+        matchesLocalItem &&
+        matchesErrorCategory
+      );
+    });
+  };
+
+  /*
+   * LEGACY: mock-only search (sampleErrorData + setTimeout). Kept for reference; uncomment when using the commented block above.
+   */
+  // const handleSearchLegacyMock = () => {
+  //   setTimeout(() => {
+  //     const filteredData = sampleErrorData.filter(...);
+  //     setErrorData(filteredData);
+  //     setFilteredData(filteredData);
+  //     setEdits({});
+  //     setLoading(false);
+  //   }, 1000);
+  // };
+
+  const handleSearch = async () => {
     if (!validateMandatoryFields()) {
       return;
     }
-    // AI Generated Code by Deloitte + Cursor (BEGIN)
     closeSidebar();
-    // AI Generated Code by Deloitte + Cursor (END)
     setFieldErrors({});
     setSearchExecuted(true);
     setLoading(true);
-    setTimeout(() => {
+    setEdits({});
+    try {
       const searchSystemId =
         searchConditionsRef.current.systemIdInput.trim().length >=
         SYSTEM_ID_MIN_CHARS
           ? searchConditionsRef.current.systemIdInput.trim()
           : searchConditionsRef.current.systemId;
-      const filteredData = sampleErrorData.filter((item) => {
-        const matchesSystem = searchSystemId
-          ? item.systemId === searchSystemId
-          : true;
-        let matchesSalesDate = true;
-        if (salesDate) {
-          const searchMonth = `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`;
-          matchesSalesDate = item.salesMonth === searchMonth;
-        }
-        let matchesRecordingDate = true;
-        if (salesRecordingDate) {
-          const searchYM = `${salesRecordingDate.getFullYear()}${String(salesRecordingDate.getMonth() + 1).padStart(2, "0")}`;
-          matchesRecordingDate = item.dataCreationDate.startsWith(searchYM);
-        }
-        const matchesCorporate =
-          !corporateCode || item.entityCode.includes(corporateCode);
-        const matchesSalesBase =
-          !salesBaseCode || item.salesEntityCode.includes(salesBaseCode);
-        const matchesLocalOrg =
-          !localOrganizationCode ||
-          item.localOrganizationCode.includes(localOrganizationCode);
-        const matchesLocalItem =
-          !localItemCode ||
-          (matchType === "prefix"
-            ? item.localItemCode.startsWith(localItemCode)
-            : item.localItemCode.includes(localItemCode));
-        let matchesErrorCategory = true;
-        if (errorCategory && errorCategory !== "All") {
-          const searchTerms: Record<string, string[]> = {
-            Normal: ["success", "normal"],
-            Caveat: ["caution", "caveat"],
-            "Sales Error": [
-              "sales error",
-              "sales data",
-              "data validation",
-              "currency conversion",
-            ],
-          };
-          const terms = searchTerms[errorCategory] || [
-            errorCategory.toLowerCase(),
-          ];
-          const itemCat = item.errorCategory.toLowerCase();
-          matchesErrorCategory = terms.some((term) => itemCat.includes(term));
-        }
-        return (
-          matchesSystem &&
-          matchesSalesDate &&
-          matchesRecordingDate &&
-          matchesCorporate &&
-          matchesSalesBase &&
-          matchesLocalOrg &&
-          matchesLocalItem &&
-          matchesErrorCategory
-        );
+      const salesMonth =
+        salesDate != null
+          ? Number(
+              `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`,
+            )
+          : 0;
+      const res = await fetch(SALES_ERROR_CORRECTION_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_id: searchSystemId,
+          sales_month: salesMonth,
+        }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as SalesErrorCorrectionApiEnvelope;
+      const rows = json.response ?? [];
+      const mapped = rows.map((raw, i) => mapApiRowToErrorData(raw, i));
+      const filteredData = applyClientSideFilters(mapped);
       setErrorData(filteredData);
       setFilteredData(filteredData);
-      setEdits({}); // Clear cell edits on new search
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("errorCorrection.searchApiError"));
+      setSnackbarOpen(true);
+      setErrorData([]);
+      setFilteredData([]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Table sorting functions
   const handleRequestSort = (property: keyof ErrorData) => {
@@ -1080,7 +1229,11 @@ export default function SalesDataErrorCorrectionScreen() {
             return order === "asc" ? aValue - bValue : bValue - aValue;
           }
 
-          return 0;
+          const as = String(aValue ?? "");
+          const bs = String(bValue ?? "");
+          return order === "asc"
+            ? as.localeCompare(bs)
+            : bs.localeCompare(as);
         });
 
   // Apply global search to data
@@ -1143,7 +1296,7 @@ export default function SalesDataErrorCorrectionScreen() {
     setSystemId("");
     searchConditionsRef.current.systemIdInput = "";
     searchConditionsRef.current.systemId = "";
-    setSalesDate(new Date(2025, 1, 1));
+    setSalesDate(new Date(2024, 9, 1));
     setCorporateCode("");
     setSalesRecordingDate(null);
     setSalesBaseCode("");

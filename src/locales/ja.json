@@ -177,6 +177,7 @@
     "caution": "注意",
     "salesError": "売上エラー",
     "search": "検索",
+    "searchApiError": "検索結果の読み込みに失敗しました。もう一度お試しください。",
     "clear": "クリア",
     "download": "ダウンロード",
     "resultData": "結果データ",

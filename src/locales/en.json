@@ -176,6 +176,7 @@
     "caution": "Caution",
     "salesError": "Sales Error",
     "search": "Search",
+    "searchApiError": "Error loading search results. Please try again.",
     "clear": "Clear",
     "download": "Download",
     "resultData": "Result Data",

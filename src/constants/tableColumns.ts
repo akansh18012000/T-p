@@ -23,8 +23,128 @@ export interface FreezeColumnItem {
 // ---------------------------------------------------------------------------
 // Sales Data Error Correction Screen
 // ---------------------------------------------------------------------------
-
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+/**
+ * Active columns align with POST /api/v1/databricks/sales/error-corrections response
+ * (no fileName, correctionCategory, errorCategory, summary in payload).
+ *
+ * LEGACY: full mock column set is preserved in a block comment below — uncomment that
+ * export and remove/rename the active one to restore the previous table (with mock data).
+ */
 export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
+  { key: "rowCode", labelKey: "errorCorrection.lineCode", editable: false },
+  { key: "systemId", labelKey: "errorCorrection.systemId", editable: false },
+  {
+    key: "dataCreationDate",
+    labelKey: "errorCorrection.dataCreationDate",
+    editable: false,
+  },
+  {
+    key: "dataCreationTime",
+    labelKey: "errorCorrection.dataCreationTime",
+    editable: false,
+  },
+
+  {
+    key: "entityCode",
+    labelKey: "errorCorrection.corporateCode",
+    editable: true,
+  },
+  {
+    key: "salesEntityCode",
+    labelKey: "errorCorrection.salesBaseCode",
+    editable: false,
+  },
+  {
+    key: "localOrganizationCode",
+    labelKey: "errorCorrection.localOrganizationCode",
+    editable: false,
+  },
+  {
+    key: "salesMonth",
+    labelKey: "errorCorrection.salesBookedMonth",
+    editable: false,
+  },
+  {
+    key: "salesDate",
+    labelKey: "errorCorrection.salesRecordingDateCol",
+    editable: false,
+  },
+  {
+    key: "localItemCode",
+    labelKey: "errorCorrection.localItemCode",
+    editable: true,
+  },
+  { key: "itemCode", labelKey: "errorCorrection.itemCode", editable: false },
+  {
+    key: "gpc",
+    labelKey: "errorCorrection.productClassification",
+    editable: false,
+  },
+  { key: "bu3", labelKey: "errorCorrection.bu3", editable: false },
+  {
+    key: "localProductCategory",
+    labelKey: "errorCorrection.localProductClassification",
+    editable: false,
+  },
+  {
+    key: "productionPlantCode",
+    labelKey: "errorCorrection.productionFactoryCode",
+    editable: false,
+  },
+  {
+    key: "localCustomerCode",
+    labelKey: "errorCorrection.localCustomerCode",
+    editable: false,
+  },
+  {
+    key: "interCompanyEntityCode",
+    labelKey: "errorCorrection.intercompanyCode",
+    editable: false,
+  },
+  {
+    key: "destinationCountry",
+    labelKey: "errorCorrection.destinationCountry",
+    editable: true,
+  },
+  { key: "quantity", labelKey: "errorCorrection.quantity", editable: false },
+  {
+    key: "salesCurrency",
+    labelKey: "errorCorrection.salesCurrencyTransaction",
+    editable: false,
+  },
+  {
+    key: "salesAmount",
+    labelKey: "errorCorrection.salesAmountTransaction",
+    editable: false,
+  },
+  {
+    key: "salesCurrencyBook",
+    labelKey: "errorCorrection.salesCurrencyBook",
+    editable: false,
+  },
+  {
+    key: "salesAmountBookCurrency",
+    labelKey: "errorCorrection.salesAmountBook",
+    editable: false,
+  },
+  {
+    key: "salesCost",
+    labelKey: "errorCorrection.costOfGoodsSold",
+    editable: false,
+  },
+  { key: "reserved1", labelKey: "errorCorrection.reserve1", editable: false },
+  { key: "reserved2", labelKey: "errorCorrection.reserve2", editable: false },
+  { key: "reserved3", labelKey: "errorCorrection.reserve3", editable: false },
+  {
+    key: "dataTypeCategory",
+    labelKey: "errorCorrection.dataTypeClassification",
+    editable: false,
+  },
+];
+
+/*
+export const SALES_DATA_ERROR_CORRECTION_COLUMNS_LEGACY: I18nColumnConfig[] = [
   { key: "rowCode", labelKey: "errorCorrection.lineCode", editable: false },
   { key: "fileName", labelKey: "errorCorrection.fileName", editable: false },
   { key: "systemId", labelKey: "errorCorrection.systemId", editable: false },
@@ -147,9 +267,49 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
   },
   { key: "summary", labelKey: "errorCorrection.abstract", editable: false },
 ];
+*/
 
-/** Freeze config: index 0 = #, 1-31 = data cols, 32 = delete */
+/** Freeze config: index 0 = #, 1–28 = data cols, 29 = delete (Databricks error-corrections shape) */
 export const SALES_DATA_ERROR_CORRECTION_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, label: "#", width: 48 },
+  { index: 1, labelKey: "errorCorrection.lineCode" },
+  { index: 2, labelKey: "errorCorrection.systemId" },
+  { index: 3, labelKey: "errorCorrection.dataCreationDate" },
+  { index: 4, labelKey: "errorCorrection.dataCreationTime" },
+  { index: 5, labelKey: "errorCorrection.corporateCode" },
+  { index: 6, labelKey: "errorCorrection.salesBaseCode" },
+  { index: 7, labelKey: "errorCorrection.localOrganizationCode" },
+  { index: 8, labelKey: "errorCorrection.salesBookedMonth" },
+  { index: 9, labelKey: "errorCorrection.salesRecordingDateCol" },
+  { index: 10, labelKey: "errorCorrection.localItemCode" },
+  { index: 11, labelKey: "errorCorrection.itemCode" },
+  { index: 12, labelKey: "errorCorrection.productClassification" },
+  { index: 13, labelKey: "errorCorrection.bu3" },
+  { index: 14, labelKey: "errorCorrection.localProductClassification" },
+  { index: 15, labelKey: "errorCorrection.productionFactoryCode" },
+  { index: 16, labelKey: "errorCorrection.localCustomerCode" },
+  { index: 17, labelKey: "errorCorrection.intercompanyCode" },
+  { index: 18, labelKey: "errorCorrection.destinationCountry" },
+  { index: 19, labelKey: "errorCorrection.quantity" },
+  { index: 20, labelKey: "errorCorrection.salesCurrencyTransaction" },
+  { index: 21, labelKey: "errorCorrection.salesAmountTransaction" },
+  { index: 22, labelKey: "errorCorrection.salesCurrencyBook" },
+  { index: 23, labelKey: "errorCorrection.salesAmountBook" },
+  { index: 24, labelKey: "errorCorrection.costOfGoodsSold" },
+  { index: 25, labelKey: "errorCorrection.reserve1" },
+  { index: 26, labelKey: "errorCorrection.reserve2" },
+  { index: 27, labelKey: "errorCorrection.reserve3" },
+  { index: 28, labelKey: "errorCorrection.dataTypeClassification" },
+  {
+    index: 29,
+    labelKey: "errorCorrection.delete",
+    width: 80,
+    isDeletionFlag: true,
+  },
+];
+
+/*
+export const SALES_DATA_ERROR_CORRECTION_FREEZE_CONFIG_LEGACY: FreezeColumnItem[] = [
   { index: 0, label: "#", width: 48 },
   { index: 1, labelKey: "errorCorrection.lineCode" },
   { index: 2, labelKey: "errorCorrection.fileName" },
@@ -190,6 +350,8 @@ export const SALES_DATA_ERROR_CORRECTION_FREEZE_CONFIG: FreezeColumnItem[] = [
     isDeletionFlag: true,
   },
 ];
+*/
+// AI Generated Code by Deloitte + Cursor (END)
 
 // ---------------------------------------------------------------------------
 // Adjustment Data File Deletion Screen (search results)
