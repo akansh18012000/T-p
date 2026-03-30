@@ -35,9 +35,11 @@ import {
   StyledResultPaper,
   StyledToolbar,
   StyledToolbarTitleBox,
+  StyledToolbarTitle,
   StyledToolbarButtonsBox,
   StyledAddRowButton,
   StyledSecondaryButton,
+  StyledDownloadButton,
   StyledPrimaryContainedButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
@@ -48,8 +50,8 @@ import {
   StyledEmptyStateBox,
   StyledEmptyStateTitle,
   StyledEmptyStateSubtitle,
-  StyledResultTableContainer,
-  StyledResultTable,
+  StyledTableContainer,
+  ScrollableTable,
   StyledTableHeaderCell,
   StyledTableHeaderText,
   StyledTableBodyRow,
@@ -103,7 +105,11 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { LOCAL_ITEM_CONVERSION_MASTER_HEADERS } from "../constants/tableColumns.js";
+import {
+  LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG,
+  LOCAL_ITEM_CONVERSION_MASTER_HEADERS,
+  LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS,
+} from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import { useSidebar } from "../context/SidebarContext.js";
@@ -121,6 +127,13 @@ const MANUFACTURER_CODES = [
 ];
 
 const DEFAULT_CSV_HEADERS = LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
+
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+function rowYearMonthFromValidFrom(validFrom: string): string {
+  const m = validFrom.trim().match(/^(\d{4})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}` : "";
+}
+// AI Generated Code by Deloitte + Cursor (END)
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
@@ -255,47 +268,258 @@ function LocalItemConversionMasterScreen() {
       const yearMonthStr = conditions.yearMonth
         ? `${conditions.yearMonth.getFullYear()}-${String(conditions.yearMonth.getMonth() + 1).padStart(2, "0")}`
         : "";
+      // AI Generated Code by Deloitte + Cursor (BEGIN)
+      // Mock rows: order matches LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS
       const allRows: string[][] = [
-        ["SYS-001", "2026-01", "LOC-001", "MFR-001", "Acme Corp", "PART-1001"],
-        ["SYS-001", "2026-01", "LOC-002", "MFR-002", "Beta Inc", "PART-2002"],
-        ["SYS-001", "2026-02", "LOC-003", "MFR-001", "Acme Corp", "PART-1003"],
-        ["SYS-002", "2026-01", "LOC-004", "MFR-003", "Gamma Ltd", "PART-3001"],
-        ["SYS-002", "2026-02", "LOC-005", "MFR-002", "Beta Inc", "PART-2003"],
-        ["SYS-002", "2026-02", "LOC-006", "MFR-004", "Delta Co", "PART-4001"],
-        ["SYS-003", "2026-01", "LOC-007", "MFR-001", "Acme Corp", "PART-1004"],
+        [
+          "SYS-001",
+          "LOC-001",
+          "MFR-001",
+          "Acme Corp",
+          "PART-1001",
+          "GIT-A",
+          "GPC01",
+          "GPC Alpha",
+          "2026",
+          "BC01",
+          "Base North",
+          "CC01",
+          "Corp Alpha",
+          "100.50",
+          "USD",
+          "2026-01-15",
+        ],
+        [
+          "SYS-001",
+          "LOC-002",
+          "MFR-002",
+          "Beta Inc",
+          "PART-2002",
+          "GIT-B",
+          "GPC02",
+          "GPC Beta",
+          "2026",
+          "BC02",
+          "Base East",
+          "CC02",
+          "Corp Beta",
+          "200.00",
+          "EUR",
+          "2026-01-20",
+        ],
+        [
+          "SYS-001",
+          "LOC-003",
+          "MFR-001",
+          "Acme Corp",
+          "PART-1003",
+          "GIT-A",
+          "GPC01",
+          "GPC Alpha",
+          "2026",
+          "BC01",
+          "Base North",
+          "CC01",
+          "Corp Alpha",
+          "150.25",
+          "USD",
+          "2026-02-10",
+        ],
+        [
+          "SYS-002",
+          "LOC-004",
+          "MFR-003",
+          "Gamma Ltd",
+          "PART-3001",
+          "GIT-C",
+          "GPC03",
+          "GPC Gamma",
+          "2026",
+          "BC03",
+          "Base West",
+          "CC03",
+          "Corp Gamma",
+          "300.00",
+          "JPY",
+          "2026-01-05",
+        ],
+        [
+          "SYS-002",
+          "LOC-005",
+          "MFR-002",
+          "Beta Inc",
+          "PART-2003",
+          "GIT-B",
+          "GPC02",
+          "GPC Beta",
+          "2026",
+          "BC02",
+          "Base East",
+          "CC02",
+          "Corp Beta",
+          "210.00",
+          "EUR",
+          "2026-02-01",
+        ],
+        [
+          "SYS-002",
+          "LOC-006",
+          "MFR-004",
+          "Delta Co",
+          "PART-4001",
+          "GIT-D",
+          "GPC04",
+          "GPC Delta",
+          "2026",
+          "BC04",
+          "Base South",
+          "CC04",
+          "Corp Delta",
+          "175.75",
+          "USD",
+          "2026-02-28",
+        ],
         [
           "SYS-003",
-          "2026-03",
+          "LOC-007",
+          "MFR-001",
+          "Acme Corp",
+          "PART-1004",
+          "GIT-A",
+          "GPC01",
+          "GPC Alpha",
+          "2026",
+          "BC01",
+          "Base North",
+          "CC01",
+          "Corp Alpha",
+          "99.99",
+          "USD",
+          "2026-01-12",
+        ],
+        [
+          "SYS-003",
           "LOC-008",
           "MFR-005",
           "Epsilon Inc",
           "PART-5001",
+          "GIT-E",
+          "GPC05",
+          "GPC Epsilon",
+          "2026",
+          "BC05",
+          "Base Central",
+          "CC05",
+          "Corp Epsilon",
+          "400.00",
+          "GBP",
+          "2026-03-01",
         ],
-        ["SYS-004", "2026-01", "LOC-009", "MFR-002", "Beta Inc", "PART-2004"],
-        ["SYS-004", "2026-02", "LOC-010", "MFR-003", "Gamma Ltd", "PART-3002"],
-        ["SYS-005", "2026-01", "LOC-011", "MFR-001", "Acme Corp", "PART-1005"],
-        ["SYS-005", "2026-02", "LOC-012", "MFR-004", "Delta Co", "PART-4002"],
+        [
+          "SYS-004",
+          "LOC-009",
+          "MFR-002",
+          "Beta Inc",
+          "PART-2004",
+          "GIT-B",
+          "GPC02",
+          "GPC Beta",
+          "2026",
+          "BC02",
+          "Base East",
+          "CC02",
+          "Corp Beta",
+          "220.00",
+          "EUR",
+          "2026-01-18",
+        ],
+        [
+          "SYS-004",
+          "LOC-010",
+          "MFR-003",
+          "Gamma Ltd",
+          "PART-3002",
+          "GIT-C",
+          "GPC03",
+          "GPC Gamma",
+          "2026",
+          "BC03",
+          "Base West",
+          "CC03",
+          "Corp Gamma",
+          "310.50",
+          "JPY",
+          "2026-02-15",
+        ],
         [
           "SYS-005",
-          "2026-03",
+          "LOC-011",
+          "MFR-001",
+          "Acme Corp",
+          "PART-1005",
+          "GIT-A",
+          "GPC01",
+          "GPC Alpha",
+          "2026",
+          "BC01",
+          "Base North",
+          "CC01",
+          "Corp Alpha",
+          "105.00",
+          "USD",
+          "2026-01-25",
+        ],
+        [
+          "SYS-005",
+          "LOC-012",
+          "MFR-004",
+          "Delta Co",
+          "PART-4002",
+          "GIT-D",
+          "GPC04",
+          "GPC Delta",
+          "2026",
+          "BC04",
+          "Base South",
+          "CC04",
+          "Corp Delta",
+          "180.00",
+          "USD",
+          "2026-02-20",
+        ],
+        [
+          "SYS-005",
           "LOC-013",
           "MFR-005",
           "Epsilon Inc",
           "PART-5002",
+          "GIT-E",
+          "GPC05",
+          "GPC Epsilon",
+          "2026",
+          "BC05",
+          "Base Central",
+          "CC05",
+          "Corp Epsilon",
+          "410.00",
+          "GBP",
+          "2026-03-10",
         ],
       ];
       const filteredRows = allRows.filter((row) => {
-        const [
-          rowSystemId,
-          rowYearMonth,
-          rowLocalItem,
-          rowMfrCode,
-          rowMfrName,
-          rowPartNum,
-        ] = row;
+        const rowSystemId = row[0];
+        const rowLocalItem = row[1];
+        const rowMfrCode = row[2];
+        const rowMfrName = row[3];
+        const rowPartNum = row[4];
+        const validFrom = row[15] ?? "";
         if (conditions.systemId.trim() && rowSystemId !== conditions.systemId)
           return false;
-        if (yearMonthStr && rowYearMonth !== yearMonthStr) return false;
+        if (
+          yearMonthStr &&
+          rowYearMonthFromValidFrom(validFrom) !== yearMonthStr
+        )
+          return false;
         if (
           conditions.localItemCode.trim() &&
           !rowLocalItem
@@ -324,6 +548,7 @@ function LocalItemConversionMasterScreen() {
           return false;
         return true;
       });
+      // AI Generated Code by Deloitte + Cursor (END)
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows: filteredRows,
@@ -331,14 +556,14 @@ function LocalItemConversionMasterScreen() {
       setRowDeletionFlags(new Set());
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("localItemConversion.searchCompletedWithData")
+          : t("localItemConversion.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch (err) {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("localItemConversion.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -347,7 +572,7 @@ function LocalItemConversionMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("localItemConversion.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -366,7 +591,7 @@ function LocalItemConversionMasterScreen() {
     link.download = `local_item_conversion_${yearMonthStr}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("localItemConversion.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -378,7 +603,7 @@ function LocalItemConversionMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, newRow],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("localItemConversion.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -389,11 +614,11 @@ function LocalItemConversionMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("localItemConversion.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("localItemConversion.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -416,7 +641,7 @@ function LocalItemConversionMasterScreen() {
     if (!csvData) return;
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
-    setSnackbarMessage("Row deleted.");
+    setSnackbarMessage(t("localItemConversion.rowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -435,7 +660,7 @@ function LocalItemConversionMasterScreen() {
     const newRows = csvData.rows.filter((_, idx) => !rowDeletionFlags.has(idx));
     setCsvData({ ...csvData, rows: newRows });
     setRowDeletionFlags(new Set());
-    setSnackbarMessage("Row(s) deleted.");
+    setSnackbarMessage(t("localItemConversion.rowsDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -487,13 +712,13 @@ function LocalItemConversionMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("localItemConversion.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("localItemConversion.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -505,32 +730,31 @@ function LocalItemConversionMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("localItemConversion.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("localItemConversion.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("localItemConversion.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({ index: i + 1, label: h })),
-    {
-      index: displayData.headers.length + 1,
-      label: "Deletion Flag",
-      isDeletionFlag: true,
-    },
-  ];
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const freezeColumnsConfig = LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG.map(
+    (c) => ({
+      ...c,
+      label: c.labelKey ? t(c.labelKey) : c.label!,
+    }),
+  );
+  // AI Generated Code by Deloitte + Cursor (END)
   const {
     freezeIndices,
     dialogOpen,
@@ -574,7 +798,7 @@ function LocalItemConversionMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("localItemConversion.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -608,8 +832,10 @@ function LocalItemConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="System ID"
-                        placeholder="Enter 3 characters to search"
+                        label={t("localItemConversion.systemId")}
+                        placeholder={t(
+                          "localItemConversion.searchPlaceholderMinChars",
+                        )}
                       />
                     )}
                   />
@@ -618,7 +844,7 @@ function LocalItemConversionMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Year and Month"
+                      label={t("localItemConversion.yearAndMonth")}
                       value={yearMonth}
                       onChange={(newValue) => {
                         setYearMonth(newValue);
@@ -641,7 +867,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Local Item Code"
+                    label={t("localItemConversion.localItemCode")}
                     value={localItemCode}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -673,8 +899,10 @@ function LocalItemConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Manufacturer Code"
-                        placeholder="Enter 3 characters to search"
+                        label={t("localItemConversion.manufacturerCode")}
+                        placeholder={t(
+                          "localItemConversion.searchPlaceholderMinChars",
+                        )}
                       />
                     )}
                   />
@@ -683,7 +911,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Manufacturer Name"
+                    label={t("localItemConversion.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -696,7 +924,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Manufacturer Part Number"
+                    label={t("localItemConversion.manufacturerPartNumberLabel")}
                     value={manufacturerPartNumber}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -716,7 +944,7 @@ function LocalItemConversionMasterScreen() {
                           }
                         />
                       }
-                      label="Item not registered"
+                      label={t("localItemConversion.itemNotRegistered")}
                     />
                     <StyledSearchButton
                       variant="contained"
@@ -726,7 +954,7 @@ function LocalItemConversionMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("localItemConversion.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -737,9 +965,9 @@ function LocalItemConversionMasterScreen() {
                   <StyledResultPaper elevation={0}>
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
-                          Result Data
-                        </StyledSectionTitle>
+                        <StyledToolbarTitle variant="h6">
+                          {t("localItemConversion.resultData")}
+                        </StyledToolbarTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <StyledAddRowButton
@@ -748,7 +976,7 @@ function LocalItemConversionMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("localItemConversion.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -756,7 +984,7 @@ function LocalItemConversionMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("localItemConversion.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -765,7 +993,7 @@ function LocalItemConversionMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("localItemConversion.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -774,11 +1002,10 @@ function LocalItemConversionMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("localItemConversion.registration")}
                         </StyledPrimaryContainedButton>
-
                         <FreezeColumnsButton
-                          component={StyledSecondaryButton}
+                          component={StyledDownloadButton}
                           onClick={() => setDialogOpen(true)}
                           disabled={!hasRows}
                         />
@@ -788,7 +1015,9 @@ function LocalItemConversionMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t(
+                            "localItemConversion.searchAllDataPlaceholder",
+                          )}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -812,8 +1041,10 @@ function LocalItemConversionMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("localItemConversion.showingRows", {
+                              filtered: filteredRowIndices.length,
+                              total: displayData.rows.length,
+                            })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -821,10 +1052,10 @@ function LocalItemConversionMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("localItemConversion.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("localItemConversion.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -840,8 +1071,8 @@ function LocalItemConversionMasterScreen() {
                           onSave={handleSave}
                         />
 
-                        <StyledResultTableContainer>
-                          <StyledResultTable stickyHeader size="small">
+                        <StyledTableContainer>
+                          <ScrollableTable stickyHeader size="small">
                             <TableHead>
                               <TableRow>
                                 <StyledTableHeaderCell
@@ -852,35 +1083,40 @@ function LocalItemConversionMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
-                                  <StyledTableHeaderCell
-                                    key={colIndex}
-                                    $isFrozen={freezeIndices.includes(
-                                      colIndex + 1,
-                                    )}
-                                    $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(
-                                      colIndex + 1,
-                                    )}
-                                  >
-                                    <StyledTableHeaderText variant="body2">
-                                      {header}
-                                    </StyledTableHeaderText>
-                                  </StyledTableHeaderCell>
-                                ))}
+                                {LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map(
+                                  (col, colIndex) => (
+                                    <StyledTableHeaderCell
+                                      key={col.key}
+                                      $isFrozen={freezeIndices.includes(
+                                        colIndex + 1,
+                                      )}
+                                      $leftOffset={getLeftOffset(colIndex + 1)}
+                                      $isLastFrozen={isLastFrozenColumn(
+                                        colIndex + 1,
+                                      )}
+                                    >
+                                      <StyledTableHeaderText variant="body2">
+                                        {t(col.labelKey)}
+                                      </StyledTableHeaderText>
+                                    </StyledTableHeaderCell>
+                                  ),
+                                )}
                                 <StyledTableHeaderCell
                                   $deletionFlag
                                   $isFrozen={freezeIndices.includes(
-                                    displayData.headers.length + 1,
+                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                      1,
                                   )}
                                   $leftOffset={getLeftOffset(
-                                    displayData.headers.length + 1,
+                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                      1,
                                   )}
                                   $isLastFrozen={isLastFrozenColumn(
-                                    displayData.headers.length + 1,
+                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                      1,
                                   )}
                                 >
-                                  Deletion Flag
+                                  {t("localItemConversion.deletionFlag")}
                                 </StyledTableHeaderCell>
                               </TableRow>
                             </TableHead>
@@ -901,48 +1137,69 @@ function LocalItemConversionMasterScreen() {
                                     >
                                       {i + 1}
                                     </StyledTableIndexCell>
-                                    {row.map((cell, colIndex) => (
-                                      <StyledTableDataCell
-                                        key={colIndex}
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
-                                        $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
-                                      >
-                                        <StyledCellTextField
-                                          value={cell}
-                                          onChange={(e) =>
-                                            handleCellEdit(
-                                              originalRowIndex,
-                                              colIndex,
-                                              e.target.value,
-                                            )
-                                          }
-                                          variant="standard"
-                                          fullWidth
-                                          size="small"
-                                          multiline
-                                          maxRows={4}
-                                        />
-                                      </StyledTableDataCell>
-                                    ))}
+                                    {LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map(
+                                      (col, colIndex) => {
+                                        const cell = row[colIndex] ?? "";
+                                        const editable = col.editable !== false;
+                                        return (
+                                          <StyledTableDataCell
+                                            key={col.key}
+                                            $isFrozen={freezeIndices.includes(
+                                              colIndex + 1,
+                                            )}
+                                            $leftOffset={getLeftOffset(
+                                              colIndex + 1,
+                                            )}
+                                            $rowIndex={i}
+                                            $isLastFrozen={isLastFrozenColumn(
+                                              colIndex + 1,
+                                            )}
+                                          >
+                                            {editable ? (
+                                              <StyledCellTextField
+                                                value={cell}
+                                                onChange={(e) =>
+                                                  handleCellEdit(
+                                                    originalRowIndex,
+                                                    colIndex,
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                variant="standard"
+                                                fullWidth
+                                                size="small"
+                                                multiline
+                                                maxRows={4}
+                                              />
+                                            ) : (
+                                              <Box
+                                                sx={{
+                                                  py: 0.5,
+                                                  px: 0.5,
+                                                  fontSize: "0.875rem",
+                                                }}
+                                              >
+                                                {cell}
+                                              </Box>
+                                            )}
+                                          </StyledTableDataCell>
+                                        );
+                                      },
+                                    )}
                                     <StyledTableDataCell
                                       $deletionFlag
                                       $isFrozen={freezeIndices.includes(
-                                        displayData.headers.length + 1,
+                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                          1,
                                       )}
                                       $leftOffset={getLeftOffset(
-                                        displayData.headers.length + 1,
+                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                          1,
                                       )}
                                       $rowIndex={i}
                                       $isLastFrozen={isLastFrozenColumn(
-                                        displayData.headers.length + 1,
+                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
+                                          1,
                                       )}
                                     >
                                       <StyledCheckbox
@@ -962,8 +1219,8 @@ function LocalItemConversionMasterScreen() {
                                 );
                               })}
                             </TableBody>
-                          </StyledResultTable>
-                        </StyledResultTableContainer>
+                          </ScrollableTable>
+                        </StyledTableContainer>
                       </>
                     )}
                   </StyledResultPaper>
@@ -978,7 +1235,9 @@ function LocalItemConversionMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">
+              {t("localItemConversion.uploadFile")}
+            </StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1010,11 +1269,11 @@ function LocalItemConversionMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("localItemConversion.dropFileHere")
+                        : t("localItemConversion.dragDropCsv")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("localItemConversion.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -1024,10 +1283,10 @@ function LocalItemConversionMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("localItemConversion.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("localItemConversion.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
 
@@ -1051,7 +1310,7 @@ function LocalItemConversionMasterScreen() {
                           onClick={handleUploadClick}
                           disabled={uploadStatus === "uploading"}
                         >
-                          Upload
+                          {t("localItemConversion.upload")}
                         </StyledUploadButton>
                         <StyledViewButton
                           variant="outlined"
@@ -1123,14 +1382,14 @@ function LocalItemConversionMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("localItemConversion.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("localItemConversion.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>

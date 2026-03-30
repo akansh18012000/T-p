@@ -1,4 +1,6 @@
+// AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogTitle,
@@ -35,6 +37,7 @@ export function FreezeColumnsDialog({
   initialSelected,
   onSave,
 }: FreezeColumnsDialogProps) {
+  const { t } = useTranslation();
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
     () => new Set(initialSelected),
   );
@@ -65,9 +68,7 @@ export function FreezeColumnsDialog({
   const handleSave = () => {
     const indices = Array.from(selectedIndices).sort((a, b) => a - b);
     if (!isValidSelection(indices)) {
-      setErrorMessage(
-        "Please select consecutive columns starting from the first column.",
-      );
+      setErrorMessage(t("freezeColumns.validationError"));
       return;
     }
     onSave(indices);
@@ -88,7 +89,7 @@ export function FreezeColumnsDialog({
       fullWidth
       disableEscapeKeyDown={false}
     >
-      <DialogTitle>Freeze Columns</DialogTitle>
+      <DialogTitle>{t("freezeColumns.title")}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 1 }}>
           {errorMessage && (
@@ -111,13 +112,16 @@ export function FreezeColumnsDialog({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleUnselectAll}>Unselect All</Button>
+        <Button onClick={handleUnselectAll}>
+          {t("freezeColumns.unselectAll")}
+        </Button>
         <Box sx={{ flex: 1 }} />
-        <Button onClick={handleCancel}>Cancel</Button>
+        <Button onClick={handleCancel}>{t("freezeColumns.cancel")}</Button>
         <Button variant="contained" onClick={handleSave}>
-          Save
+          {t("freezeColumns.save")}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
+// AI Generated Code by Deloitte + Cursor (END)

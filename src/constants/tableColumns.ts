@@ -461,14 +461,111 @@ export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
 // Local Item Conversion Master Screen
 // ---------------------------------------------------------------------------
 
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+/** Search result table: order matches CSV headers; labelKey used with t() in screen */
+export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfig[] =
+  [
+    { key: "systemId", labelKey: "localItemConversion.systemId", editable: true },
+    {
+      key: "localItemCode",
+      labelKey: "localItemConversion.localItemCode",
+      editable: true,
+    },
+    {
+      key: "manufacturer",
+      labelKey: "localItemConversion.manufacturer",
+      editable: true,
+    },
+    {
+      key: "manufacturerName",
+      labelKey: "localItemConversion.manufacturerName",
+      editable: false,
+    },
+    {
+      key: "mfrPartNumber",
+      labelKey: "localItemConversion.mfrPartNumber",
+      editable: true,
+    },
+    {
+      key: "globalItemTypes",
+      labelKey: "localItemConversion.globalItemTypes",
+      editable: true,
+    },
+    { key: "gpcCode", labelKey: "localItemConversion.gpcCode", editable: true },
+    {
+      key: "gpcName",
+      labelKey: "localItemConversion.gpcName",
+      editable: false,
+    },
+    {
+      key: "validityYear",
+      labelKey: "localItemConversion.validityYear",
+      editable: true,
+    },
+    { key: "baseCode", labelKey: "localItemConversion.baseCode", editable: true },
+    {
+      key: "baseName",
+      labelKey: "localItemConversion.baseName",
+      editable: false,
+    },
+    {
+      key: "corporateCode",
+      labelKey: "localItemConversion.corporateCode",
+      editable: true,
+    },
+    {
+      key: "corporateName",
+      labelKey: "localItemConversion.corporateName",
+      editable: false,
+    },
+    {
+      key: "standardCost",
+      labelKey: "localItemConversion.standardCost",
+      editable: true,
+    },
+    { key: "currency", labelKey: "localItemConversion.currency", editable: true },
+    {
+      key: "validFromDate",
+      labelKey: "localItemConversion.validFromDate",
+      editable: true,
+    },
+  ];
+
+/** English CSV column headers; order must match SEARCH_RESULT_COLUMNS */
 export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
   "System ID",
-  "Year Month",
   "Local Item Code",
-  "Manufacturer Code",
+  "Manufacturer",
   "Manufacturer Name",
-  "Manufacturer Part Number",
+  "Mfr Part Number",
+  "Global Item Types",
+  "GPC Code",
+  "GPC Name",
+  "Validity Year",
+  "Base Code",
+  "Base name",
+  "Corporate Code",
+  "Corporate name",
+  "Standard cost",
+  "currency",
+  "Valid from date",
 ];
+
+/** Freeze dialog: index 0 = #, 1–16 = data cols, 17 = deletion flag */
+export const LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, label: "#", width: 48 },
+  ...LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map((col, i) => ({
+    index: i + 1,
+    labelKey: col.labelKey,
+  })),
+  {
+    index: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length + 1,
+    labelKey: "localItemConversion.deletionFlag",
+    width: 80,
+    isDeletionFlag: true,
+  },
+];
+// AI Generated Code by Deloitte + Cursor (END)
 
 // ---------------------------------------------------------------------------
 // GPC Master Screen
