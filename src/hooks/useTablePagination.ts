@@ -1,5 +1,5 @@
 // AI Generated Code by Deloitte + Cursor (BEGIN)
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 export const TABLE_PAGINATION_ROWS_OPTIONS = [5, 10, 25, 50, 100] as const;
 
@@ -27,18 +27,14 @@ export function useTablePagination<T>(
 
   const pageOffset = page * rowsPerPage;
 
-  const pagedItems = useMemo(
-    () => items.slice(pageOffset, pageOffset + rowsPerPage),
-    [items, pageOffset, rowsPerPage],
-  );
+  const pagedItems = items.slice(pageOffset, pageOffset + rowsPerPage);
 
-  const onRowsPerPageChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setRowsPerPage(parseInt(e.target.value, 10));
-      setPage(0);
-    },
-    [],
-  );
+  const onRowsPerPageChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setRowsPerPage(parseInt(e.target.value, 10));
+    setPage(0);
+  };
 
   return {
     page,
