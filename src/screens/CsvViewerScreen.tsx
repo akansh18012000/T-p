@@ -53,8 +53,13 @@ import {
   StyledAddRowButton,
   StyledSnackbarAlert,
   StyledDeleteIconButton,
+  StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv } from "../utils/csvUtils.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
 
 /* Local styled components - screen specific */
 const StyledChip = styled(Chip)(({ theme }) => ({
@@ -429,6 +434,25 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
     });
   };
 
+  const displayRowsForPager = (filteredData ?? csvData)?.rows ?? [];
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    pageOffset,
+    pagedItems: pagedRows,
+    onRowsPerPageChange,
+    count: resultPaginationCount,
+  } = useTablePagination(displayRowsForPager, {
+    resetDeps: [
+      searchTerm,
+      sortConfig?.column,
+      sortConfig?.direction,
+      csvData?.rows.length,
+      fileId,
+    ],
+  });
+
   if (loading) {
     return (
       <StyledLoadingWrapper>
@@ -513,6 +537,7 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
         </StyledSearchBarBox>
 
         {(filteredData || csvData) && (
+          <>
           <StyledTableContainer>
             <StyledDataTable stickyHeader size="small">
               <TableHead>
@@ -560,11 +585,13 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(filteredData || csvData)!.rows.map((row, rowIndex) => (
-                  <StyledTableBodyRow key={rowIndex} $index={rowIndex}>
+                {pagedRows.map((row, rowIndex) => {
+                  const actualRowIndex = pageOffset + rowIndex;
+                  return (
+                  <StyledTableBodyRow key={actualRowIndex} $index={rowIndex}>
                     {editMode && (
                       <StyledTableIndexCell>
-                        {rowIndex + 1}
+                        {actualRowIndex + 1}
                       </StyledTableIndexCell>
                     )}
                     {row.map((cell, colIndex) => (
@@ -575,7 +602,7 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
                               value={cell}
                               onChange={(e) =>
                                 handleCellEdit(
-                                  rowIndex,
+                                  actualRowIndex,
                                   colIndex,
                                   e.target.value,
                                 )
@@ -599,14 +626,15 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
                       <StyledTableDataCell>
                         <StyledDeleteIcon
                           size="small"
-                          onClick={() => handleDeleteRow(rowIndex)}
+                          onClick={() => handleDeleteRow(actualRowIndex)}
                         >
                           <DeleteIcon />
                         </StyledDeleteIcon>
                       </StyledTableDataCell>
                     )}
                   </StyledTableBodyRow>
-                ))}
+                  );
+                })}
                 {editMode && (
                   <TableRow>
                     <StyledAddRowCell
@@ -626,6 +654,15 @@ Micro Catheter,1800000,Sendai,2026/01/08,John Doe`;
               </TableBody>
             </StyledDataTable>
           </StyledTableContainer>
+          <StyledTablePagination
+            count={resultPaginationCount}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={onRowsPerPageChange}
+            rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+          />
+          </>
         )}
       </StyledMainPaperBordered>
 

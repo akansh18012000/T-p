@@ -26,7 +26,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TablePagination,
   Snackbar,
   Checkbox,
   FormControl,
@@ -51,6 +50,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
 import { parseCsv, type CsvData as CsvDataType } from "../utils/csvUtils.js";
+import { StyledTablePagination } from "../components/shared/StyledComponents.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -459,12 +459,6 @@ const StyledCsvTextField = styled(TextField)(({ theme }) => ({
 const StyledCsvCheckbox = styled(Checkbox)(({ theme }) => ({
   color: theme.palette.grey![500],
   "&.Mui-checked": { color: theme.palette.primary.main },
-}));
-
-const StyledTablePagination = styled(TablePagination)(({ theme }) => ({
-  borderTop: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.default,
-  flexShrink: 0,
 }));
 
 const StyledDialogActions = styled(DialogActions)(({ theme }) => ({
@@ -1219,7 +1213,6 @@ export default function AdjustmentSalesDetailScreen() {
               </StyledTableContainerScroll>
 
               <StyledTablePagination
-                component="div"
                 count={csvEditor.data.rows.length}
                 page={csvPage}
                 onPageChange={(_, newPage) => setCsvPage(newPage)}

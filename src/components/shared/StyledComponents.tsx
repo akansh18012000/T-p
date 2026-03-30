@@ -20,6 +20,7 @@ import {
   Tabs,
   Chip,
   IconButton,
+  TablePagination,
 } from "@mui/material";
 import {
   ExpandLess as ExpandLessIcon,
@@ -250,6 +251,14 @@ export const StyledResultPaper = styled(Paper)(({ theme }) => ({
 
 export const StyledResultsSection = StyledResultBorderBox;
 export const StyledResultsPaper = StyledResultPaper;
+
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+export const StyledTablePagination = styled(TablePagination)(({ theme }) => ({
+  borderTop: `1px solid ${theme.palette.divider}`,
+  backgroundColor: theme.palette.background.default,
+  flexShrink: 0,
+}));
+// AI Generated Code by Deloitte + Cursor (END)
 
 // ---------------------------------------------------------------------------
 // Toolbar

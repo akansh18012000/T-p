@@ -96,8 +96,13 @@ import {
   StyledTableContainer,
   ScrollableTable,
   FREEZE_COLUMN_DATA_WIDTH,
+  StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 
 // Screen-specific table components (white borders for this screen)
@@ -1246,6 +1251,25 @@ export default function SalesDataErrorCorrectionScreen() {
             : bs.localeCompare(as);
         });
 
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    pageOffset,
+    pagedItems: pagedSortedData,
+    onRowsPerPageChange,
+    count: resultPaginationCount,
+  } = useTablePagination(sortedData, {
+    resetDeps: [
+      globalSearchTerm,
+      orderBy,
+      order,
+      filteredData.length,
+      errorData.length,
+      searchExecuted,
+    ],
+  });
+
   // Apply global search to data
   useEffect(() => {
     if (!errorData || errorData.length === 0) {
@@ -1733,7 +1757,7 @@ export default function SalesDataErrorCorrectionScreen() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {sortedData.map((row, index) => (
+                        {pagedSortedData.map((row, index) => (
                           <StyledTableBodyRow key={row.rowCode} $index={index}>
                             <StyledIndexCell
                               $isFrozen={freezeIndices.includes(0)}
@@ -1741,7 +1765,7 @@ export default function SalesDataErrorCorrectionScreen() {
                               $rowIndex={index}
                               $isLastFrozen={isLastFrozenColumn(0)}
                             >
-                              {index + 1}
+                              {pageOffset + index + 1}
                             </StyledIndexCell>
                             {TABLE_COLUMNS.map((column, colIndex) => {
                               const key = column.key as keyof ErrorData;
@@ -1786,6 +1810,14 @@ export default function SalesDataErrorCorrectionScreen() {
                       </TableBody>
                     </ScrollableTable>
                   </StyledTableContainer>
+                  <StyledTablePagination
+                    count={resultPaginationCount}
+                    page={page}
+                    onPageChange={(_, newPage) => setPage(newPage)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={onRowsPerPageChange}
+                    rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+                  />
                 </>
               )}
             </StyledResultsPaper>

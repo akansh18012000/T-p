@@ -83,6 +83,7 @@ import {
   StyledCancelButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
+  StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
 import {
@@ -101,6 +102,10 @@ import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS } from "../constants/tableColumns.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
@@ -464,6 +469,17 @@ export default function KitItemClassificationMasterScreen() {
           ),
         )
     : displayData.rows.map((_, i) => i);
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    pageOffset,
+    pagedItems: pagedRowIndices,
+    onRowsPerPageChange,
+    count: resultPaginationCount,
+  } = useTablePagination(filteredRowIndices, {
+    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+  });
   const hasRows = displayData.rows.length > 0;
 
   const listboxProps = {
@@ -707,7 +723,7 @@ export default function KitItemClassificationMasterScreen() {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {filteredRowIndices.map((displayIndex, i) => {
+                              {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
                                 return (
@@ -721,7 +737,7 @@ export default function KitItemClassificationMasterScreen() {
                                       $rowIndex={i}
                                       $isLastFrozen={isLastFrozenColumn(0)}
                                     >
-                                      {i + 1}
+                                      {pageOffset + i + 1}
                                     </StyledTableIndexCell>
                                     {row.map((cell, colIndex) => (
                                       <StyledTableDataCell
@@ -777,6 +793,14 @@ export default function KitItemClassificationMasterScreen() {
                             </TableBody>
                           </StyledResultTable>
                         </StyledResultTableContainer>
+                        <StyledTablePagination
+                          count={resultPaginationCount}
+                          page={page}
+                          onPageChange={(_, newPage) => setPage(newPage)}
+                          rowsPerPage={rowsPerPage}
+                          onRowsPerPageChange={onRowsPerPageChange}
+                          rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+                        />
                       </>
                     )}
                   </StyledResultPaper>

@@ -87,6 +87,7 @@ import {
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledFormControlLabel,
+  StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
 import {
@@ -112,6 +113,10 @@ import {
 } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
@@ -777,6 +782,17 @@ function LocalItemConversionMasterScreen() {
           ),
         )
     : displayData.rows.map((_, i) => i);
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    pageOffset,
+    pagedItems: pagedRowIndices,
+    onRowsPerPageChange,
+    count: resultPaginationCount,
+  } = useTablePagination(filteredRowIndices, {
+    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+  });
   const hasRows = displayData.rows.length > 0;
 
   const listboxProps = {
@@ -1121,7 +1137,7 @@ function LocalItemConversionMasterScreen() {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {filteredRowIndices.map((displayIndex, i) => {
+                              {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
                                 return (
@@ -1135,7 +1151,7 @@ function LocalItemConversionMasterScreen() {
                                       $rowIndex={i}
                                       $isLastFrozen={isLastFrozenColumn(0)}
                                     >
-                                      {i + 1}
+                                      {pageOffset + i + 1}
                                     </StyledTableIndexCell>
                                     {LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map(
                                       (col, colIndex) => {
@@ -1221,6 +1237,14 @@ function LocalItemConversionMasterScreen() {
                             </TableBody>
                           </ScrollableTable>
                         </StyledTableContainer>
+                        <StyledTablePagination
+                          count={resultPaginationCount}
+                          page={page}
+                          onPageChange={(_, newPage) => setPage(newPage)}
+                          rowsPerPage={rowsPerPage}
+                          onRowsPerPageChange={onRowsPerPageChange}
+                          rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+                        />
                       </>
                     )}
                   </StyledResultPaper>

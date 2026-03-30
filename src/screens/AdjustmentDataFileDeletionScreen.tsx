@@ -67,8 +67,13 @@ import {
   StyledSnackbarAlert,
   StyledRemoveButton,
   StyledTableCellTypography,
+  StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { useSidebar } from "../context/SidebarContext.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
 import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
 
 // Screen-specific table components (delete column, white borders)
@@ -401,6 +406,17 @@ function AdjustmentDataFileDeletionScreen() {
       })
     : resultRows;
   // AI Generated Code by Deloitte + Cursor (END)
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    pageOffset,
+    pagedItems: pagedFilteredRows,
+    onRowsPerPageChange,
+    count: resultPaginationCount,
+  } = useTablePagination(filteredRows, {
+    resetDeps: [searchTerm, resultRows.length, searchExecuted],
+  });
   const selectedCount = resultRows.filter((r) => r.selected).length;
   const allSelected =
     resultRows.length > 0 && resultRows.every((r) => r.selected);
@@ -624,12 +640,12 @@ function AdjustmentDataFileDeletionScreen() {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {filteredRows.map((row, i) => (
+                              {pagedFilteredRows.map((row, i) => (
                                 <StyledTableBodyRow key={row.id} $index={i}>
                                   {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
                                   <StyledTableBodyIndexCell $rowIndex={i}>
                                     <StyledTableCellTypography variant="body2">
-                                      {i + 1}
+                                      {pageOffset + i + 1}
                                     </StyledTableCellTypography>
                                   </StyledTableBodyIndexCell>
                                   {ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS.map(
@@ -669,6 +685,14 @@ function AdjustmentDataFileDeletionScreen() {
                             </TableBody>
                           </StyledResultTable>
                         </StyledResultTableContainer>
+                        <StyledTablePagination
+                          count={resultPaginationCount}
+                          page={page}
+                          onPageChange={(_, newPage) => setPage(newPage)}
+                          rowsPerPage={rowsPerPage}
+                          onRowsPerPageChange={onRowsPerPageChange}
+                          rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+                        />
                         <StyledDeleteButtonArea>
                           <StyledDeleteButton
                             variant="contained"
