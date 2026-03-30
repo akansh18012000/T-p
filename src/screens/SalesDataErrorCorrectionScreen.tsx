@@ -1085,13 +1085,15 @@ export default function SalesDataErrorCorrectionScreen() {
         ? searchConditionsRef.current.systemIdInput.trim()
         : searchConditionsRef.current.systemId;
     return items.filter((item) => {
+      // Case-insensitive comparison for systemId
       const matchesSystem = searchSystemId
-        ? item.systemId === searchSystemId
+        ? item.systemId.toUpperCase() === searchSystemId.toUpperCase()
         : true;
       let matchesSalesDate = true;
       if (salesDate) {
         const searchMonth = `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`;
-        matchesSalesDate = item.salesMonth === searchMonth;
+        // Handle salesMonth as string (API may return number or string)
+        matchesSalesDate = String(item.salesMonth) === searchMonth;
       }
       let matchesRecordingDate = true;
       if (salesRecordingDate) {
@@ -1188,11 +1190,19 @@ export default function SalesDataErrorCorrectionScreen() {
         throw new Error(text || `HTTP ${res.status}`);
       }
       const json = (await res.json()) as SalesErrorCorrectionApiEnvelope;
-      const rows = json.response ?? [];
+      // Handle flexible response structure - API may return 'response' or 'data' or array directly
+      const jsonAny = json as unknown as Record<string, unknown>;
+      const rows: SalesErrorCorrectionApiRow[] = Array.isArray(json)
+        ? (json as unknown as SalesErrorCorrectionApiRow[])
+        : Array.isArray(json.response)
+          ? json.response
+          : Array.isArray(jsonAny.data)
+            ? (jsonAny.data as SalesErrorCorrectionApiRow[])
+            : [];
       const mapped = rows.map((raw, i) => mapApiRowToErrorData(raw, i));
-      const filteredData = applyClientSideFilters(mapped);
-      setErrorData(filteredData);
-      setFilteredData(filteredData);
+      // Display API results directly - API already returns filtered data
+      setErrorData(mapped);
+      setFilteredData(mapped);
     } catch (e) {
       console.error(e);
       setSnackbarMessage(t("errorCorrection.searchApiError"));
