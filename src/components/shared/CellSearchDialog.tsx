@@ -1,5 +1,5 @@
 // AI Generated Code by Deloitte + Cursor (BEGIN)
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -116,42 +116,36 @@ export function CellSearchDialog({
   }, [debouncedValue, searchFn, options]);
 
   // Handle result selection
-  const handleSelect = useCallback(
-    (value: string) => {
-      onSelect(value);
-      onClose();
-    },
-    [onSelect, onClose]
-  );
+  const handleSelect = (value: string) => {
+    onSelect(value);
+    onClose();
+  };
 
   // Keyboard navigation
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent) => {
-      switch (event.key) {
-        case "ArrowDown":
-          event.preventDefault();
-          setFocusedIndex((prev) =>
-            prev < results.length - 1 ? prev + 1 : prev
-          );
-          break;
-        case "ArrowUp":
-          event.preventDefault();
-          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-          break;
-        case "Enter":
-          event.preventDefault();
-          if (focusedIndex >= 0 && focusedIndex < results.length) {
-            handleSelect(results[focusedIndex]);
-          }
-          break;
-        case "Escape":
-          event.preventDefault();
-          onClose();
-          break;
-      }
-    },
-    [results, focusedIndex, handleSelect, onClose]
-  );
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setFocusedIndex((prev) =>
+          prev < results.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+        break;
+      case "Enter":
+        event.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < results.length) {
+          handleSelect(results[focusedIndex]);
+        }
+        break;
+      case "Escape":
+        event.preventDefault();
+        onClose();
+        break;
+    }
+  };
 
   // Scroll focused item into view
   useEffect(() => {

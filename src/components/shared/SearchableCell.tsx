@@ -1,5 +1,5 @@
 // AI Generated Code by Deloitte + Cursor (BEGIN)
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Box, TextFieldProps } from "@mui/material";
 import { StyledCellTextField } from "./StyledComponents.js";
 import { CellSearchButton } from "./CellSearchButton.js";
@@ -57,27 +57,23 @@ export function SearchableCell({
 }: SearchableCellProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleOpenDialog = useCallback(() => {
+  const handleOpenDialog = () => {
     setDialogOpen(true);
-  }, []);
+  };
 
-  const handleCloseDialog = useCallback(() => {
+  const handleCloseDialog = () => {
     setDialogOpen(false);
-  }, []);
+  };
 
-  const handleSelect = useCallback(
-    (selectedValue: string) => {
-      onChange(selectedValue);
-    },
-    [onChange]
-  );
+  const handleSelect = (selectedValue: string) => {
+    onChange(selectedValue);
+  };
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      onChange(e.target.value);
-    },
-    [onChange]
-  );
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    onChange(e.target.value);
+  };
 
   // Non-editable display
   if (!editable) {
