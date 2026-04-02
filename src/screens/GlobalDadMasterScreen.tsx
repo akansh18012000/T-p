@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -177,21 +178,21 @@ export default function GlobalDadMasterScreen() {
 
   // Search inputs and debounced (min 3 chars, 1s debounce)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const [systemIdDebounced, setSystemIdDebounced] = useState("");
+  const { debouncedValue: systemIdDebounced } =
+    useDebouncedSearch(systemIdSearchInput);
   const [localCustomerSearchInput, setLocalCustomerSearchInput] = useState("");
-  const [localCustomerDebounced, setLocalCustomerDebounced] = useState("");
+  const { debouncedValue: localCustomerDebounced } =
+    useDebouncedSearch(localCustomerSearchInput);
   const [
     productClassificationSearchInput,
     setProductClassificationSearchInput,
   ] = useState("");
-  const [productClassificationDebounced, setProductClassificationDebounced] =
-    useState("");
+  const { debouncedValue: productClassificationDebounced } =
+    useDebouncedSearch(productClassificationSearchInput);
   const [transferDestBU3SearchInput, setTransferDestBU3SearchInput] =
     useState("");
-  const [transferDestBU3Debounced, setTransferDestBU3Debounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: transferDestBU3Debounced } =
+    useDebouncedSearch(transferDestBU3SearchInput);
 
   const searchConditionsRef = useRef({
     systemId: "",
@@ -228,44 +229,14 @@ export default function GlobalDadMasterScreen() {
     deletionFlag,
   ]);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setSystemIdDebounced(systemIdSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [systemIdSearchInput]);
-  useEffect(() => {
-    const id = setTimeout(
-      () => setLocalCustomerDebounced(localCustomerSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [localCustomerSearchInput]);
-  useEffect(() => {
-    const id = setTimeout(
-      () => setProductClassificationDebounced(productClassificationSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [productClassificationSearchInput]);
-  useEffect(() => {
-    const id = setTimeout(
-      () => setTransferDestBU3Debounced(transferDestBU3SearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [transferDestBU3SearchInput]);
-
-  const systemIdOptions =
-    systemIdDebounced.length >= MIN_SEARCH_CHARS
-      ? SYSTEM_IDS.filter((id) =>
-          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-        )
-      : [];
+  const systemIdOptions = systemIdDebounced
+    ? SYSTEM_IDS.filter((id) =>
+        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+      )
+    : [];
 
   const filterCodeWithName = (list: CodeWithName[], q: string) =>
-    q.length >= MIN_SEARCH_CHARS
+    q
       ? list.filter(
           (o) =>
             o.code.toLowerCase().includes(q.toLowerCase()) ||

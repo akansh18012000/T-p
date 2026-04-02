@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -453,23 +454,17 @@ export default function SalesDataErrorCorrectionScreen() {
   const errorCategoryOptions = ["All", "Normal", "Caveat", "Sales Error"];
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const DEBOUNCE_MS = 300;
+  const DEBOUNCE_MS = 1000;
   const SYSTEM_ID_MIN_CHARS = 3;
 
-  const [systemIdDebounced, setSystemIdDebounced] = useState("");
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setSystemIdDebounced(systemIdInput);
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [systemIdInput]);
+  const { debouncedValue: systemIdDebounced } =
+    useDebouncedSearch(systemIdInput);
 
-  const systemIdOptions =
-    systemIdDebounced.length >= SYSTEM_ID_MIN_CHARS
-      ? MOCK_SYSTEM_IDS.filter((id) =>
-          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-        )
-      : [];
+  const systemIdOptions = systemIdDebounced
+    ? MOCK_SYSTEM_IDS.filter((id) =>
+        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+      )
+    : [];
 
   const searchConditionsRef = useRef({
     systemIdInput: "",

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -133,12 +134,11 @@ export default function CommonMasterScreen() {
 
   // Search inputs and debounced (min 3 chars, 1s debounce)
   const [groupIdSearchInput, setGroupIdSearchInput] = useState("");
-  const [groupIdDebounced, setGroupIdDebounced] = useState("");
+  const { debouncedValue: groupIdDebounced } =
+    useDebouncedSearch(groupIdSearchInput);
   const [codeSearchInput, setCodeSearchInput] = useState("");
-  const [codeDebounced, setCodeDebounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: codeDebounced } =
+    useDebouncedSearch(codeSearchInput);
 
   const searchConditionsRef = useRef({
     groupId: "",
@@ -155,35 +155,21 @@ export default function CommonMasterScreen() {
     };
   }, [groupId, code, codeName, deletionFlag]);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setGroupIdDebounced(groupIdSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [groupIdSearchInput]);
-  useEffect(() => {
-    const id = setTimeout(() => setCodeDebounced(codeSearchInput), DEBOUNCE_MS);
-    return () => clearTimeout(id);
-  }, [codeSearchInput]);
+  const groupIdOptions: string[] = groupIdDebounced
+    ? GROUP_OPTIONS.filter(
+        (o) =>
+          o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()) ||
+          o.name.toLowerCase().includes(groupIdDebounced.toLowerCase()),
+      ).map((o) => o.id)
+    : [];
 
-  const groupIdOptions: string[] =
-    groupIdDebounced.length >= MIN_SEARCH_CHARS
-      ? GROUP_OPTIONS.filter(
-          (o) =>
-            o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()) ||
-            o.name.toLowerCase().includes(groupIdDebounced.toLowerCase()),
-        ).map((o) => o.id)
-      : [];
-
-  const codeOptions: string[] =
-    codeDebounced.length >= MIN_SEARCH_CHARS
-      ? CODE_OPTIONS.filter(
-          (o) =>
-            o.code.toLowerCase().includes(codeDebounced.toLowerCase()) ||
-            o.name.toLowerCase().includes(codeDebounced.toLowerCase()),
-        ).map((o) => o.code)
-      : [];
+  const codeOptions: string[] = codeDebounced
+    ? CODE_OPTIONS.filter(
+        (o) =>
+          o.code.toLowerCase().includes(codeDebounced.toLowerCase()) ||
+          o.name.toLowerCase().includes(codeDebounced.toLowerCase()),
+      ).map((o) => o.code)
+    : [];
 
   const groupSelected = GROUP_OPTIONS.find((o) => o.id === groupId);
   const codeSelected = CODE_OPTIONS.find((o) => o.code === code);

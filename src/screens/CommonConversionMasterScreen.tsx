@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -189,12 +190,11 @@ export default function CommonConversionMasterScreen() {
 
   // Search box input and debounced (min 3 chars, 1s debounce)
   const [itemIdSearchInput, setItemIdSearchInput] = useState("");
-  const [itemIdDebounced, setItemIdDebounced] = useState("");
+  const { debouncedValue: itemIdDebounced } =
+    useDebouncedSearch(itemIdSearchInput);
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const [systemIdDebounced, setSystemIdDebounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: systemIdDebounced } =
+    useDebouncedSearch(systemIdSearchInput);
 
   const searchConditionsRef = useRef({
     itemId: "",
@@ -231,37 +231,20 @@ export default function CommonConversionMasterScreen() {
     deletionFlag,
   ]);
 
-  useEffect(() => {
-    const tid = setTimeout(
-      () => setItemIdDebounced(itemIdSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(tid);
-  }, [itemIdSearchInput]);
-  useEffect(() => {
-    const tid = setTimeout(
-      () => setSystemIdDebounced(systemIdSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(tid);
-  }, [systemIdSearchInput]);
+  const itemIdOptions: string[] = itemIdDebounced
+    ? ITEM_OPTIONS.filter(
+        (o) =>
+          o.id.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
+          o.name.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
+          o.abstract.toLowerCase().includes(itemIdDebounced.toLowerCase()),
+      ).map((o) => o.id)
+    : [];
 
-  const itemIdOptions: string[] =
-    itemIdDebounced.length >= MIN_SEARCH_CHARS
-      ? ITEM_OPTIONS.filter(
-          (o) =>
-            o.id.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
-            o.name.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
-            o.abstract.toLowerCase().includes(itemIdDebounced.toLowerCase()),
-        ).map((o) => o.id)
-      : [];
-
-  const systemIdOptions =
-    systemIdDebounced.length >= MIN_SEARCH_CHARS
-      ? SYSTEM_IDS.filter((id) =>
-          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-        )
-      : [];
+  const systemIdOptions = systemIdDebounced
+    ? SYSTEM_IDS.filter((id) =>
+        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+      )
+    : [];
 
   const itemSelected = ITEM_OPTIONS.find((o) => o.id === itemId);
 

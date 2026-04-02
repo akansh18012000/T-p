@@ -899,6 +899,46 @@ export const StyledUploadedTitle = styled(Typography)(({ theme }) => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Cell search components
+// ---------------------------------------------------------------------------
+
+export const StyledSearchableCellWrapper = styled(Box)({
+  display: "flex",
+  alignItems: "flex-start",
+  width: "100%",
+  position: "relative",
+});
+
+export const StyledCellSearchButton = styled(IconButton)(({ theme }) => ({
+  padding: "2px",
+  marginLeft: "4px",
+  opacity: 0.6,
+  "&:hover": {
+    opacity: 1,
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+export const StyledSearchResultsList = styled(Box)(({ theme }) => ({
+  maxHeight: 240,
+  overflow: "auto",
+  border: `1px solid ${theme.palette.divider}`,
+  borderRadius: theme.spacing(0.5),
+  marginTop: theme.spacing(1),
+}));
+
+export const StyledSearchResultItem = styled(Box)<{ $selected?: boolean }>(
+  ({ theme, $selected }) => ({
+    padding: theme.spacing(1, 1.5),
+    cursor: "pointer",
+    backgroundColor: $selected ? theme.palette.action.selected : "transparent",
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+    },
+  })
+);
+
+// ---------------------------------------------------------------------------
 // Preview table
 // ---------------------------------------------------------------------------
 

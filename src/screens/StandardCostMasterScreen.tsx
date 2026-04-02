@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import { styled, alpha } from "@mui/material/styles";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -540,14 +541,14 @@ export default function StandardCostMasterScreen() {
 
   // Search box input and debounced values (min 3 chars, 1s debounce)
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
-  const [manufacturerDebounced, setManufacturerDebounced] = useState("");
+  const { debouncedValue: manufacturerDebounced } =
+    useDebouncedSearch(manufacturerSearchInput);
   const [baseCodeSearchInput, setBaseCodeSearchInput] = useState("");
-  const [baseCodeDebounced, setBaseCodeDebounced] = useState("");
+  const { debouncedValue: baseCodeDebounced } =
+    useDebouncedSearch(baseCodeSearchInput);
   const [corporateCodeSearchInput, setCorporateCodeSearchInput] = useState("");
-  const [corporateCodeDebounced, setCorporateCodeDebounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: corporateCodeDebounced } =
+    useDebouncedSearch(corporateCodeSearchInput);
 
   const searchConditionsRef = useRef({
     manufacturerPartNumber: "",
@@ -581,50 +582,23 @@ export default function StandardCostMasterScreen() {
     validFrom,
   ]);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setManufacturerDebounced(manufacturerSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [manufacturerSearchInput]);
+  const manufacturerOptions = manufacturerDebounced
+    ? MANUFACTURERS.filter((m) =>
+        m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setBaseCodeDebounced(baseCodeSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [baseCodeSearchInput]);
+  const baseCodeOptions = baseCodeDebounced
+    ? BASE_CODES.filter((c) =>
+        c.toLowerCase().includes(baseCodeDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setCorporateCodeDebounced(corporateCodeSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [corporateCodeSearchInput]);
-
-  const manufacturerOptions =
-    manufacturerDebounced.length >= MIN_SEARCH_CHARS
-      ? MANUFACTURERS.filter((m) =>
-          m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
-        )
-      : [];
-
-  const baseCodeOptions =
-    baseCodeDebounced.length >= MIN_SEARCH_CHARS
-      ? BASE_CODES.filter((c) =>
-          c.toLowerCase().includes(baseCodeDebounced.toLowerCase()),
-        )
-      : [];
-
-  const corporateCodeOptions =
-    corporateCodeDebounced.length >= MIN_SEARCH_CHARS
-      ? CORPORATE_CODES.filter((c) =>
-          c.toLowerCase().includes(corporateCodeDebounced.toLowerCase()),
-        )
-      : [];
+  const corporateCodeOptions = corporateCodeDebounced
+    ? CORPORATE_CODES.filter((c) =>
+        c.toLowerCase().includes(corporateCodeDebounced.toLowerCase()),
+      )
+    : [];
 
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);

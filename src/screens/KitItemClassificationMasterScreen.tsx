@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -169,16 +170,12 @@ export default function KitItemClassificationMasterScreen() {
     kitManufacturerPartNumberSearchInput,
     setKitManufacturerPartNumberSearchInput,
   ] = useState("");
-  const [
-    kitManufacturerPartNumberDebounced,
-    setKitManufacturerPartNumberDebounced,
-  ] = useState("");
+  const { debouncedValue: kitManufacturerPartNumberDebounced } =
+    useDebouncedSearch(kitManufacturerPartNumberSearchInput);
   const [kitManufacturerSearchInput, setKitManufacturerSearchInput] =
     useState("");
-  const [kitManufacturerDebounced, setKitManufacturerDebounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: kitManufacturerDebounced } =
+    useDebouncedSearch(kitManufacturerSearchInput);
 
   const searchConditionsRef = useRef({
     kitManufacturerPartNumber: "",
@@ -191,40 +188,19 @@ export default function KitItemClassificationMasterScreen() {
     };
   }, [kitManufacturerPartNumber, kitManufacturer]);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () =>
-        setKitManufacturerPartNumberDebounced(
-          kitManufacturerPartNumberSearchInput,
-        ),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [kitManufacturerPartNumberSearchInput]);
+  const kitManufacturerPartNumberOptions = kitManufacturerPartNumberDebounced
+    ? KIT_MANUFACTURER_PART_NUMBERS.filter((p) =>
+        p
+          .toLowerCase()
+          .includes(kitManufacturerPartNumberDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setKitManufacturerDebounced(kitManufacturerSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [kitManufacturerSearchInput]);
-
-  const kitManufacturerPartNumberOptions =
-    kitManufacturerPartNumberDebounced.length >= MIN_SEARCH_CHARS
-      ? KIT_MANUFACTURER_PART_NUMBERS.filter((p) =>
-          p
-            .toLowerCase()
-            .includes(kitManufacturerPartNumberDebounced.toLowerCase()),
-        )
-      : [];
-
-  const kitManufacturerOptions =
-    kitManufacturerDebounced.length >= MIN_SEARCH_CHARS
-      ? KIT_MANUFACTURERS.filter((m) =>
-          m.toLowerCase().includes(kitManufacturerDebounced.toLowerCase()),
-        )
-      : [];
+  const kitManufacturerOptions = kitManufacturerDebounced
+    ? KIT_MANUFACTURERS.filter((m) =>
+        m.toLowerCase().includes(kitManufacturerDebounced.toLowerCase()),
+      )
+    : [];
 
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);

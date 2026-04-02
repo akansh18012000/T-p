@@ -502,10 +502,10 @@ export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfi
       labelKey: "localItemConversion.validityYear",
       editable: true,
     },
-    { key: "baseCode", labelKey: "localItemConversion.baseCode", editable: true },
+    { key: "locationCode", labelKey: "localItemConversion.locationCode", editable: true },
     {
-      key: "baseName",
-      labelKey: "localItemConversion.baseName",
+      key: "locationName",
+      labelKey: "localItemConversion.locationName",
       editable: false,
     },
     {
@@ -542,12 +542,12 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
   "GPC Code",
   "GPC Name",
   "Validity Year",
-  "Base Code",
-  "Base name",
+  "Location Code",
+  "Location Name",
   "Corporate Code",
-  "Corporate name",
-  "Standard cost",
-  "currency",
+  "Corporate Name",
+  "Standard Cost",
+  "Currency",
   "Valid from date",
 ];
 

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -112,6 +113,7 @@ import {
   LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS,
 } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -130,6 +132,97 @@ const MANUFACTURER_CODES = [
   "MFR-004",
   "MFR-005",
 ];
+
+// Mock data for cell search dialogs
+const CELL_SEARCH_SYSTEM_IDS = [
+  "SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005",
+  "SYS-006", "SYS-007", "SYS-008", "SYS-009", "SYS-010",
+];
+const CELL_SEARCH_GLOBAL_ITEM_TYPES = [
+  "GIT-A", "GIT-B", "GIT-C", "GIT-D", "GIT-E",
+  "GIT-ALPHA", "GIT-BETA", "GIT-GAMMA", "GIT-DELTA",
+];
+const CELL_SEARCH_CURRENCIES = [
+  "USD", "EUR", "JPY", "GBP", "CHF",
+  "CAD", "AUD", "CNY", "INR", "KRW",
+];
+
+// Code-to-Name lookup maps for associated columns
+const MANUFACTURER_CODE_TO_NAME: Record<string, string> = {
+  "MFR-001": "Acme Corporation",
+  "MFR-002": "Beta Industries",
+  "MFR-003": "Gamma Technologies",
+  "MFR-004": "Delta Manufacturing",
+  "MFR-005": "Epsilon Solutions",
+  "MFR-ACM": "Acme Medical Supplies",
+  "MFR-BET": "Beta Healthcare",
+  "MFR-GAM": "Gamma Devices Inc.",
+  "MFR-DEL": "Delta Pharma Ltd.",
+  "MFR-EPS": "Epsilon BioScience",
+};
+
+const GPC_CODE_TO_NAME: Record<string, string> = {
+  "GPC01": "Medical Instruments",
+  "GPC02": "Surgical Equipment",
+  "GPC03": "Diagnostic Devices",
+  "GPC04": "Laboratory Supplies",
+  "GPC05": "Patient Care Products",
+  "GPC10": "Cardiovascular Devices",
+  "GPC11": "Orthopedic Implants",
+  "GPC12": "Neurological Equipment",
+  "GPC20": "Respiratory Devices",
+  "GPC21": "Dialysis Equipment",
+};
+
+const LOCATION_CODE_TO_NAME: Record<string, string> = {
+  "BC01": "Tokyo Distribution Center",
+  "BC02": "Osaka Warehouse",
+  "BC03": "Nagoya Facility",
+  "BC04": "Fukuoka Hub",
+  "BC05": "Sapporo Depot",
+  "LOC-NORTH": "North Region Center",
+  "LOC-EAST": "East Region Center",
+  "LOC-WEST": "West Region Center",
+  "LOC-SOUTH": "South Region Center",
+  "LOC-CENTRAL": "Central Region Hub",
+};
+
+const CORPORATE_CODE_TO_NAME: Record<string, string> = {
+  "CC01": "Terumo Corporation",
+  "CC02": "Terumo Americas",
+  "CC03": "Terumo Europe",
+  "CC04": "Terumo Asia Pacific",
+  "CC05": "Terumo China",
+  "CC-ALPHA": "Alpha Medical Division",
+  "CC-BETA": "Beta Healthcare Unit",
+  "CC-GAMMA": "Gamma Research Lab",
+  "CC-DELTA": "Delta Distribution Corp",
+};
+
+// Extract code arrays from lookup maps
+const CELL_SEARCH_MANUFACTURERS = Object.keys(MANUFACTURER_CODE_TO_NAME);
+const CELL_SEARCH_GPC_CODES = Object.keys(GPC_CODE_TO_NAME);
+const CELL_SEARCH_LOCATION_CODES = Object.keys(LOCATION_CODE_TO_NAME);
+const CELL_SEARCH_CORPORATE_CODES = Object.keys(CORPORATE_CODE_TO_NAME);
+
+// Column indices for code-to-name auto-population
+const CODE_TO_NAME_COLUMN_MAP: Record<number, { nameColIndex: number; lookupMap: Record<string, string> }> = {
+  2: { nameColIndex: 3, lookupMap: MANUFACTURER_CODE_TO_NAME },   // manufacturer -> manufacturerName
+  6: { nameColIndex: 7, lookupMap: GPC_CODE_TO_NAME },            // gpcCode -> gpcName
+  9: { nameColIndex: 10, lookupMap: LOCATION_CODE_TO_NAME },      // locationCode -> locationName
+  11: { nameColIndex: 12, lookupMap: CORPORATE_CODE_TO_NAME },    // corporateCode -> corporateName
+};
+
+// Map column keys to their search options
+const SEARCHABLE_COLUMN_OPTIONS: Record<string, string[]> = {
+  systemId: CELL_SEARCH_SYSTEM_IDS,
+  manufacturer: CELL_SEARCH_MANUFACTURERS,
+  globalItemTypes: CELL_SEARCH_GLOBAL_ITEM_TYPES,
+  gpcCode: CELL_SEARCH_GPC_CODES,
+  locationCode: CELL_SEARCH_LOCATION_CODES,
+  corporateCode: CELL_SEARCH_CORPORATE_CODES,
+  currency: CELL_SEARCH_CURRENCIES,
+};
 
 const DEFAULT_CSV_HEADERS = LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
 
@@ -179,14 +272,12 @@ function LocalItemConversionMasterScreen() {
 
   // Search box input and debounced values for System ID and Manufacturer Code (min 3 chars, 1s debounce)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const [systemIdDebounced, setSystemIdDebounced] = useState("");
+  const { debouncedValue: systemIdDebounced } =
+    useDebouncedSearch(systemIdSearchInput);
   const [manufacturerCodeSearchInput, setManufacturerCodeSearchInput] =
     useState("");
-  const [manufacturerCodeDebounced, setManufacturerCodeDebounced] =
-    useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: manufacturerCodeDebounced } =
+    useDebouncedSearch(manufacturerCodeSearchInput);
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
@@ -215,33 +306,17 @@ function LocalItemConversionMasterScreen() {
     manufacturerPartNumber,
   ]);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setSystemIdDebounced(systemIdSearchInput);
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [systemIdSearchInput]);
+  const systemIdOptions = systemIdDebounced
+    ? SYSTEM_IDS.filter((id) =>
+        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setManufacturerCodeDebounced(manufacturerCodeSearchInput);
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [manufacturerCodeSearchInput]);
-
-  const systemIdOptions =
-    systemIdDebounced.length >= MIN_SEARCH_CHARS
-      ? SYSTEM_IDS.filter((id) =>
-          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-        )
-      : [];
-
-  const manufacturerCodeOptions =
-    manufacturerCodeDebounced.length >= MIN_SEARCH_CHARS
-      ? MANUFACTURER_CODES.filter((code) =>
-          code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
-        )
-      : [];
+  const manufacturerCodeOptions = manufacturerCodeDebounced
+    ? MANUFACTURER_CODES.filter((code) =>
+        code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
+      )
+    : [];
 
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -634,11 +709,25 @@ function LocalItemConversionMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
-      rIdx === rowIndex
-        ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
-        : row,
-    );
+    
+    // Check if this column has an associated name column
+    const codeToNameMapping = CODE_TO_NAME_COLUMN_MAP[colIndex];
+    
+    const newRows = csvData.rows.map((row, rIdx) => {
+      if (rIdx !== rowIndex) return row;
+      
+      const newRow = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
+      
+      // Auto-populate the associated name column if mapping exists
+      if (codeToNameMapping) {
+        const { nameColIndex, lookupMap } = codeToNameMapping;
+        const associatedName = lookupMap[value] ?? "";
+        newRow[nameColIndex] = associatedName;
+      }
+      
+      return newRow;
+    });
+    
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -1157,6 +1246,8 @@ function LocalItemConversionMasterScreen() {
                                       (col, colIndex) => {
                                         const cell = row[colIndex] ?? "";
                                         const editable = col.editable !== false;
+                                        const searchOptions = SEARCHABLE_COLUMN_OPTIONS[col.key];
+                                        const isSearchable = editable && !!searchOptions;
                                         return (
                                           <StyledTableDataCell
                                             key={col.key}
@@ -1172,20 +1263,19 @@ function LocalItemConversionMasterScreen() {
                                             )}
                                           >
                                             {editable ? (
-                                              <StyledCellTextField
+                                              <SearchableCell
                                                 value={cell}
-                                                onChange={(e) =>
+                                                onChange={(value) =>
                                                   handleCellEdit(
                                                     originalRowIndex,
                                                     colIndex,
-                                                    e.target.value,
+                                                    value,
                                                   )
                                                 }
-                                                variant="standard"
-                                                fullWidth
-                                                size="small"
-                                                multiline
-                                                maxRows={4}
+                                                editable
+                                                searchable={isSearchable}
+                                                searchOptions={searchOptions}
+                                                searchTitle={t(col.labelKey)}
                                               />
                                             ) : (
                                               <Box

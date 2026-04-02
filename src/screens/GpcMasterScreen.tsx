@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -169,18 +170,17 @@ export default function GpcMasterScreen() {
 
   // Search box input and debounced values (min 3 chars, 1s debounce)
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
-  const [manufacturerDebounced, setManufacturerDebounced] = useState("");
+  const { debouncedValue: manufacturerDebounced } =
+    useDebouncedSearch(manufacturerSearchInput);
   const [
     manufacturerPartNumberSearchInput,
     setManufacturerPartNumberSearchInput,
   ] = useState("");
-  const [manufacturerPartNumberDebounced, setManufacturerPartNumberDebounced] =
-    useState("");
+  const { debouncedValue: manufacturerPartNumberDebounced } =
+    useDebouncedSearch(manufacturerPartNumberSearchInput);
   const [gpcCodeSearchInput, setGpcCodeSearchInput] = useState("");
-  const [gpcCodeDebounced, setGpcCodeDebounced] = useState("");
-
-  const DEBOUNCE_MS = 1000;
-  const MIN_SEARCH_CHARS = 3;
+  const { debouncedValue: gpcCodeDebounced } =
+    useDebouncedSearch(gpcCodeSearchInput);
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
@@ -209,53 +209,25 @@ export default function GpcMasterScreen() {
     validYear,
   ]);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setManufacturerDebounced(manufacturerSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [manufacturerSearchInput]);
+  const manufacturerOptions = manufacturerDebounced
+    ? MANUFACTURERS.filter((m) =>
+        m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const id = setTimeout(
-      () =>
-        setManufacturerPartNumberDebounced(manufacturerPartNumberSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [manufacturerPartNumberSearchInput]);
+  const manufacturerPartNumberOptions = manufacturerPartNumberDebounced
+    ? MANUFACTURER_PART_NUMBERS.filter((p) =>
+        p
+          .toLowerCase()
+          .includes(manufacturerPartNumberDebounced.toLowerCase()),
+      )
+    : [];
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setGpcCodeDebounced(gpcCodeSearchInput),
-      DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [gpcCodeSearchInput]);
-
-  const manufacturerOptions =
-    manufacturerDebounced.length >= MIN_SEARCH_CHARS
-      ? MANUFACTURERS.filter((m) =>
-          m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
-        )
-      : [];
-
-  const manufacturerPartNumberOptions =
-    manufacturerPartNumberDebounced.length >= MIN_SEARCH_CHARS
-      ? MANUFACTURER_PART_NUMBERS.filter((p) =>
-          p
-            .toLowerCase()
-            .includes(manufacturerPartNumberDebounced.toLowerCase()),
-        )
-      : [];
-
-  const gpcCodeOptions =
-    gpcCodeDebounced.length >= MIN_SEARCH_CHARS
-      ? GPC_CODES.filter((c) =>
-          c.toLowerCase().includes(gpcCodeDebounced.toLowerCase()),
-        )
-      : [];
+  const gpcCodeOptions = gpcCodeDebounced
+    ? GPC_CODES.filter((c) =>
+        c.toLowerCase().includes(gpcCodeDebounced.toLowerCase()),
+      )
+    : [];
 
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -376,14 +348,14 @@ export default function GpcMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("gpcMaster.searchCompletedWithData")
+          : t("gpcMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("gpcMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -391,7 +363,7 @@ export default function GpcMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("gpcMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -405,7 +377,7 @@ export default function GpcMasterScreen() {
     link.download = `gpc_master_${yearStr}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("gpcMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -417,7 +389,7 @@ export default function GpcMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, newRow],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("gpcMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -428,11 +400,11 @@ export default function GpcMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("gpcMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("gpcMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -498,13 +470,13 @@ export default function GpcMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("gpcMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("gpcMaster.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -516,17 +488,17 @@ export default function GpcMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("gpcMaster.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("gpcMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("gpcMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -595,7 +567,7 @@ export default function GpcMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("gpcMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -627,8 +599,8 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Manufacturer"
-                        placeholder="Enter 3 characters to search"
+                        label={t("gpcMaster.manufacturer")}
+                        placeholder={t("gpcMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -637,7 +609,7 @@ export default function GpcMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Manufacturer Name"
+                    label={t("gpcMaster.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => setManufacturerName(e.target.value)}
                   />
@@ -662,8 +634,8 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Manufacturer Part Number"
-                        placeholder="Enter 3 characters to search"
+                        label={t("gpcMaster.manufacturerPartNumber")}
+                        placeholder={t("gpcMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -688,8 +660,8 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="GPC Code"
-                        placeholder="Enter 3 characters to search"
+                        label={t("gpcMaster.gpcCode")}
+                        placeholder={t("gpcMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -698,7 +670,7 @@ export default function GpcMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="GPC Name"
+                    label={t("gpcMaster.gpcName")}
                     value={gpcName}
                     onChange={(e) => setGpcName(e.target.value)}
                   />
@@ -707,7 +679,7 @@ export default function GpcMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Valid Year (or later)"
+                      label={t("gpcMaster.validYearOrLater")}
                       value={validYear}
                       onChange={(newValue) => setValidYear(newValue)}
                       views={["year"]}
@@ -731,7 +703,7 @@ export default function GpcMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("gpcMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -743,7 +715,7 @@ export default function GpcMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("gpcMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -753,7 +725,7 @@ export default function GpcMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("gpcMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -761,7 +733,7 @@ export default function GpcMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("gpcMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -770,7 +742,7 @@ export default function GpcMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("gpcMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -779,7 +751,7 @@ export default function GpcMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("gpcMaster.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -793,7 +765,7 @@ export default function GpcMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("gpcMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -817,8 +789,10 @@ export default function GpcMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("gpcMaster.showingRows", {
+                              filtered: filteredRowIndices.length,
+                              total: displayData.rows.length,
+                            })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -826,10 +800,10 @@ export default function GpcMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("gpcMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("gpcMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -971,7 +945,7 @@ export default function GpcMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">{t("gpcMaster.uploadFile")}</StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1003,11 +977,11 @@ export default function GpcMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("gpcMaster.dropFileHere")
+                        : t("gpcMaster.dragDropFile")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("gpcMaster.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -1017,10 +991,10 @@ export default function GpcMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("gpcMaster.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("gpcMaster.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
 
@@ -1044,7 +1018,7 @@ export default function GpcMasterScreen() {
                           onClick={handleUploadClick}
                           disabled={uploadStatus === "uploading"}
                         >
-                          Upload
+                          {t("gpcMaster.upload")}
                         </StyledUploadButton>
                         <StyledViewButton
                           variant="outlined"
@@ -1116,14 +1090,14 @@ export default function GpcMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("gpcMaster.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("gpcMaster.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>
