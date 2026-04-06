@@ -30,7 +30,8 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { GLOBAL_DAD_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -79,7 +80,6 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
   StyledTableHeaderText,
-  StyledCellTextField,
   StyledSnackbarAlert,
   FREEZE_COLUMN_DATA_WIDTH,
   StyledResultTableContainer,
@@ -87,27 +87,40 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
-type CodeWithName = { code: string; name: string };
-
 const SYSTEM_IDS = ["SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005"];
-const LOCAL_CUSTOMER_OPTIONS: CodeWithName[] = [
-  { code: "LCC-001", name: "Customer Alpha" },
-  { code: "LCC-002", name: "Customer Beta" },
-  { code: "LCC-003", name: "Customer Gamma" },
-  { code: "LCC-004", name: "Customer Delta" },
-];
-const PRODUCT_CLASSIFICATION_OPTIONS: CodeWithName[] = [
-  { code: "PC-001", name: "Classification A" },
-  { code: "PC-002", name: "Classification B" },
-  { code: "PC-003", name: "Classification C" },
-  { code: "PC-004", name: "Classification D" },
-];
-const TRANSFER_DEST_BU3_OPTIONS: CodeWithName[] = [
-  { code: "BU3-001", name: "Destination North" },
-  { code: "BU3-002", name: "Destination South" },
-  { code: "BU3-003", name: "Destination East" },
-  { code: "BU3-004", name: "Destination West" },
-];
+const LOCAL_CUSTOMER_CODES = ["LCC-001", "LCC-002", "LCC-003", "LCC-004", "LCC-005"];
+const PRODUCT_CLASSIFICATION_CODES = ["PC-001", "PC-002", "PC-003", "PC-004", "PC-005"];
+const TRANSFER_DEST_BU3_CODES = ["BU3-001", "BU3-002", "BU3-003", "BU3-004", "BU3-005"];
+
+// Name mappings for codes
+const LOCAL_CUSTOMER_NAME_MAP: Record<string, string> = {
+  "LCC-001": "Customer Alpha",
+  "LCC-002": "Customer Beta",
+  "LCC-003": "Customer Gamma",
+  "LCC-004": "Customer Delta",
+  "LCC-005": "Customer Epsilon",
+};
+
+const PRODUCT_CLASSIFICATION_NAME_MAP: Record<string, string> = {
+  "PC-001": "Classification A",
+  "PC-002": "Classification B",
+  "PC-003": "Classification C",
+  "PC-004": "Classification D",
+  "PC-005": "Classification E",
+};
+
+const TRANSFER_DEST_BU3_NAME_MAP: Record<string, string> = {
+  "BU3-001": "Destination North",
+  "BU3-002": "Destination South",
+  "BU3-003": "Destination East",
+  "BU3-004": "Destination West",
+  "BU3-005": "Destination Central",
+};
+
+// Search options for searchable cells
+const SEARCH_OPTIONS: Record<string, string[]> = {
+  transferDestBU3: TRANSFER_DEST_BU3_CODES,
+};
 
 const DEFAULT_CSV_HEADERS = GLOBAL_DAD_MASTER_HEADERS;
 
@@ -119,7 +132,7 @@ const listboxProps = {
   style: { maxHeight: 176, overflow: "auto" as const },
 };
 
-// Data columns need explicit width so headers like "Sales Base Code" and "Local Customer Code" don't overlap
+// Data columns need explicit width so headers like "Sales Location Code" and "Local Customer Code" don't overlap
 const ScrollableTableHeaderCell = styled(StyledTableHeaderCell)(
   ({ $indexCell, $deletionFlag }) =>
     !$indexCell && !$deletionFlag
@@ -162,17 +175,13 @@ export default function GlobalDadMasterScreen() {
 
   // Search condition state
   const [systemId, setSystemId] = useState("");
-  const [salesBaseCode, setSalesBaseCode] = useState("");
+  const [salesLocationCode, setSalesLocationCode] = useState("");
   const [localCustomerCode, setLocalCustomerCode] = useState("");
-  const [localCustomerName, setLocalCustomerName] = useState("");
   const [productClassification, setProductClassification] = useState("");
-  const [productClassificationName, setProductClassificationName] =
-    useState("");
   const [transferDestBU3, setTransferDestBU3] = useState("");
-  const [transferDestBU3Name, setTransferDestBU3Name] = useState("");
   const [patternId, setPatternId] = useState("");
-  const [validFrom, setValidFrom] = useState<Date | null>(null);
-  const [validityEnd, setValidityEnd] = useState<Date | null>(null);
+  const [effectiveStartDate, setEffectiveStartDate] = useState<Date | null>(null);
+  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [deletionFlag, setDeletionFlag] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
 
@@ -196,36 +205,36 @@ export default function GlobalDadMasterScreen() {
 
   const searchConditionsRef = useRef({
     systemId: "",
-    salesBaseCode: "",
+    salesLocationCode: "",
     localCustomerCode: "",
     productClassification: "",
     transferDestBU3: "",
     patternId: "",
-    validFrom: null as Date | null,
-    validityEnd: null as Date | null,
+    effectiveStartDate: null as Date | null,
+    expirationDate: null as Date | null,
     deletionFlag: false,
   });
   useEffect(() => {
     searchConditionsRef.current = {
       systemId,
-      salesBaseCode,
+      salesLocationCode,
       localCustomerCode,
       productClassification,
       transferDestBU3,
       patternId,
-      validFrom,
-      validityEnd,
+      effectiveStartDate,
+      expirationDate,
       deletionFlag,
     };
   }, [
     systemId,
-    salesBaseCode,
+    salesLocationCode,
     localCustomerCode,
     productClassification,
     transferDestBU3,
     patternId,
-    validFrom,
-    validityEnd,
+    effectiveStartDate,
+    expirationDate,
     deletionFlag,
   ]);
 
@@ -235,41 +244,32 @@ export default function GlobalDadMasterScreen() {
       )
     : [];
 
-  const filterCodeWithName = (list: CodeWithName[], q: string) =>
-    q
-      ? list.filter(
-          (o) =>
-            o.code.toLowerCase().includes(q.toLowerCase()) ||
-            o.name.toLowerCase().includes(q.toLowerCase()),
-        )
-      : [];
+  const localCustomerCodeOptions = localCustomerDebounced
+    ? LOCAL_CUSTOMER_CODES.filter((code) =>
+        code.toLowerCase().includes(localCustomerDebounced.toLowerCase()),
+      )
+    : [];
 
-  const localCustomerOptions = filterCodeWithName(
-    LOCAL_CUSTOMER_OPTIONS,
-    localCustomerDebounced,
-  );
-  const productClassificationOptions = filterCodeWithName(
-    PRODUCT_CLASSIFICATION_OPTIONS,
-    productClassificationDebounced,
-  );
-  const transferDestBU3Options = filterCodeWithName(
-    TRANSFER_DEST_BU3_OPTIONS,
-    transferDestBU3Debounced,
-  );
+  const productClassificationCodeOptions = productClassificationDebounced
+    ? PRODUCT_CLASSIFICATION_CODES.filter((code) =>
+        code.toLowerCase().includes(productClassificationDebounced.toLowerCase()),
+      )
+    : [];
 
-  const localCustomerSelected = LOCAL_CUSTOMER_OPTIONS.find(
-    (o) => o.code === localCustomerCode,
-  );
-  const productClassificationSelected = PRODUCT_CLASSIFICATION_OPTIONS.find(
-    (o) => o.code === productClassification,
-  );
-  const transferDestBU3Selected = TRANSFER_DEST_BU3_OPTIONS.find(
-    (o) => o.code === transferDestBU3,
-  );
+  const transferDestBU3CodeOptions = transferDestBU3Debounced
+    ? TRANSFER_DEST_BU3_CODES.filter((code) =>
+        code.toLowerCase().includes(transferDestBU3Debounced.toLowerCase()),
+      )
+    : [];
+
+  // Get associated names for selected codes
+  const localCustomerName = LOCAL_CUSTOMER_NAME_MAP[localCustomerCode] || "";
+  const productClassificationName = PRODUCT_CLASSIFICATION_NAME_MAP[productClassification] || "";
+  const transferDestBU3Name = TRANSFER_DEST_BU3_NAME_MAP[transferDestBU3] || "";
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
-  const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
-    (h) => h === "Deletion flag",
+  const deletionFlagColIndex = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
+    (col) => col.isCheckbox === true,
   );
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
@@ -293,10 +293,9 @@ export default function GlobalDadMasterScreen() {
           "PC-001",
           "Classification A",
           "BU3-001",
-          "Destination North",
-          "PAT-001",
           "2026-01",
           "2026-12",
+          "PAT-001",
           "0",
         ],
         [
@@ -307,10 +306,9 @@ export default function GlobalDadMasterScreen() {
           "PC-002",
           "Classification B",
           "BU3-002",
-          "Destination South",
-          "PAT-002",
           "2026-02",
           "2027-06",
+          "PAT-002",
           "0",
         ],
         [
@@ -321,18 +319,17 @@ export default function GlobalDadMasterScreen() {
           "PC-003",
           "Classification C",
           "BU3-003",
-          "Destination East",
-          "PAT-003",
           "2026-01",
           "2026-06",
+          "PAT-003",
           "1",
         ],
       ];
-      const validFromStr = conditions.validFrom
-        ? `${conditions.validFrom.getFullYear()}-${String(conditions.validFrom.getMonth() + 1).padStart(2, "0")}`
+      const effectiveStartDateStr = conditions.effectiveStartDate
+        ? `${conditions.effectiveStartDate.getFullYear()}-${String(conditions.effectiveStartDate.getMonth() + 1).padStart(2, "0")}`
         : "";
-      const validityEndStr = conditions.validityEnd
-        ? `${conditions.validityEnd.getFullYear()}-${String(conditions.validityEnd.getMonth() + 1).padStart(2, "0")}`
+      const expirationDateStr = conditions.expirationDate
+        ? `${conditions.expirationDate.getFullYear()}-${String(conditions.expirationDate.getMonth() + 1).padStart(2, "0")}`
         : "";
       const filteredRows = allRows.filter((row) => {
         const [
@@ -343,17 +340,16 @@ export default function GlobalDadMasterScreen() {
           rowProdClass,
           ,
           rowTransferBU3,
-          ,
+          rowEffectiveStartDate,
+          rowExpirationDate,
           rowPatternId,
-          rowValidFrom,
-          rowValidityEnd,
           rowDelFlag,
         ] = row;
         if (conditions.systemId.trim() && rowSystemId !== conditions.systemId)
           return false;
         if (
-          conditions.salesBaseCode.trim() &&
-          rowSalesBase !== conditions.salesBaseCode
+          conditions.salesLocationCode.trim() &&
+          rowSalesBase !== conditions.salesLocationCode
         )
           return false;
         if (
@@ -378,8 +374,8 @@ export default function GlobalDadMasterScreen() {
             .includes(conditions.patternId.toLowerCase())
         )
           return false;
-        if (validFromStr && rowValidFrom !== validFromStr) return false;
-        if (validityEndStr && rowValidityEnd !== validityEndStr) return false;
+        if (effectiveStartDateStr && rowEffectiveStartDate !== effectiveStartDateStr) return false;
+        if (expirationDateStr && rowExpirationDate !== expirationDateStr) return false;
         if (conditions.deletionFlag && rowDelFlag !== "1") return false;
         return true;
       });
@@ -482,8 +478,8 @@ export default function GlobalDadMasterScreen() {
     ...displayData.headers.map((h, i) => ({
       index: i + 1,
       label: h,
-      width: h === "Deletion flag" ? 110 : FREEZE_COLUMN_DATA_WIDTH,
-      isDeletionFlag: h === "Deletion flag",
+      width: GLOBAL_DAD_MASTER_COLUMNS[i]?.isCheckbox ? 110 : FREEZE_COLUMN_DATA_WIDTH,
+      isDeletionFlag: GLOBAL_DAD_MASTER_COLUMNS[i]?.isCheckbox === true,
     })),
   ];
   const {
@@ -591,56 +587,34 @@ export default function GlobalDadMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Sales Base Code"
-                    value={salesBaseCode}
+                    label="Sales Location Code"
+                    value={salesLocationCode}
                     onChange={(e) => {
-                      setSalesBaseCode(e.target.value);
-                      searchConditionsRef.current.salesBaseCode =
+                      setSalesLocationCode(e.target.value);
+                      searchConditionsRef.current.salesLocationCode =
                         e.target.value;
                     }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Box>
-                    <Autocomplete<CodeWithName>
+                    <Autocomplete
                       fullWidth
                       size="small"
-                      options={localCustomerOptions}
-                      value={
-                        localCustomerSelected ??
-                        (localCustomerCode
-                          ? {
-                              code: localCustomerCode,
-                              name: localCustomerName || "",
-                            }
-                          : null)
-                      }
+                      options={localCustomerCodeOptions}
+                      value={localCustomerCode || null}
                       inputValue={localCustomerSearchInput}
                       onInputChange={(_e, v) => {
                         setLocalCustomerSearchInput(v);
-                        if (!v) {
-                          setLocalCustomerCode("");
-                          setLocalCustomerName("");
-                          searchConditionsRef.current.localCustomerCode = "";
-                        }
+                        searchConditionsRef.current.localCustomerCode = v;
                       }}
                       onChange={(_e, v) => {
-                        if (v) {
-                          setLocalCustomerCode(v.code);
-                          setLocalCustomerName(v.name);
-                          searchConditionsRef.current.localCustomerCode =
-                            v.code;
-                        } else {
-                          setLocalCustomerCode("");
-                          setLocalCustomerName("");
-                          searchConditionsRef.current.localCustomerCode = "";
-                        }
-                        setLocalCustomerSearchInput(v ? v.code : "");
+                        const s = v ?? "";
+                        setLocalCustomerCode(s);
+                        setLocalCustomerSearchInput(s);
+                        searchConditionsRef.current.localCustomerCode = s;
                       }}
-                      getOptionLabel={(o) =>
-                        typeof o === "string" ? o : o.code
-                      }
-                      isOptionEqualToValue={(o, v) => o.code === v.code}
+                      freeSolo
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
@@ -650,10 +624,10 @@ export default function GlobalDadMasterScreen() {
                         />
                       )}
                     />
-                    {localCustomerSelected && (
+                    {localCustomerName && (
                       <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption">
-                          {localCustomerSelected.name}
+                        <StyledPrimaryCaption variant="caption" fontSize={16}>
+                          {localCustomerName}
                         </StyledPrimaryCaption>
                       </StyledItemDetailsBox>
                     )}
@@ -661,47 +635,23 @@ export default function GlobalDadMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Box>
-                    <Autocomplete<CodeWithName>
+                    <Autocomplete
                       fullWidth
                       size="small"
-                      options={productClassificationOptions}
-                      value={
-                        productClassificationSelected ??
-                        (productClassification
-                          ? {
-                              code: productClassification,
-                              name: productClassificationName || "",
-                            }
-                          : null)
-                      }
+                      options={productClassificationCodeOptions}
+                      value={productClassification || null}
                       inputValue={productClassificationSearchInput}
                       onInputChange={(_e, v) => {
                         setProductClassificationSearchInput(v);
-                        if (!v) {
-                          setProductClassification("");
-                          setProductClassificationName("");
-                          searchConditionsRef.current.productClassification =
-                            "";
-                        }
+                        searchConditionsRef.current.productClassification = v;
                       }}
                       onChange={(_e, v) => {
-                        if (v) {
-                          setProductClassification(v.code);
-                          setProductClassificationName(v.name);
-                          searchConditionsRef.current.productClassification =
-                            v.code;
-                        } else {
-                          setProductClassification("");
-                          setProductClassificationName("");
-                          searchConditionsRef.current.productClassification =
-                            "";
-                        }
-                        setProductClassificationSearchInput(v ? v.code : "");
+                        const s = v ?? "";
+                        setProductClassification(s);
+                        setProductClassificationSearchInput(s);
+                        searchConditionsRef.current.productClassification = s;
                       }}
-                      getOptionLabel={(o) =>
-                        typeof o === "string" ? o : o.code
-                      }
-                      isOptionEqualToValue={(o, v) => o.code === v.code}
+                      freeSolo
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
@@ -711,10 +661,10 @@ export default function GlobalDadMasterScreen() {
                         />
                       )}
                     />
-                    {productClassificationSelected && (
+                    {productClassificationName && (
                       <StyledItemDetailsBox>
                         <StyledPrimaryCaption variant="caption">
-                          {productClassificationSelected.name}
+                          {productClassificationName}
                         </StyledPrimaryCaption>
                       </StyledItemDetailsBox>
                     )}
@@ -722,44 +672,23 @@ export default function GlobalDadMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Box>
-                    <Autocomplete<CodeWithName>
+                    <Autocomplete
                       fullWidth
                       size="small"
-                      options={transferDestBU3Options}
-                      value={
-                        transferDestBU3Selected ??
-                        (transferDestBU3
-                          ? {
-                              code: transferDestBU3,
-                              name: transferDestBU3Name || "",
-                            }
-                          : null)
-                      }
+                      options={transferDestBU3CodeOptions}
+                      value={transferDestBU3 || null}
                       inputValue={transferDestBU3SearchInput}
                       onInputChange={(_e, v) => {
                         setTransferDestBU3SearchInput(v);
-                        if (!v) {
-                          setTransferDestBU3("");
-                          setTransferDestBU3Name("");
-                          searchConditionsRef.current.transferDestBU3 = "";
-                        }
+                        searchConditionsRef.current.transferDestBU3 = v;
                       }}
                       onChange={(_e, v) => {
-                        if (v) {
-                          setTransferDestBU3(v.code);
-                          setTransferDestBU3Name(v.name);
-                          searchConditionsRef.current.transferDestBU3 = v.code;
-                        } else {
-                          setTransferDestBU3("");
-                          setTransferDestBU3Name("");
-                          searchConditionsRef.current.transferDestBU3 = "";
-                        }
-                        setTransferDestBU3SearchInput(v ? v.code : "");
+                        const s = v ?? "";
+                        setTransferDestBU3(s);
+                        setTransferDestBU3SearchInput(s);
+                        searchConditionsRef.current.transferDestBU3 = s;
                       }}
-                      getOptionLabel={(o) =>
-                        typeof o === "string" ? o : o.code
-                      }
-                      isOptionEqualToValue={(o, v) => o.code === v.code}
+                      freeSolo
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
@@ -769,10 +698,10 @@ export default function GlobalDadMasterScreen() {
                         />
                       )}
                     />
-                    {transferDestBU3Selected && (
+                    {transferDestBU3Name && (
                       <StyledItemDetailsBox>
                         <StyledPrimaryCaption variant="caption">
-                          {transferDestBU3Selected.name}
+                          {transferDestBU3Name}
                         </StyledPrimaryCaption>
                       </StyledItemDetailsBox>
                     )}
@@ -794,11 +723,11 @@ export default function GlobalDadMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Valid from date"
-                      value={validFrom}
+                      label="Effective Start Date"
+                      value={effectiveStartDate}
                       onChange={(v) => {
-                        setValidFrom(v);
-                        searchConditionsRef.current.validFrom = v;
+                        setEffectiveStartDate(v);
+                        searchConditionsRef.current.effectiveStartDate = v;
                       }}
                       views={["year", "month"]}
                       slots={datePickerSlots}
@@ -810,11 +739,11 @@ export default function GlobalDadMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Validity end date"
-                      value={validityEnd}
+                      label="Expiration Date"
+                      value={expirationDate}
                       onChange={(v) => {
-                        setValidityEnd(v);
-                        searchConditionsRef.current.validityEnd = v;
+                        setExpirationDate(v);
+                        searchConditionsRef.current.expirationDate = v;
                       }}
                       views={["year", "month"]}
                       slots={datePickerSlots}
@@ -974,7 +903,7 @@ export default function GlobalDadMasterScreen() {
                                 {displayData.headers.map((header, colIndex) => (
                                   <ScrollableTableHeaderCell
                                     key={colIndex}
-                                    $deletionFlag={header === "Deletion flag"}
+                                    $deletionFlag={GLOBAL_DAD_MASTER_COLUMNS[colIndex]?.isCheckbox === true}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -1007,54 +936,59 @@ export default function GlobalDadMasterScreen() {
                                     >
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
-                                    {row.map((cell, colIndex) => (
-                                      <ScrollableTableDataCell
-                                        key={colIndex}
-                                        $deletionFlag={
-                                          colIndex === deletionFlagColIndex
-                                        }
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
-                                        $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
-                                      >
-                                        {colIndex === deletionFlagColIndex ? (
-                                          <StyledCheckbox
-                                            size="small"
-                                            checked={cell === "1"}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.checked ? "1" : "0",
-                                              )
-                                            }
-                                          />
-                                        ) : (
-                                          <StyledCellTextField
-                                            value={cell}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            variant="standard"
-                                            fullWidth
-                                            size="small"
-                                            multiline
-                                            maxRows={4}
-                                          />
-                                        )}
-                                      </ScrollableTableDataCell>
-                                    ))}
+                                    {row.map((cell, colIndex) => {
+                                      const colConfig = GLOBAL_DAD_MASTER_COLUMNS[colIndex];
+                                      const isCheckbox = colConfig?.isCheckbox;
+                                      const isEditable = colConfig?.editable !== false;
+                                      const isSearchable = colConfig?.searchable && isEditable;
+                                      const searchOptions = colConfig?.key ? SEARCH_OPTIONS[colConfig.key] : undefined;
+
+                                      return (
+                                        <ScrollableTableDataCell
+                                          key={colIndex}
+                                          $deletionFlag={isCheckbox}
+                                          $isFrozen={freezeIndices.includes(
+                                            colIndex + 1,
+                                          )}
+                                          $leftOffset={getLeftOffset(
+                                            colIndex + 1,
+                                          )}
+                                          $rowIndex={i}
+                                          $isLastFrozen={isLastFrozenColumn(
+                                            colIndex + 1,
+                                          )}
+                                        >
+                                          {isCheckbox ? (
+                                            <StyledCheckbox
+                                              size="small"
+                                              checked={cell === "1"}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.checked ? "1" : "0",
+                                                )
+                                              }
+                                            />
+                                          ) : (
+                                            <SearchableCell
+                                              value={cell}
+                                              onChange={(value) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  value,
+                                                )
+                                              }
+                                              editable={isEditable}
+                                              searchable={isSearchable}
+                                              searchOptions={searchOptions}
+                                              searchTitle={colConfig?.label}
+                                            />
+                                          )}
+                                        </ScrollableTableDataCell>
+                                      );
+                                    })}
                                   </StyledTableBodyRow>
                                 );
                               })}

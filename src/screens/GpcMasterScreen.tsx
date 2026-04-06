@@ -56,7 +56,6 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
   StyledCheckbox,
-  StyledCellTextField,
   StyledDragDropZone,
   StyledUploadIconCircle,
   StyledCloudUploadIcon,
@@ -102,8 +101,9 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { GPC_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { GPC_MASTER_HEADERS, GPC_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -129,6 +129,30 @@ const MANUFACTURER_PART_NUMBERS = [
   "PART-4001",
 ];
 const GPC_CODES = ["GPC-001", "GPC-002", "GPC-003", "GPC-004", "GPC-005"];
+
+// Search options mapping by column key
+const SEARCH_OPTIONS: Record<string, string[]> = {
+  manufacturer: MANUFACTURERS,
+  mfrPartNumber: MANUFACTURER_PART_NUMBERS,
+  gpcCode: GPC_CODES,
+};
+
+// Mapping from code to name for associated columns
+const MANUFACTURER_NAME_MAP: Record<string, string> = {
+  "MFR-001": "Acme Corp",
+  "MFR-002": "Beta Inc",
+  "MFR-003": "Gamma Ltd",
+  "Acme Corp": "Acme Corp",
+  "Beta Inc": "Beta Inc",
+};
+
+const GPC_NAME_MAP: Record<string, string> = {
+  "GPC-001": "Category A",
+  "GPC-002": "Category B",
+  "GPC-003": "Category C",
+  "GPC-004": "Category D",
+  "GPC-005": "Category E",
+};
 
 const DEFAULT_CSV_HEADERS = GPC_MASTER_HEADERS;
 
@@ -260,6 +284,9 @@ export default function GpcMasterScreen() {
           "GPC-001",
           "Category A",
           "2026",
+          "BU3-001",
+          "Business Unit Alpha",
+          "0",
           "0",
         ],
         [
@@ -269,6 +296,9 @@ export default function GpcMasterScreen() {
           "GPC-002",
           "Category B",
           "2026",
+          "BU3-002",
+          "Business Unit Beta",
+          "0",
           "0",
         ],
         [
@@ -278,6 +308,9 @@ export default function GpcMasterScreen() {
           "GPC-003",
           "Category C",
           "2027",
+          "BU3-001",
+          "Business Unit Alpha",
+          "1",
           "0",
         ],
         [
@@ -287,6 +320,9 @@ export default function GpcMasterScreen() {
           "GPC-004",
           "Category D",
           "2026",
+          "BU3-003",
+          "Business Unit Gamma",
+          "0",
           "0",
         ],
         [
@@ -296,6 +332,9 @@ export default function GpcMasterScreen() {
           "GPC-001",
           "Category A",
           "2027",
+          "BU3-002",
+          "Business Unit Beta",
+          "0",
           "0",
         ],
       ];
@@ -311,6 +350,7 @@ export default function GpcMasterScreen() {
           rowGpcName,
           rowYear,
         ] = row.slice(0, 6);
+        // BU3 Code at index 6, BU3 Name at index 7, Overwrite Prevention Flag at index 8, Deletion Flag at index 9
         if (
           conditions.manufacturer.trim() &&
           rowMfr !== conditions.manufacturer
@@ -343,7 +383,7 @@ export default function GpcMasterScreen() {
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows: filteredRows.map((row) =>
-          row.length >= 7 ? row : [...row.slice(0, 6), "0"],
+          row.length >= 10 ? row : [...row.slice(0, 8), "0", "0"],
         ),
       });
       setSnackbarMessage(
@@ -415,11 +455,32 @@ export default function GpcMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
+    const colConfig = GPC_MASTER_COLUMNS[colIndex];
+    let newRows = csvData.rows.map((row, rIdx) =>
       rIdx === rowIndex
         ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
         : row,
     );
+
+    // Handle associated column auto-population
+    if (colConfig?.associatedColumn) {
+      const assocColIndex = GPC_MASTER_COLUMNS.findIndex(
+        (c) => c.key === colConfig.associatedColumn,
+      );
+      if (assocColIndex !== -1) {
+        let assocValue = "";
+        if (colConfig.key === "manufacturer") {
+          assocValue = MANUFACTURER_NAME_MAP[value] || "";
+        } else if (colConfig.key === "gpcCode") {
+          assocValue = GPC_NAME_MAP[value] || "";
+        }
+        newRows = newRows.map((row, rIdx) =>
+          rIdx === rowIndex
+            ? row.map((cell, cIdx) => (cIdx === assocColIndex ? assocValue : cell))
+            : row,
+        );
+      }
+    }
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -504,16 +565,13 @@ export default function GpcMasterScreen() {
   };
 
   const displayData = csvData || getEmptyCsvData();
-  const deletionFlagColIndex = displayData.headers.findIndex(
-    (h) => h === "Deletion Flag",
-  );
 
   const freezeColumnsConfig = [
     { index: 0, label: "#", width: 48 },
     ...displayData.headers.map((h, i) => ({
       index: i + 1,
       label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
+      isDeletionFlag: GPC_MASTER_COLUMNS[i]?.isCheckbox === true,
     })),
   ];
   const {
@@ -835,7 +893,7 @@ export default function GpcMasterScreen() {
                                   <StyledTableHeaderCell
                                     key={colIndex}
                                     $deletionFlag={
-                                      colIndex === deletionFlagColIndex
+                                      GPC_MASTER_COLUMNS[colIndex]?.isCheckbox === true
                                     }
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
@@ -869,54 +927,59 @@ export default function GpcMasterScreen() {
                                     >
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
-                                    {row.map((cell, colIndex) => (
-                                      <StyledTableDataCell
-                                        key={colIndex}
-                                        $deletionFlag={
-                                          colIndex === deletionFlagColIndex
-                                        }
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
-                                        $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
-                                      >
-                                        {colIndex === deletionFlagColIndex ? (
-                                          <StyledCheckbox
-                                            size="small"
-                                            checked={cell === "1"}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.checked ? "1" : "0",
-                                              )
-                                            }
-                                          />
-                                        ) : (
-                                          <StyledCellTextField
-                                            value={cell}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            variant="standard"
-                                            fullWidth
-                                            size="small"
-                                            multiline
-                                            maxRows={4}
-                                          />
-                                        )}
-                                      </StyledTableDataCell>
-                                    ))}
+                                    {row.map((cell, colIndex) => {
+                                      const colConfig = GPC_MASTER_COLUMNS[colIndex];
+                                      const isCheckbox = colConfig?.isCheckbox;
+                                      const isEditable = colConfig?.editable !== false;
+                                      const isSearchable = colConfig?.searchable && isEditable;
+                                      const searchOptions = colConfig?.key ? SEARCH_OPTIONS[colConfig.key] : undefined;
+
+                                      return (
+                                        <StyledTableDataCell
+                                          key={colIndex}
+                                          $deletionFlag={isCheckbox}
+                                          $isFrozen={freezeIndices.includes(
+                                            colIndex + 1,
+                                          )}
+                                          $leftOffset={getLeftOffset(
+                                            colIndex + 1,
+                                          )}
+                                          $rowIndex={i}
+                                          $isLastFrozen={isLastFrozenColumn(
+                                            colIndex + 1,
+                                          )}
+                                        >
+                                          {isCheckbox ? (
+                                            <StyledCheckbox
+                                              size="small"
+                                              checked={cell === "1"}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.checked ? "1" : "0",
+                                                )
+                                              }
+                                            />
+                                          ) : (
+                                            <SearchableCell
+                                              value={cell}
+                                              onChange={(value) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  value,
+                                                )
+                                              }
+                                              editable={isEditable}
+                                              searchable={isSearchable}
+                                              searchOptions={searchOptions}
+                                              searchTitle={colConfig?.label}
+                                            />
+                                          )}
+                                        </StyledTableDataCell>
+                                      );
+                                    })}
                                   </StyledTableBodyRow>
                                 );
                               })}

@@ -41,7 +41,8 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { STANDARD_COST_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { STANDARD_COST_MASTER_HEADERS, STANDARD_COST_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -110,7 +111,7 @@ const StyledTableHeaderCell = styled(TableCell)<{
     backgroundColor: theme.palette.table!.headerBg,
     color: theme.palette.common.white,
     fontWeight: 600,
-    borderBottom: `2px solid ${theme.palette.grey![200]}`,
+    border: `1px solid ${theme.palette.grey![200]}`,
 
     ...($isFrozen && {
       position: "sticky",
@@ -176,7 +177,7 @@ const StyledTableIndexCell = styled(TableCell)<{
   minWidth: 48,
   maxWidth: 48,
   fontWeight: 600,
-  borderBottom: `1px solid ${theme.palette.grey![200]}`,
+  border: `1px solid ${theme.palette.grey![200]}`,
   backgroundColor:
     $isFrozen && $rowIndex !== undefined
       ? $rowIndex % 2 === 0
@@ -211,7 +212,7 @@ const StyledTableDataCell = styled(TableCell)<{
     $rowIndex,
     $isLastFrozen,
   }) => ({
-    borderBottom: `1px solid ${theme.palette.grey![200]}`,
+    border: `1px solid ${theme.palette.grey![200]}`,
     padding: "4px 8px",
     minWidth: 0,
     whiteSpace: "normal",
@@ -254,8 +255,6 @@ const StyledTableDataCell = styled(TableCell)<{
         }),
       }),
 
-    /* AI Generated Code by Deloitte + Cursor (END) */
-
     ...($deletionFlag && {
       width: 110,
       minWidth: 110,
@@ -269,6 +268,9 @@ const StyledTableHeaderText = styled(Typography)(({ theme }) => ({
   fontSize: "0.875rem",
   fontWeight: 600,
   color: theme.palette.common.white,
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  lineHeight: 1.3,
 }));
 
 const StyledCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -453,7 +455,7 @@ const StyledPreviewTableHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   fontWeight: 600,
   color: theme.palette.common.white,
-  borderBottom: `2px solid ${theme.palette.grey![200]}`,
+  border: `1px solid ${theme.palette.grey![200]}`,
   minWidth: 120,
 }));
 
@@ -467,7 +469,7 @@ const StyledPreviewTableBodyRow = styled(TableRow)<{ $index: number }>(
 );
 
 const StyledPreviewTableDataCell = styled(TableCell)(({ theme }) => ({
-  borderBottom: `1px solid ${theme.palette.grey![200]}`,
+  border: `1px solid ${theme.palette.grey![200]}`,
   color: theme.palette.grey![700],
 }));
 
@@ -496,8 +498,46 @@ const MANUFACTURERS = [
   "Acme Corp",
   "Beta Inc",
 ];
-const BASE_CODES = ["BASE-001", "BASE-002", "BASE-003", "BASE-004"];
+const MFR_PART_NUMBERS = [
+  "PART-1001",
+  "PART-2002",
+  "PART-1003",
+  "PART-3001",
+  "PART-4001",
+];
+const LOCATION_CODES = ["LOC-001", "LOC-002", "LOC-003", "LOC-004"];
 const CORPORATE_CODES = ["CORP-001", "CORP-002", "CORP-003", "CORP-004"];
+
+// Search options mapping by column key
+const SEARCH_OPTIONS: Record<string, string[]> = {
+  mfrPartNumber: MFR_PART_NUMBERS,
+  manufacturer: MANUFACTURERS,
+  locationCode: LOCATION_CODES,
+  corporateCode: CORPORATE_CODES,
+};
+
+// Mapping from code to name for associated columns
+const MANUFACTURER_NAME_MAP: Record<string, string> = {
+  "MFR-001": "Acme Corp",
+  "MFR-002": "Beta Inc",
+  "MFR-003": "Gamma Ltd",
+  "Acme Corp": "Acme Corp",
+  "Beta Inc": "Beta Inc",
+};
+
+const LOCATION_NAME_MAP: Record<string, string> = {
+  "LOC-001": "Location Alpha",
+  "LOC-002": "Location Beta",
+  "LOC-003": "Location Gamma",
+  "LOC-004": "Location Delta",
+};
+
+const CORPORATE_NAME_MAP: Record<string, string> = {
+  "CORP-001": "Corporate A",
+  "CORP-002": "Corporate B",
+  "CORP-003": "Corporate C",
+  "CORP-004": "Corporate D",
+};
 
 const DEFAULT_CSV_HEADERS = STANDARD_COST_MASTER_HEADERS;
 
@@ -531,8 +571,8 @@ export default function StandardCostMasterScreen() {
   const [manufacturerPartNumber, setManufacturerPartNumber] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [manufacturerName, setManufacturerName] = useState("");
-  const [baseCode, setBaseCode] = useState("");
-  const [baseName, setBaseName] = useState("");
+  const [locationCode, setLocationCode] = useState("");
+  const [locationName, setLocationName] = useState("");
   const [corporateCode, setCorporateCode] = useState("");
   const [corporateName, setCorporateName] = useState("");
   const [validFrom, setValidFrom] = useState<Date | null>(null);
@@ -543,9 +583,9 @@ export default function StandardCostMasterScreen() {
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
   const { debouncedValue: manufacturerDebounced } =
     useDebouncedSearch(manufacturerSearchInput);
-  const [baseCodeSearchInput, setBaseCodeSearchInput] = useState("");
-  const { debouncedValue: baseCodeDebounced } =
-    useDebouncedSearch(baseCodeSearchInput);
+  const [locationCodeSearchInput, setLocationCodeSearchInput] = useState("");
+  const { debouncedValue: locationCodeDebounced } =
+    useDebouncedSearch(locationCodeSearchInput);
   const [corporateCodeSearchInput, setCorporateCodeSearchInput] = useState("");
   const { debouncedValue: corporateCodeDebounced } =
     useDebouncedSearch(corporateCodeSearchInput);
@@ -554,8 +594,8 @@ export default function StandardCostMasterScreen() {
     manufacturerPartNumber: "",
     manufacturer: "",
     manufacturerName: "",
-    baseCode: "",
-    baseName: "",
+    locationCode: "",
+    locationName: "",
     corporateCode: "",
     corporateName: "",
     validFrom: null as Date | null,
@@ -565,8 +605,8 @@ export default function StandardCostMasterScreen() {
       manufacturerPartNumber,
       manufacturer,
       manufacturerName,
-      baseCode,
-      baseName,
+      locationCode,
+      locationName,
       corporateCode,
       corporateName,
       validFrom,
@@ -575,8 +615,8 @@ export default function StandardCostMasterScreen() {
     manufacturerPartNumber,
     manufacturer,
     manufacturerName,
-    baseCode,
-    baseName,
+    locationCode,
+    locationName,
     corporateCode,
     corporateName,
     validFrom,
@@ -588,9 +628,9 @@ export default function StandardCostMasterScreen() {
       )
     : [];
 
-  const baseCodeOptions = baseCodeDebounced
-    ? BASE_CODES.filter((c) =>
-        c.toLowerCase().includes(baseCodeDebounced.toLowerCase()),
+  const locationCodeOptions = locationCodeDebounced
+    ? LOCATION_CODES.filter((c) =>
+        c.toLowerCase().includes(locationCodeDebounced.toLowerCase()),
       )
     : [];
 
@@ -628,44 +668,56 @@ export default function StandardCostMasterScreen() {
           "PART-1001",
           "MFR-001",
           "Acme Corp",
-          "BASE-001",
-          "Base A",
+          "LOC-001",
+          "Location Alpha",
           "CORP-001",
           "Corporate A",
           "2026-01",
+          "USD",
+          "100.00",
+          "0",
           "0",
         ],
         [
           "PART-2002",
           "MFR-002",
           "Beta Inc",
-          "BASE-002",
-          "Base B",
+          "LOC-002",
+          "Location Beta",
           "CORP-002",
           "Corporate B",
           "2026-02",
+          "EUR",
+          "150.50",
+          "0",
           "0",
         ],
         [
           "PART-1003",
           "MFR-001",
           "Acme Corp",
-          "BASE-003",
-          "Base C",
+          "LOC-003",
+          "Location Gamma",
           "CORP-001",
           "Corporate A",
           "2026-03",
+          "JPY",
+          "12000",
+          "1",
           "0",
         ],
         [
           "PART-3001",
           "MFR-003",
           "Gamma Ltd",
-          "BASE-001",
-          "Base A",
+          "LOC-001",
+          "Location Alpha",
           "CORP-003",
           "Corporate C",
           "2026-01",
+          "USD",
+          "250.00",
+          "0",
           "0",
         ],
       ];
@@ -677,8 +729,8 @@ export default function StandardCostMasterScreen() {
           rowPartNum,
           rowMfr,
           rowMfrName,
-          rowBaseCode,
-          rowBaseName,
+          rowLocCode,
+          rowLocName,
           rowCorpCode,
           rowCorpName,
           rowValidFrom,
@@ -702,11 +754,11 @@ export default function StandardCostMasterScreen() {
             .includes(conditions.manufacturerName.toLowerCase())
         )
           return false;
-        if (conditions.baseCode.trim() && rowBaseCode !== conditions.baseCode)
+        if (conditions.locationCode.trim() && rowLocCode !== conditions.locationCode)
           return false;
         if (
-          conditions.baseName.trim() &&
-          !rowBaseName.toLowerCase().includes(conditions.baseName.toLowerCase())
+          conditions.locationName.trim() &&
+          !rowLocName.toLowerCase().includes(conditions.locationName.toLowerCase())
         )
           return false;
         if (
@@ -727,7 +779,7 @@ export default function StandardCostMasterScreen() {
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows: filteredRows.map((row) =>
-          row.length >= 9 ? row : [...row.slice(0, 8), "0"],
+          row.length >= 12 ? row : [...row.slice(0, 10), "0", "0"],
         ),
       });
       setSnackbarMessage(
@@ -801,11 +853,34 @@ export default function StandardCostMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
+    const colConfig = STANDARD_COST_MASTER_COLUMNS[colIndex];
+    let newRows = csvData.rows.map((row, rIdx) =>
       rIdx === rowIndex
         ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
         : row,
     );
+
+    // Handle associated column auto-population
+    if (colConfig?.associatedColumn) {
+      const assocColIndex = STANDARD_COST_MASTER_COLUMNS.findIndex(
+        (c) => c.key === colConfig.associatedColumn,
+      );
+      if (assocColIndex !== -1) {
+        let assocValue = "";
+        if (colConfig.key === "manufacturer") {
+          assocValue = MANUFACTURER_NAME_MAP[value] || "";
+        } else if (colConfig.key === "locationCode") {
+          assocValue = LOCATION_NAME_MAP[value] || "";
+        } else if (colConfig.key === "corporateCode") {
+          assocValue = CORPORATE_NAME_MAP[value] || "";
+        }
+        newRows = newRows.map((row, rIdx) =>
+          rIdx === rowIndex
+            ? row.map((cell, cIdx) => (cIdx === assocColIndex ? assocValue : cell))
+            : row,
+        );
+      }
+    }
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -891,15 +966,12 @@ export default function StandardCostMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const deletionFlagColIndex = displayData.headers.findIndex(
-    (h) => h === "Deletion Flag",
-  );
   const freezeColumnsConfig = [
     { index: 0, label: "#", width: 48 },
     ...displayData.headers.map((h, i) => ({
       index: i + 1,
       label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
+      isDeletionFlag: STANDARD_COST_MASTER_COLUMNS[i]?.isCheckbox === true,
     })),
   ];
   const {
@@ -1013,23 +1085,23 @@ export default function StandardCostMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={baseCodeOptions}
-                    value={baseCode || null}
-                    inputValue={baseCodeSearchInput}
+                    options={locationCodeOptions}
+                    value={locationCode || null}
+                    inputValue={locationCodeSearchInput}
                     onInputChange={(_event, newInputValue) =>
-                      setBaseCodeSearchInput(newInputValue)
+                      setLocationCodeSearchInput(newInputValue)
                     }
                     onChange={(_event, newValue) => {
                       const v = newValue ?? "";
-                      setBaseCode(v);
-                      setBaseCodeSearchInput(v);
+                      setLocationCode(v);
+                      setLocationCodeSearchInput(v);
                     }}
                     freeSolo
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Base Code"
+                        label="Location Code"
                         placeholder="Enter 3 characters to search"
                       />
                     )}
@@ -1039,9 +1111,9 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Base Name"
-                    value={baseName}
-                    onChange={(e) => setBaseName(e.target.value)}
+                    label="Location Name"
+                    value={locationName}
+                    onChange={(e) => setLocationName(e.target.value)}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -1237,7 +1309,7 @@ export default function StandardCostMasterScreen() {
                                   <StyledTableHeaderCell
                                     key={colIndex}
                                     $deletionFlag={
-                                      colIndex === deletionFlagColIndex
+                                      STANDARD_COST_MASTER_COLUMNS[colIndex]?.isCheckbox === true
                                     }
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
@@ -1271,54 +1343,59 @@ export default function StandardCostMasterScreen() {
                                     >
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
-                                    {row.map((cell, colIndex) => (
-                                      <StyledTableDataCell
-                                        key={colIndex}
-                                        $deletionFlag={
-                                          colIndex === deletionFlagColIndex
-                                        }
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
-                                        $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
-                                      >
-                                        {colIndex === deletionFlagColIndex ? (
-                                          <StyledCheckbox
-                                            size="small"
-                                            checked={cell === "1"}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.checked ? "1" : "0",
-                                              )
-                                            }
-                                          />
-                                        ) : (
-                                          <StyledCellTextField
-                                            value={cell}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            variant="standard"
-                                            fullWidth
-                                            size="small"
-                                            multiline
-                                            maxRows={4}
-                                          />
-                                        )}
-                                      </StyledTableDataCell>
-                                    ))}
+                                    {row.map((cell, colIndex) => {
+                                      const colConfig = STANDARD_COST_MASTER_COLUMNS[colIndex];
+                                      const isCheckbox = colConfig?.isCheckbox;
+                                      const isEditable = colConfig?.editable !== false;
+                                      const isSearchable = colConfig?.searchable && isEditable;
+                                      const searchOptions = colConfig?.key ? SEARCH_OPTIONS[colConfig.key] : undefined;
+
+                                      return (
+                                        <StyledTableDataCell
+                                          key={colIndex}
+                                          $deletionFlag={isCheckbox}
+                                          $isFrozen={freezeIndices.includes(
+                                            colIndex + 1,
+                                          )}
+                                          $leftOffset={getLeftOffset(
+                                            colIndex + 1,
+                                          )}
+                                          $rowIndex={i}
+                                          $isLastFrozen={isLastFrozenColumn(
+                                            colIndex + 1,
+                                          )}
+                                        >
+                                          {isCheckbox ? (
+                                            <StyledCheckbox
+                                              size="small"
+                                              checked={cell === "1"}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.checked ? "1" : "0",
+                                                )
+                                              }
+                                            />
+                                          ) : (
+                                            <SearchableCell
+                                              value={cell}
+                                              onChange={(value) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  value,
+                                                )
+                                              }
+                                              editable={isEditable}
+                                              searchable={isSearchable}
+                                              searchOptions={searchOptions}
+                                              searchTitle={colConfig?.label}
+                                            />
+                                          )}
+                                        </StyledTableDataCell>
+                                      );
+                                    })}
                                   </StyledTableBodyRow>
                                 );
                               })}

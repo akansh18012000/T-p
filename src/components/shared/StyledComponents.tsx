@@ -630,6 +630,9 @@ export const StyledTableHeaderText = styled(Typography)(({ theme }) => ({
   fontSize: "0.875rem",
   fontWeight: 600,
   color: theme.palette.common.white,
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  lineHeight: 1.3,
 }));
 
 export const StyledTableCellTypography = styled(Typography)(({ theme }) => ({

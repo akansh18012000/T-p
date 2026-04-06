@@ -56,7 +56,6 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
   StyledCheckbox,
-  StyledCellTextField,
   StyledDragDropZone,
   StyledUploadIconCircle,
   StyledCloudUploadIcon,
@@ -101,7 +100,8 @@ import {
 } from "@mui/icons-material";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
-import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS, KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -226,11 +226,11 @@ export default function KitItemClassificationMasterScreen() {
       const conditions = searchConditionsRef.current;
       await new Promise((r) => setTimeout(r, 500));
       const allRows: string[][] = [
-        ["KIT-PART-1001", "MFR-001", "LOC-001", "CLS-A", "2026-01", "0"],
-        ["KIT-PART-2002", "MFR-002", "LOC-002", "CLS-B", "2026-02", "0"],
-        ["KIT-PART-1003", "MFR-001", "LOC-003", "CLS-C", "2026-03", "0"],
-        ["KIT-PART-3001", "MFR-003", "LOC-004", "CLS-A", "2026-01", "0"],
-        ["KIT-PART-4001", "MFR-002", "LOC-005", "CLS-D", "2026-02", "0"],
+        ["KIT-PART-1001", "MFR-001", "Acme Corp", "COMP-001", "MFR-001", "LOC-001", "5", "0"],
+        ["KIT-PART-2002", "MFR-002", "Beta Inc", "COMP-002", "MFR-002", "LOC-002", "10", "0"],
+        ["KIT-PART-1003", "MFR-001", "Acme Corp", "COMP-003", "MFR-003", "LOC-003", "3", "0"],
+        ["KIT-PART-3001", "MFR-003", "Gamma Ltd", "COMP-004", "MFR-001", "LOC-004", "8", "0"],
+        ["KIT-PART-4001", "MFR-002", "Beta Inc", "COMP-005", "MFR-002", "LOC-005", "2", "0"],
       ];
       const filteredRows = allRows.filter((row) => {
         const [rowPartNum, rowMfr] = row.slice(0, 2);
@@ -251,7 +251,7 @@ export default function KitItemClassificationMasterScreen() {
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows: filteredRows.map((row) =>
-          row.length >= 6 ? row : [...row.slice(0, 5), "0"],
+          row.length >= 8 ? row : [...row.slice(0, 7), "0"],
         ),
       });
       setSnackbarMessage(
@@ -411,16 +411,13 @@ export default function KitItemClassificationMasterScreen() {
   };
 
   const displayData = csvData || getEmptyCsvData();
-  const deletionFlagColIndex = displayData.headers.findIndex(
-    (h) => h === "Deletion Flag",
-  );
 
   const freezeColumnsConfig = [
     { index: 0, label: "#", width: 48 },
     ...displayData.headers.map((h, i) => ({
       index: i + 1,
       label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
+      isDeletionFlag: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[i]?.isCheckbox === true,
     })),
   ];
   const {
@@ -681,7 +678,7 @@ export default function KitItemClassificationMasterScreen() {
                                   <StyledTableHeaderCell
                                     key={colIndex}
                                     $deletionFlag={
-                                      colIndex === deletionFlagColIndex
+                                      KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[colIndex]?.isCheckbox === true
                                     }
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
@@ -715,54 +712,56 @@ export default function KitItemClassificationMasterScreen() {
                                     >
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
-                                    {row.map((cell, colIndex) => (
-                                      <StyledTableDataCell
-                                        key={colIndex}
-                                        $deletionFlag={
-                                          colIndex === deletionFlagColIndex
-                                        }
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
-                                        $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
-                                      >
-                                        {colIndex === deletionFlagColIndex ? (
-                                          <StyledCheckbox
-                                            size="small"
-                                            checked={cell === "1"}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.checked ? "1" : "0",
-                                              )
-                                            }
-                                          />
-                                        ) : (
-                                          <StyledCellTextField
-                                            value={cell}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            variant="standard"
-                                            fullWidth
-                                            size="small"
-                                            multiline
-                                            maxRows={4}
-                                          />
-                                        )}
-                                      </StyledTableDataCell>
-                                    ))}
+                                    {row.map((cell, colIndex) => {
+                                      const colConfig = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[colIndex];
+                                      const isCheckbox = colConfig?.isCheckbox;
+                                      const isEditable = colConfig?.editable !== false;
+
+                                      return (
+                                        <StyledTableDataCell
+                                          key={colIndex}
+                                          $deletionFlag={isCheckbox}
+                                          $isFrozen={freezeIndices.includes(
+                                            colIndex + 1,
+                                          )}
+                                          $leftOffset={getLeftOffset(
+                                            colIndex + 1,
+                                          )}
+                                          $rowIndex={i}
+                                          $isLastFrozen={isLastFrozenColumn(
+                                            colIndex + 1,
+                                          )}
+                                        >
+                                          {isCheckbox ? (
+                                            <StyledCheckbox
+                                              size="small"
+                                              checked={cell === "1"}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.checked ? "1" : "0",
+                                                )
+                                              }
+                                            />
+                                          ) : (
+                                            <SearchableCell
+                                              value={cell}
+                                              onChange={(value) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  value,
+                                                )
+                                              }
+                                              editable={isEditable}
+                                              searchable={false}
+                                              searchTitle={colConfig?.label}
+                                            />
+                                          )}
+                                        </StyledTableDataCell>
+                                      );
+                                    })}
                                   </StyledTableBodyRow>
                                 );
                               })}

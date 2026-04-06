@@ -400,49 +400,97 @@ export const YEAR_MONTH_MASTER_HEADERS: string[] = [
 // Global Dad Master Screen
 // ---------------------------------------------------------------------------
 
-export const GLOBAL_DAD_MASTER_HEADERS: string[] = [
-  "System ID",
-  "Sales Base Code",
-  "Local Customer Code",
-  "Local Customer Name",
-  "Product Classification",
-  "Product Classification Name",
-  "Transfer Destination BU3",
-  "Transfer Destination BU3 Name",
-  "Pattern Id",
-  "Valid from",
-  "Validity end",
-  "Deletion flag",
+/** Column config for Global D&D Master table */
+export interface GlobalDadMasterColumnConfig {
+  key: string;
+  label: string;
+  /** If false, cell is read-only. Default true. */
+  editable?: boolean;
+  /** If true, shows search button for the cell */
+  searchable?: boolean;
+  /** If true, renders as checkbox */
+  isCheckbox?: boolean;
+}
+
+export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
+  { key: "systemId", label: "System ID", editable: false },
+  { key: "salesLocationCode", label: "Sales Location Code", editable: false },
+  { key: "localCustomerCode", label: "Local Customer Code", editable: false },
+  { key: "localCustomerName", label: "Local Customer Name", editable: false },
+  { key: "productClassification", label: "Product Classification", editable: false },
+  { key: "productClassificationName", label: "Product Classification Name", editable: false },
+  { key: "transferDestBU3", label: "Transfer Destination BU3", editable: true, searchable: true },
+  { key: "effectiveStartDate", label: "Effective Start Date", editable: true },
+  { key: "expirationDate", label: "Expiration Date", editable: true },
+  { key: "patternId", label: "Pattern Id", editable: false },
+  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
 ];
+
+export const GLOBAL_DAD_MASTER_HEADERS: string[] = GLOBAL_DAD_MASTER_COLUMNS.map((col) => col.label);
 
 // ---------------------------------------------------------------------------
 // Standard Cost Master Screen
 // ---------------------------------------------------------------------------
 
-export const STANDARD_COST_MASTER_HEADERS: string[] = [
-  "Manufacturer Part Number",
-  "Manufacturer",
-  "Manufacturer Name",
-  "Base Code",
-  "Base Name",
-  "Corporate Code",
-  "Corporate Name",
-  "Valid From",
-  "Deletion Flag",
+/** Column config for Standard Cost Master table */
+export interface StandardCostMasterColumnConfig {
+  key: string;
+  label: string;
+  /** If false, cell is read-only. Default true. */
+  editable?: boolean;
+  /** If true, shows search button for the cell */
+  searchable?: boolean;
+  /** Key of the column that gets auto-populated when this column value is selected */
+  associatedColumn?: string;
+  /** If true, renders as checkbox */
+  isCheckbox?: boolean;
+}
+
+export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
+  { key: "mfrPartNumber", label: "Mfr Part Number", editable: true, searchable: true },
+  { key: "manufacturer", label: "Manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
+  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
+  { key: "locationCode", label: "Location Code", editable: true, searchable: true, associatedColumn: "locationName" },
+  { key: "locationName", label: "Location Name", editable: false },
+  { key: "corporateCode", label: "Corporate Code", editable: true, searchable: true, associatedColumn: "corporateName" },
+  { key: "corporateName", label: "Corporate Name", editable: false },
+  { key: "effectiveStartDate", label: "Effective Start Date (Year/Month)", editable: true },
+  { key: "currency", label: "Currency", editable: true },
+  { key: "standardCost", label: "Standard Cost", editable: true },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
 ];
+
+/** Header labels array for backward compatibility */
+export const STANDARD_COST_MASTER_HEADERS: string[] = STANDARD_COST_MASTER_COLUMNS.map((col) => col.label);
 
 // ---------------------------------------------------------------------------
 // Kit Item Classification Master Screen
 // ---------------------------------------------------------------------------
 
-export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = [
-  "Kit Manufacturer Part Number",
-  "Kit Manufacturer",
-  "Local Item Code",
-  "Classification Code",
-  "Year Month",
-  "Deletion Flag",
+/** Column config for Kit Item Classification Master table */
+export interface KitItemClassificationMasterColumnConfig {
+  key: string;
+  label: string;
+  /** If false, cell is read-only. Default true. */
+  editable?: boolean;
+  /** If true, renders as checkbox */
+  isCheckbox?: boolean;
+}
+
+export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMasterColumnConfig[] = [
+  { key: "kitMfrPartNumber", label: "Kit Mfr Part Number", editable: false },
+  { key: "kitManufacturer", label: "Kit Manufacturer", editable: false },
+  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
+  { key: "componentMfrPartNumber", label: "Component Mfr Part Number", editable: false },
+  { key: "componentsManufacturer", label: "Components Manufacturer", editable: false },
+  { key: "componentLocationCode", label: "Component Location Code", editable: false },
+  { key: "quantity", label: "Quantity", editable: true },
+  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
 ];
+
+/** Header labels array for backward compatibility */
+export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS.map((col) => col.label);
 
 // ---------------------------------------------------------------------------
 // Fx Rate Entry Master Screen
@@ -571,15 +619,35 @@ export const LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 // GPC Master Screen
 // ---------------------------------------------------------------------------
 
-export const GPC_MASTER_HEADERS: string[] = [
-  "Manufacturer",
-  "Manufacturer Name",
-  "Manufacturer Part Number",
-  "GPC Code",
-  "GPC Name",
-  "Valid Year",
-  "Deletion Flag",
+/** Column config for GPC Master table */
+export interface GpcMasterColumnConfig {
+  key: string;
+  label: string;
+  /** If false, cell is read-only. Default true. */
+  editable?: boolean;
+  /** If true, shows search button for the cell */
+  searchable?: boolean;
+  /** Key of the column that gets auto-populated when this column value is selected */
+  associatedColumn?: string;
+  /** If true, renders as checkbox */
+  isCheckbox?: boolean;
+}
+
+export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
+  { key: "manufacturer", label: "Manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
+  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
+  { key: "mfrPartNumber", label: "Mfr Part Number", editable: true, searchable: true },
+  { key: "gpcCode", label: "GPC Code", editable: true, searchable: true, associatedColumn: "gpcName" },
+  { key: "gpcName", label: "GPC Name", editable: false },
+  { key: "validYear", label: "Valid Year", editable: true },
+  { key: "bu3Code", label: "BU3 Code", editable: false },
+  { key: "bu3Name", label: "BU3 Name", editable: false },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
 ];
+
+/** Header labels array for backward compatibility */
+export const GPC_MASTER_HEADERS: string[] = GPC_MASTER_COLUMNS.map((col) => col.label);
 
 // ---------------------------------------------------------------------------
 // Common Conversion Master Screen
