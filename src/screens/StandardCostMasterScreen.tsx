@@ -784,14 +784,14 @@ export default function StandardCostMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("standardCostMaster.searchCompletedWithData")
+          : t("standardCostMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("standardCostMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -799,7 +799,7 @@ export default function StandardCostMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("standardCostMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -815,7 +815,7 @@ export default function StandardCostMasterScreen() {
     link.download = `standard_cost_${validFromStr}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("standardCostMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -827,7 +827,7 @@ export default function StandardCostMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, newRow],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("standardCostMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -838,11 +838,11 @@ export default function StandardCostMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("standardCostMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("standardCostMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -931,13 +931,13 @@ export default function StandardCostMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("standardCostMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("standardCostMaster.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -949,17 +949,17 @@ export default function StandardCostMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("standardCostMaster.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("standardCostMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("standardCostMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -1025,7 +1025,7 @@ export default function StandardCostMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("standardCostMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -1041,7 +1041,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Manufacturer Part Number"
+                    label={t("standardCostMaster.manufacturerPartNumber")}
                     value={manufacturerPartNumber}
                     onChange={(e) => setManufacturerPartNumber(e.target.value)}
                   />
@@ -1066,8 +1066,8 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Manufacturer"
-                        placeholder="Enter 3 characters to search"
+                        label={t("standardCostMaster.manufacturer")}
+                        placeholder={t("standardCostMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -1076,7 +1076,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Manufacturer Name"
+                    label={t("standardCostMaster.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => setManufacturerName(e.target.value)}
                   />
@@ -1101,8 +1101,8 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Location Code"
-                        placeholder="Enter 3 characters to search"
+                        label={t("standardCostMaster.locationCode")}
+                        placeholder={t("standardCostMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -1111,7 +1111,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Location Name"
+                    label={t("standardCostMaster.locationName")}
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
                   />
@@ -1136,8 +1136,8 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Corporate Code"
-                        placeholder="Enter 3 characters to search"
+                        label={t("standardCostMaster.corporateCode")}
+                        placeholder={t("standardCostMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -1146,7 +1146,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Corporate Name"
+                    label={t("standardCostMaster.corporateName")}
                     value={corporateName}
                     onChange={(e) => setCorporateName(e.target.value)}
                   />
@@ -1155,7 +1155,7 @@ export default function StandardCostMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Valid from date"
+                      label={t("standardCostMaster.effectiveStartDate")}
                       value={validFrom}
                       onChange={(newValue) => setValidFrom(newValue)}
                       views={["year", "month"]}
@@ -1179,7 +1179,7 @@ export default function StandardCostMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("standardCostMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -1191,7 +1191,7 @@ export default function StandardCostMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("standardCostMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -1201,7 +1201,7 @@ export default function StandardCostMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("standardCostMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1209,7 +1209,7 @@ export default function StandardCostMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("standardCostMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1218,7 +1218,7 @@ export default function StandardCostMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("standardCostMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -1227,7 +1227,7 @@ export default function StandardCostMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("standardCostMaster.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -1241,7 +1241,7 @@ export default function StandardCostMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("standardCostMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -1274,10 +1274,10 @@ export default function StandardCostMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("standardCostMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("standardCostMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -1424,7 +1424,7 @@ export default function StandardCostMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">{t("standardCostMaster.uploadFile")}</StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1456,11 +1456,11 @@ export default function StandardCostMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("standardCostMaster.dropFileHere")
+                        : t("standardCostMaster.dragDropFile")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("standardCostMaster.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -1470,10 +1470,10 @@ export default function StandardCostMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("standardCostMaster.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("standardCostMaster.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
 
@@ -1497,7 +1497,7 @@ export default function StandardCostMasterScreen() {
                           onClick={handleUploadClick}
                           disabled={uploadStatus === "uploading"}
                         >
-                          Upload
+                          {t("upload.upload")}
                         </StyledUploadButton>
                         <StyledViewButton
                           variant="outlined"
@@ -1569,14 +1569,14 @@ export default function StandardCostMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("standardCostMaster.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("standardCostMaster.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>

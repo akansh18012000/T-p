@@ -385,14 +385,14 @@ export default function GlobalDadMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("globalDadMaster.searchCompletedWithData")
+          : t("globalDadMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("globalDadMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -400,7 +400,7 @@ export default function GlobalDadMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("globalDadMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -413,7 +413,7 @@ export default function GlobalDadMasterScreen() {
     link.download = "global_dad_master_export.csv";
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("globalDadMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -424,7 +424,7 @@ export default function GlobalDadMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, base.headers.map(() => "")],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("globalDadMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -433,11 +433,11 @@ export default function GlobalDadMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("globalDadMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("globalDadMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -466,7 +466,7 @@ export default function GlobalDadMasterScreen() {
       (row) => row[deletionFlagColIndex] !== "1",
     );
     setCsvData({ ...csvData, rows: newRows });
-    setSnackbarMessage("Row(s) deleted.");
+    setSnackbarMessage(t("globalDadMaster.rowsDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -543,7 +543,7 @@ export default function GlobalDadMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("globalDadMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -577,8 +577,8 @@ export default function GlobalDadMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="System ID"
-                        placeholder="Enter 3 characters to search"
+                        label={t("globalDadMaster.systemId")}
+                        placeholder={t("globalDadMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -587,7 +587,7 @@ export default function GlobalDadMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Sales Location Code"
+                    label={t("globalDadMaster.salesLocationCode")}
                     value={salesLocationCode}
                     onChange={(e) => {
                       setSalesLocationCode(e.target.value);
@@ -619,8 +619,8 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
-                          label="Local Customer Code"
-                          placeholder="Enter 3 characters to search"
+                          label={t("globalDadMaster.localCustomerCode")}
+                          placeholder={t("globalDadMaster.enterCharsToSearch")}
                         />
                       )}
                     />
@@ -656,8 +656,8 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
-                          label="Product Classification"
-                          placeholder="Enter 3 characters to search"
+                          label={t("globalDadMaster.productClassification")}
+                          placeholder={t("globalDadMaster.enterCharsToSearch")}
                         />
                       )}
                     />
@@ -693,8 +693,8 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
-                          label="Transfer Destination BU3"
-                          placeholder="Enter 3 characters to search"
+                          label={t("globalDadMaster.transferDestinationBU3")}
+                          placeholder={t("globalDadMaster.enterCharsToSearch")}
                         />
                       )}
                     />
@@ -711,7 +711,7 @@ export default function GlobalDadMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Pattern Id"
+                    label={t("globalDadMaster.patternId")}
                     value={patternId}
                     onChange={(e) => {
                       setPatternId(e.target.value);
@@ -723,7 +723,7 @@ export default function GlobalDadMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Effective Start Date"
+                      label={t("globalDadMaster.effectiveStartDate")}
                       value={effectiveStartDate}
                       onChange={(v) => {
                         setEffectiveStartDate(v);
@@ -739,7 +739,7 @@ export default function GlobalDadMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Expiration Date"
+                      label={t("globalDadMaster.expirationDate")}
                       value={expirationDate}
                       onChange={(v) => {
                         setExpirationDate(v);
@@ -764,7 +764,7 @@ export default function GlobalDadMasterScreen() {
                           }}
                         />
                       }
-                      label="Deletion flag"
+                      label={t("globalDadMaster.deletionFlag")}
                     />
                     <StyledSearchButton
                       variant="contained"
@@ -774,7 +774,7 @@ export default function GlobalDadMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("globalDadMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -786,7 +786,7 @@ export default function GlobalDadMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("globalDadMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -796,7 +796,7 @@ export default function GlobalDadMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("globalDadMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -804,7 +804,7 @@ export default function GlobalDadMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("globalDadMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -813,7 +813,7 @@ export default function GlobalDadMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("globalDadMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -822,7 +822,7 @@ export default function GlobalDadMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("globalDadMaster.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -836,7 +836,7 @@ export default function GlobalDadMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("globalDadMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -860,8 +860,10 @@ export default function GlobalDadMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("globalDadMaster.showingRows", {
+                              filtered: filteredRowIndices.length,
+                              total: displayData.rows.length,
+                            })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -869,10 +871,10 @@ export default function GlobalDadMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("globalDadMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("globalDadMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (

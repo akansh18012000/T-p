@@ -256,14 +256,14 @@ export default function KitItemClassificationMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("kitItemClassification.searchCompletedWithData")
+          : t("kitItemClassification.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("kitItemClassification.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -271,7 +271,7 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("kitItemClassification.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -284,7 +284,7 @@ export default function KitItemClassificationMasterScreen() {
     link.download = "kit_item_classification_export.csv";
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("kitItemClassification.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -296,7 +296,7 @@ export default function KitItemClassificationMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, newRow],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("kitItemClassification.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -307,11 +307,11 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("kitItemClassification.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("kitItemClassification.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -377,13 +377,13 @@ export default function KitItemClassificationMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("kitItemClassification.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("kitItemClassification.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -395,17 +395,17 @@ export default function KitItemClassificationMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("kitItemClassification.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("kitItemClassification.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("kitItemClassification.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -474,7 +474,7 @@ export default function KitItemClassificationMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("kitItemClassification.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -506,8 +506,8 @@ export default function KitItemClassificationMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Kit Manufacturer Part Number"
-                        placeholder="Enter 3 characters to search"
+                        label={t("kitItemClassification.kitManufacturerPartNumber")}
+                        placeholder={t("kitItemClassification.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -532,8 +532,8 @@ export default function KitItemClassificationMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="Kit Manufacturer"
-                        placeholder="Enter 3 characters to search"
+                        label={t("kitItemClassification.kitManufacturer")}
+                        placeholder={t("kitItemClassification.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -548,7 +548,7 @@ export default function KitItemClassificationMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("kitItemClassification.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -560,7 +560,7 @@ export default function KitItemClassificationMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("kitItemClassification.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -570,7 +570,7 @@ export default function KitItemClassificationMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("kitItemClassification.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -578,7 +578,7 @@ export default function KitItemClassificationMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("kitItemClassification.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -587,7 +587,7 @@ export default function KitItemClassificationMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("kitItemClassification.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -596,7 +596,7 @@ export default function KitItemClassificationMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("kitItemClassification.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -610,7 +610,7 @@ export default function KitItemClassificationMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("kitItemClassification.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -634,8 +634,10 @@ export default function KitItemClassificationMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("kitItemClassification.showingRows", {
+                              filtered: filteredRowIndices.length,
+                              total: displayData.rows.length,
+                            })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -643,10 +645,10 @@ export default function KitItemClassificationMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("kitItemClassification.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("kitItemClassification.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -790,7 +792,7 @@ export default function KitItemClassificationMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">{t("kitItemClassification.uploadFile")}</StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -822,11 +824,11 @@ export default function KitItemClassificationMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("kitItemClassification.dropFileHere")
+                        : t("kitItemClassification.dragDropFile")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("kitItemClassification.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -836,10 +838,10 @@ export default function KitItemClassificationMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("kitItemClassification.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("kitItemClassification.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
 
@@ -863,7 +865,7 @@ export default function KitItemClassificationMasterScreen() {
                           onClick={handleUploadClick}
                           disabled={uploadStatus === "uploading"}
                         >
-                          Upload
+                          {t("upload.upload")}
                         </StyledUploadButton>
                         <StyledViewButton
                           variant="outlined"
@@ -935,14 +937,14 @@ export default function KitItemClassificationMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("kitItemClassification.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("kitItemClassification.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>
