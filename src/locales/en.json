@@ -417,7 +417,13 @@
     "registrationCompleted": "Registration completed successfully.",
     "fileUploadedSuccess": "File uploaded successfully.",
     "parseCsvFailed": "Failed to parse CSV.",
-    "uploadCancelled": "Upload cancelled."
+    "uploadCancelled": "Upload cancelled.",
+    "mfrPartNumber": "Mfr Part Number",
+    "validYear": "Valid Year",
+    "bu3Code": "BU3 Code",
+    "bu3Name": "BU3 Name",
+    "overwritePreventionFlag": "Overwrite Prevention Flag",
+    "deletionFlag": "Deletion Flag"
   },
   "cellSearch": {
     "title": "Search",
@@ -432,12 +438,15 @@
     "systemId": "System ID",
     "salesLocationCode": "Sales Location Code",
     "localCustomerCode": "Local Customer Code",
+    "localCustomerName": "Local Customer Name",
     "productClassification": "Product Classification",
+    "productClassificationName": "Product Classification Name",
     "transferDestinationBU3": "Transfer Destination BU3",
+    "transferDestBU3": "Transfer Destination BU3",
     "patternId": "Pattern Id",
     "effectiveStartDate": "Effective Start Date",
     "expirationDate": "Expiration Date",
-    "deletionFlag": "Deletion flag",
+    "deletionFlag": "Deletion Flag",
     "search": "Search",
     "resultData": "Result Data",
     "addRow": "Add Row",
@@ -490,7 +499,14 @@
     "browseFiles": "Browse Files",
     "supportedFormatCsv": "Supported format: CSV",
     "cancel": "Cancel",
-    "register": "Register"
+    "register": "Register",
+    "kitMfrPartNumber": "Kit Mfr Part Number",
+    "manufacturerName": "Manufacturer Name",
+    "componentMfrPartNumber": "Component Mfr Part Number",
+    "componentsManufacturer": "Components Manufacturer",
+    "componentLocationCode": "Component Location Code",
+    "quantity": "Quantity",
+    "deletionFlag": "Deletion Flag"
   },
   "standardCostMaster": {
     "searchCondition": "Search Condition",
@@ -640,47 +656,12 @@
     "registrationInProgress": "Registration in progress...",
     "registrationCompleted": "Registration completed successfully."
   },
-  "globalDadMaster": {
-    "systemId": "System ID",
-    "salesLocationCode": "Sales Location Code",
-    "localCustomerCode": "Local Customer Code",
-    "localCustomerName": "Local Customer Name",
-    "productClassification": "Product Classification",
-    "productClassificationName": "Product Classification Name",
-    "transferDestBU3": "Transfer Destination BU3",
-    "effectiveStartDate": "Effective Start Date",
-    "expirationDate": "Expiration Date",
-    "patternId": "Pattern Id",
-    "deletionFlag": "Deletion Flag"
-  },
-  "kitItemClassificationMaster": {
-    "kitMfrPartNumber": "Kit Mfr Part Number",
-    "kitManufacturer": "Kit Manufacturer",
-    "manufacturerName": "Manufacturer Name",
-    "componentMfrPartNumber": "Component Mfr Part Number",
-    "componentsManufacturer": "Components Manufacturer",
-    "componentLocationCode": "Component Location Code",
-    "quantity": "Quantity",
-    "deletionFlag": "Deletion Flag"
-  },
   "fxRateEntryMaster": {
     "processingDate": "Processing Date",
     "currencyType": "Currency Type",
     "fromCurrency": "From Currency",
     "toCurrency": "To Currency",
     "exchangeRate": "Exchange Rate",
-    "deletionFlag": "Deletion Flag"
-  },
-  "gpcMasterColumns": {
-    "manufacturer": "Manufacturer",
-    "manufacturerName": "Manufacturer Name",
-    "mfrPartNumber": "Mfr Part Number",
-    "gpcCode": "GPC Code",
-    "gpcName": "GPC Name",
-    "validYear": "Valid Year",
-    "bu3Code": "BU3 Code",
-    "bu3Name": "BU3 Name",
-    "overwritePreventionFlag": "Overwrite Prevention Flag",
     "deletionFlag": "Deletion Flag"
   },
   "tableCommon": {

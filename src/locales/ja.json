@@ -417,7 +417,13 @@
     "registrationCompleted": "登録が正常に完了しました。",
     "fileUploadedSuccess": "ファイルのアップロードに成功しました。",
     "parseCsvFailed": "CSVの解析に失敗しました。",
-    "uploadCancelled": "アップロードをキャンセルしました。"
+    "uploadCancelled": "アップロードをキャンセルしました。",
+    "mfrPartNumber": "メーカー品番",
+    "validYear": "有効年",
+    "bu3Code": "BU3コード",
+    "bu3Name": "BU3名",
+    "overwritePreventionFlag": "上書き防止フラグ",
+    "deletionFlag": "削除フラグ"
   },
   "cellSearch": {
     "title": "検索",
@@ -432,8 +438,11 @@
     "systemId": "システムID",
     "salesLocationCode": "販売拠点コード",
     "localCustomerCode": "ローカル顧客コード",
+    "localCustomerName": "ローカル顧客名",
     "productClassification": "製品分類",
+    "productClassificationName": "製品分類名",
     "transferDestinationBU3": "振替先BU3",
+    "transferDestBU3": "振替先BU3",
     "patternId": "パターンID",
     "effectiveStartDate": "有効開始日",
     "expirationDate": "有効終了日",
@@ -490,7 +499,14 @@
     "browseFiles": "ファイルを参照",
     "supportedFormatCsv": "対応形式: CSV",
     "cancel": "キャンセル",
-    "register": "登録"
+    "register": "登録",
+    "kitMfrPartNumber": "キットメーカー品番",
+    "manufacturerName": "メーカー名",
+    "componentMfrPartNumber": "構成品メーカー品番",
+    "componentsManufacturer": "構成品メーカー",
+    "componentLocationCode": "構成品ロケーションコード",
+    "quantity": "数量",
+    "deletionFlag": "削除フラグ"
   },
   "standardCostMaster": {
     "searchCondition": "検索条件",
@@ -640,47 +656,12 @@
     "registrationInProgress": "登録処理中...",
     "registrationCompleted": "登録が正常に完了しました。"
   },
-  "globalDadMaster": {
-    "systemId": "システムID",
-    "salesLocationCode": "販売ロケーションコード",
-    "localCustomerCode": "ローカル顧客コード",
-    "localCustomerName": "ローカル顧客名",
-    "productClassification": "製品分類",
-    "productClassificationName": "製品分類名",
-    "transferDestBU3": "振替先BU3",
-    "effectiveStartDate": "有効開始日",
-    "expirationDate": "有効期限",
-    "patternId": "パターンID",
-    "deletionFlag": "削除フラグ"
-  },
-  "kitItemClassificationMaster": {
-    "kitMfrPartNumber": "キットメーカー品番",
-    "kitManufacturer": "キットメーカー",
-    "manufacturerName": "メーカー名",
-    "componentMfrPartNumber": "構成品メーカー品番",
-    "componentsManufacturer": "構成品メーカー",
-    "componentLocationCode": "構成品ロケーションコード",
-    "quantity": "数量",
-    "deletionFlag": "削除フラグ"
-  },
   "fxRateEntryMaster": {
     "processingDate": "処理日",
     "currencyType": "通貨タイプ",
     "fromCurrency": "変換元通貨",
     "toCurrency": "変換先通貨",
     "exchangeRate": "為替レート",
-    "deletionFlag": "削除フラグ"
-  },
-  "gpcMasterColumns": {
-    "manufacturer": "メーカー",
-    "manufacturerName": "メーカー名",
-    "mfrPartNumber": "メーカー品番",
-    "gpcCode": "GPCコード",
-    "gpcName": "GPC名",
-    "validYear": "有効年",
-    "bu3Code": "BU3コード",
-    "bu3Name": "BU3名",
-    "overwritePreventionFlag": "上書き防止フラグ",
     "deletionFlag": "削除フラグ"
   },
   "tableCommon": {

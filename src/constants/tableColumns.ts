@@ -535,14 +535,14 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = KIT_ITEM_CLASSIF
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "kitItemClassificationMaster.kitMfrPartNumber" },
-  { index: 2, labelKey: "kitItemClassificationMaster.kitManufacturer" },
-  { index: 3, labelKey: "kitItemClassificationMaster.manufacturerName" },
-  { index: 4, labelKey: "kitItemClassificationMaster.componentMfrPartNumber" },
-  { index: 5, labelKey: "kitItemClassificationMaster.componentsManufacturer" },
-  { index: 6, labelKey: "kitItemClassificationMaster.componentLocationCode" },
-  { index: 7, labelKey: "kitItemClassificationMaster.quantity" },
-  { index: 8, labelKey: "kitItemClassificationMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "kitItemClassification.kitMfrPartNumber" },
+  { index: 2, labelKey: "kitItemClassification.kitManufacturer" },
+  { index: 3, labelKey: "kitItemClassification.manufacturerName" },
+  { index: 4, labelKey: "kitItemClassification.componentMfrPartNumber" },
+  { index: 5, labelKey: "kitItemClassification.componentsManufacturer" },
+  { index: 6, labelKey: "kitItemClassification.componentLocationCode" },
+  { index: 7, labelKey: "kitItemClassification.quantity" },
+  { index: 8, labelKey: "kitItemClassification.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -714,16 +714,16 @@ export const GPC_MASTER_HEADERS: string[] = GPC_MASTER_COLUMNS.map((col) => col.
 
 export const GPC_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "gpcMasterColumns.manufacturer" },
-  { index: 2, labelKey: "gpcMasterColumns.manufacturerName" },
-  { index: 3, labelKey: "gpcMasterColumns.mfrPartNumber" },
-  { index: 4, labelKey: "gpcMasterColumns.gpcCode" },
-  { index: 5, labelKey: "gpcMasterColumns.gpcName" },
-  { index: 6, labelKey: "gpcMasterColumns.validYear" },
-  { index: 7, labelKey: "gpcMasterColumns.bu3Code" },
-  { index: 8, labelKey: "gpcMasterColumns.bu3Name" },
-  { index: 9, labelKey: "gpcMasterColumns.overwritePreventionFlag" },
-  { index: 10, labelKey: "gpcMasterColumns.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "gpcMaster.manufacturer" },
+  { index: 2, labelKey: "gpcMaster.manufacturerName" },
+  { index: 3, labelKey: "gpcMaster.mfrPartNumber" },
+  { index: 4, labelKey: "gpcMaster.gpcCode" },
+  { index: 5, labelKey: "gpcMaster.gpcName" },
+  { index: 6, labelKey: "gpcMaster.validYear" },
+  { index: 7, labelKey: "gpcMaster.bu3Code" },
+  { index: 8, labelKey: "gpcMaster.bu3Name" },
+  { index: 9, labelKey: "gpcMaster.overwritePreventionFlag" },
+  { index: 10, labelKey: "gpcMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
