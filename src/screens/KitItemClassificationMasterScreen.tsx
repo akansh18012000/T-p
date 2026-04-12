@@ -100,7 +100,7 @@ import {
 } from "@mui/icons-material";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
-import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS, KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS, KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS, KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -412,14 +412,10 @@ export default function KitItemClassificationMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[i]?.isCheckbox === true,
-    })),
-  ];
+  const freezeColumnsConfig = KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,

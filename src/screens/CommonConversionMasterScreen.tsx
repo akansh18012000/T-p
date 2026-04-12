@@ -99,7 +99,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { COMMON_CONVERSION_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -110,6 +110,7 @@ import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
@@ -142,6 +143,8 @@ const ITEM_OPTIONS: ItemWithDetails[] = [
     abstract: "Abstract description for Item Epsilon.",
   },
 ];
+
+const ITEM_ID_OPTIONS: string[] = ITEM_OPTIONS.map((o) => o.id);
 
 const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 
@@ -258,8 +261,11 @@ export default function CommonConversionMasterScreen() {
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
-    (h) => h === "Deletion flag",
+    (h) => h === "Deletion Flag",
   );
+  const itemIdColIndex = 0;
+  const itemNameColIndex = 1;
+  const abstractColIndex = 9;
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -276,6 +282,7 @@ export default function CommonConversionMasterScreen() {
       const allRows: string[][] = [
         [
           "ITEM-001",
+          "Item Alpha",
           "SYS-001",
           "PC1-01",
           "Preconv 1 Name A",
@@ -283,10 +290,17 @@ export default function CommonConversionMasterScreen() {
           "Preconv 2 Name A",
           "CONV-01",
           "Converted Name A",
+          "Abstract description for Item Alpha.",
+          "",
+          "",
+          "",
+          "",
+          "",
           "0",
         ],
         [
           "ITEM-002",
+          "Item Beta",
           "SYS-001",
           "PC1-02",
           "Preconv 1 Name B",
@@ -294,10 +308,17 @@ export default function CommonConversionMasterScreen() {
           "Preconv 2 Name B",
           "CONV-02",
           "Converted Name B",
+          "Abstract description for Item Beta.",
+          "",
+          "",
+          "",
+          "",
+          "",
           "0",
         ],
         [
           "ITEM-003",
+          "Item Gamma",
           "SYS-002",
           "PC1-03",
           "Preconv 1 Name C",
@@ -305,11 +326,19 @@ export default function CommonConversionMasterScreen() {
           "Preconv 2 Name C",
           "CONV-03",
           "Converted Name C",
+          "Abstract description for Item Gamma.",
+          "",
+          "",
+          "",
+          "",
+          "",
           "0",
         ],
       ];
       const filteredRows = allRows.filter((row) => {
-        const [rowItemId, rowSystemId, , , , , , , rowDelFlag] = row;
+        const rowItemId = row[0];
+        const rowSystemId = row[2];
+        const rowDelFlag = row[15];
         if (conditions.itemId.trim() && rowItemId !== conditions.itemId)
           return false;
         if (conditions.systemId.trim() && rowSystemId !== conditions.systemId)
@@ -386,11 +415,17 @@ export default function CommonConversionMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
-      rIdx === rowIndex
-        ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
-        : row,
-    );
+    const newRows = csvData.rows.map((row, rIdx) => {
+      if (rIdx !== rowIndex) return row;
+      const newRow = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
+      // If Item ID changed, auto-fill Item Name and Abstract
+      if (colIndex === itemIdColIndex) {
+        const selectedItem = ITEM_OPTIONS.find((o) => o.id === value);
+        newRow[itemNameColIndex] = selectedItem ? selectedItem.name : "";
+        newRow[abstractColIndex] = selectedItem ? selectedItem.abstract : "";
+      }
+      return newRow;
+    });
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -474,14 +509,10 @@ export default function CommonConversionMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
-    })),
-  ];
+  const freezeColumnsConfig = COMMON_CONVERSION_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,
@@ -572,10 +603,10 @@ export default function CommonConversionMasterScreen() {
                     />
                     {itemSelected && (
                       <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption">
+                        <StyledPrimaryCaption variant="caption" fontSize={16}>
                           Name: {itemSelected.name}
                         </StyledPrimaryCaption>
-                        <StyledPrimaryCaption variant="caption">
+                        <StyledPrimaryCaption variant="caption" fontSize={16}>
                           Abstract: {itemSelected.abstract}
                         </StyledPrimaryCaption>
                       </StyledItemDetailsBox>
@@ -903,6 +934,28 @@ export default function CommonConversionMasterScreen() {
                                                 e.target.checked ? "1" : "0",
                                               )
                                             }
+                                          />
+                                        ) : colIndex === itemIdColIndex ? (
+                                          <SearchableCell
+                                            value={cell}
+                                            onChange={(v) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                v,
+                                              )
+                                            }
+                                            editable
+                                            searchable
+                                            searchOptions={ITEM_ID_OPTIONS}
+                                            searchTitle="Search Item ID"
+                                          />
+                                        ) : colIndex === itemNameColIndex ||
+                                          colIndex === abstractColIndex ? (
+                                          <SearchableCell
+                                            value={cell}
+                                            onChange={() => {}}
+                                            editable={false}
                                           />
                                         ) : (
                                           <StyledCellTextField

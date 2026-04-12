@@ -101,7 +101,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { GPC_MASTER_HEADERS, GPC_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { GPC_MASTER_HEADERS, GPC_MASTER_COLUMNS, GPC_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -566,14 +566,10 @@ export default function GpcMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: GPC_MASTER_COLUMNS[i]?.isCheckbox === true,
-    })),
-  ];
+  const freezeColumnsConfig = GPC_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,

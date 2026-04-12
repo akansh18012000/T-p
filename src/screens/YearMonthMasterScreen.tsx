@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -19,10 +18,7 @@ import {
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { YEAR_MONTH_MASTER_HEADERS } from "../constants/tableColumns.js";
-import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
-import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -60,6 +56,7 @@ import {
   StyledContentBox,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 
 const YearMonthContentBox = styled(StyledContentBox)({
   maxWidth: "100%",
@@ -68,6 +65,8 @@ const YearMonthContentBox = styled(StyledContentBox)({
 });
 
 const TABLE_HEADERS = YEAR_MONTH_MASTER_HEADERS;
+const LAST_UPDATED_DATE_COL_INDEX = 4;
+const LAST_UPDATED_BY_COL_INDEX = 5;
 
 const MOCK_INITIAL_ROWS: string[][] = [
   [
@@ -202,20 +201,6 @@ function YearMonthMasterScreen() {
   });
   const hasRows = rows.length > 0;
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...TABLE_HEADERS.map((h, i) => ({ index: i + 1, label: h })),
-  ];
-  const {
-    freezeIndices,
-    dialogOpen,
-    setDialogOpen,
-    handleSave,
-    getLeftOffset,
-    initialSelected,
-    isLastFrozenColumn,
-  } = useFreezeColumns("freezeColumns_YearMonth", freezeColumnsConfig);
-
   return (
     <>
       <StyledMainPaper elevation={2}>
@@ -259,12 +244,6 @@ function YearMonthMasterScreen() {
                 >
                   Registration
                 </StyledPrimaryContainedButton>
-
-                <FreezeColumnsButton
-                  component={StyledSecondaryButton}
-                  onClick={() => setDialogOpen(true)}
-                  disabled={!hasRows}
-                />
               </StyledToolbarButtonsBox>
             </StyledToolbar>
             <StyledSearchBarBox>
@@ -311,36 +290,15 @@ function YearMonthMasterScreen() {
               </StyledEmptyStateBox>
             ) : (
               <>
-                <FreezeColumnsDialog
-                  open={dialogOpen}
-                  onClose={() => setDialogOpen(false)}
-                  columns={freezeColumnsConfig.map((c) => ({
-                    index: c.index,
-                    label: c.label,
-                  }))}
-                  initialSelected={initialSelected}
-                  onSave={handleSave}
-                />
-
                 <StyledResultTableContainer>
                   <StyledResultTable stickyHeader size="small">
                     <TableHead>
                       <TableRow>
-                        <StyledTableHeaderCell
-                          $indexCell
-                          $isFrozen={freezeIndices.includes(0)}
-                          $leftOffset={getLeftOffset(0)}
-                          $isLastFrozen={isLastFrozenColumn(0)}
-                        >
+                        <StyledTableHeaderCell $indexCell>
                           #
                         </StyledTableHeaderCell>
                         {TABLE_HEADERS.map((header, colIndex) => (
-                          <StyledTableHeaderCell
-                            key={colIndex}
-                            $isFrozen={freezeIndices.includes(colIndex + 1)}
-                            $leftOffset={getLeftOffset(colIndex + 1)}
-                            $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
-                          >
+                          <StyledTableHeaderCell key={colIndex}>
                             <StyledTableHeaderText variant="body2">
                               {header}
                             </StyledTableHeaderText>
@@ -354,37 +312,35 @@ function YearMonthMasterScreen() {
                         const row = rows[originalRowIndex];
                         return (
                           <StyledTableBodyRow key={originalRowIndex} $index={i}>
-                            <StyledTableIndexCell
-                              $isFrozen={freezeIndices.includes(0)}
-                              $leftOffset={getLeftOffset(0)}
-                              $rowIndex={i}
-                              $isLastFrozen={isLastFrozenColumn(0)}
-                            >
+                            <StyledTableIndexCell $rowIndex={i}>
                               {pageOffset + i + 1}
                             </StyledTableIndexCell>
                             {row.map((cell, colIndex) => (
-                              <StyledTableDataCell
-                                key={colIndex}
-                                $isFrozen={freezeIndices.includes(colIndex + 1)}
-                                $leftOffset={getLeftOffset(colIndex + 1)}
-                                $rowIndex={i}
-                                $isLastFrozen={isLastFrozenColumn(colIndex + 1)}
-                              >
-                                <StyledCellTextField
-                                  value={cell}
-                                  onChange={(e) =>
-                                    handleCellEdit(
-                                      originalRowIndex,
-                                      colIndex,
-                                      e.target.value,
-                                    )
-                                  }
-                                  variant="standard"
-                                  fullWidth
-                                  size="small"
-                                  multiline
-                                  maxRows={4}
-                                />
+                              <StyledTableDataCell key={colIndex} $rowIndex={i}>
+                                {colIndex === LAST_UPDATED_DATE_COL_INDEX ||
+                                colIndex === LAST_UPDATED_BY_COL_INDEX ? (
+                                  <SearchableCell
+                                    value={cell}
+                                    onChange={() => {}}
+                                    editable={false}
+                                  />
+                                ) : (
+                                  <StyledCellTextField
+                                    value={cell}
+                                    onChange={(e) =>
+                                      handleCellEdit(
+                                        originalRowIndex,
+                                        colIndex,
+                                        e.target.value,
+                                      )
+                                    }
+                                    variant="standard"
+                                    fullWidth
+                                    size="small"
+                                    multiline
+                                    maxRows={4}
+                                  />
+                                )}
                               </StyledTableDataCell>
                             ))}
                           </StyledTableBodyRow>

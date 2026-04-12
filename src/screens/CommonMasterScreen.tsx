@@ -25,7 +25,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { COMMON_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { COMMON_MASTER_HEADERS, COMMON_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -47,7 +47,6 @@ import {
   StyledPrimaryCaption,
   StyledSearchButtonsBox,
   StyledFormControlLabel,
-  StyledClearButton,
   StyledSearchButton,
   StyledResultBorderBox,
   StyledResultPaper,
@@ -79,6 +78,7 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
 
 type GroupWithName = { id: string; name: string };
 type CodeWithName = { code: string; name: string };
@@ -98,6 +98,8 @@ const CODE_OPTIONS: CodeWithName[] = [
   { code: "COD-004", name: "Code Name Four" },
   { code: "COD-005", name: "Code Name Five" },
 ];
+
+const GROUP_ID_OPTIONS: string[] = GROUP_OPTIONS.map((o) => o.id);
 
 const DEFAULT_CSV_HEADERS = COMMON_MASTER_HEADERS;
 
@@ -176,8 +178,10 @@ export default function CommonMasterScreen() {
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
-    (h) => h === "Deletion flag",
+    (h) => h === "Deletion Flag",
   );
+  const groupIdColIndex = 0;
+  const groupNameColIndex = 1;
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -192,15 +196,17 @@ export default function CommonMasterScreen() {
       const conditions = searchConditionsRef.current;
       await new Promise((r) => setTimeout(r, 500));
       const allRows: string[][] = [
-        ["GRP-001", "Group Alpha", "COD-001", "Code Name One", "0"],
-        ["GRP-002", "Group Beta", "COD-002", "Code Name Two", "0"],
-        ["GRP-003", "Group Gamma", "COD-003", "Code Name Three", "0"],
-        ["GRP-001", "Group Alpha", "COD-004", "Code Name Four", "1"],
-        ["GRP-002", "Group Beta", "COD-005", "Code Name Five", "0"],
+        ["GRP-001", "Group Alpha", "COD-001", "Code Name One", "コード名1", "Abstract 1", "1", "", "", "", "", "", "0"],
+        ["GRP-002", "Group Beta", "COD-002", "Code Name Two", "コード名2", "Abstract 2", "2", "", "", "", "", "", "0"],
+        ["GRP-003", "Group Gamma", "COD-003", "Code Name Three", "コード名3", "Abstract 3", "3", "", "", "", "", "", "0"],
+        ["GRP-001", "Group Alpha", "COD-004", "Code Name Four", "コード名4", "Abstract 4", "4", "", "", "", "", "", "1"],
+        ["GRP-002", "Group Beta", "COD-005", "Code Name Five", "コード名5", "Abstract 5", "5", "", "", "", "", "", "0"],
       ];
       const filteredRows = allRows.filter((row) => {
-        const [rowGroupId, rowGroupName, rowCode, rowCodeName, rowDelFlag] =
-          row;
+        const rowGroupId = row[0];
+        const rowCode = row[2];
+        const rowCodeName = row[3];
+        const rowDelFlag = row[12];
         if (conditions.groupId.trim() && rowGroupId !== conditions.groupId)
           return false;
         if (conditions.code.trim() && rowCode !== conditions.code) return false;
@@ -281,11 +287,16 @@ export default function CommonMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
-      rIdx === rowIndex
-        ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
-        : row,
-    );
+    const newRows = csvData.rows.map((row, rIdx) => {
+      if (rIdx !== rowIndex) return row;
+      const newRow = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
+      // If Group Id changed, auto-fill Group Name
+      if (colIndex === groupIdColIndex) {
+        const selectedGroup = GROUP_OPTIONS.find((o) => o.id === value);
+        newRow[groupNameColIndex] = selectedGroup ? selectedGroup.name : "";
+      }
+      return newRow;
+    });
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -306,14 +317,10 @@ export default function CommonMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
-    })),
-  ];
+  const freezeColumnsConfig = COMMON_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,
@@ -406,7 +413,7 @@ export default function CommonMasterScreen() {
                       )}
                     />
                     {groupSelected && (
-                      <StyledPrimaryCaption variant="caption">
+                      <StyledPrimaryCaption variant="caption" fontSize={16}>
                         {groupSelected.name}
                       </StyledPrimaryCaption>
                     )}
@@ -480,25 +487,6 @@ export default function CommonMasterScreen() {
                       }
                       label="Deletion flag"
                     />
-                    <StyledClearButton
-                      variant="outlined"
-                      onClick={() => {
-                        setGroupId("");
-                        setGroupIdSearchInput("");
-                        setCode("");
-                        setCodeSearchInput("");
-                        setCodeName("");
-                        setDeletionFlag(false);
-                        searchConditionsRef.current = {
-                          groupId: "",
-                          code: "",
-                          codeName: "",
-                          deletionFlag: false,
-                        };
-                      }}
-                    >
-                      Clear
-                    </StyledClearButton>
                     <StyledSearchButton
                       variant="contained"
                       onClick={() => {
@@ -636,7 +624,7 @@ export default function CommonMasterScreen() {
                                 {displayData.headers.map((header, colIndex) => (
                                   <StyledTableHeaderCell
                                     key={colIndex}
-                                    $deletionFlag={header === "Deletion flag"}
+                                    $deletionFlag={header === "Deletion Flag"}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -697,6 +685,27 @@ export default function CommonMasterScreen() {
                                                 e.target.checked ? "1" : "0",
                                               )
                                             }
+                                          />
+                                        ) : colIndex === groupIdColIndex ? (
+                                          <SearchableCell
+                                            value={cell}
+                                            onChange={(v) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                v,
+                                              )
+                                            }
+                                            editable
+                                            searchable
+                                            searchOptions={GROUP_ID_OPTIONS}
+                                            searchTitle="Search Group Id"
+                                          />
+                                        ) : colIndex === groupNameColIndex ? (
+                                          <SearchableCell
+                                            value={cell}
+                                            onChange={() => {}}
+                                            editable={false}
                                           />
                                         ) : (
                                           <StyledCellTextField

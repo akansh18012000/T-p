@@ -389,10 +389,10 @@ export const ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS: I18nColumnConfig[] =
 
 export const YEAR_MONTH_MASTER_HEADERS: string[] = [
   "Processing Classification",
-  "Process Name",
+  "Processing Name",
   "Processing Year",
   "Processing Date",
-  "Last Updated",
+  "Last Updated Date",
   "Last Updated By",
 ];
 
@@ -427,6 +427,21 @@ export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
 ];
 
 export const GLOBAL_DAD_MASTER_HEADERS: string[] = GLOBAL_DAD_MASTER_COLUMNS.map((col) => col.label);
+
+export const GLOBAL_DAD_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "globalDadMaster.systemId" },
+  { index: 2, labelKey: "globalDadMaster.salesLocationCode" },
+  { index: 3, labelKey: "globalDadMaster.localCustomerCode" },
+  { index: 4, labelKey: "globalDadMaster.localCustomerName" },
+  { index: 5, labelKey: "globalDadMaster.productClassification" },
+  { index: 6, labelKey: "globalDadMaster.productClassificationName" },
+  { index: 7, labelKey: "globalDadMaster.transferDestBU3" },
+  { index: 8, labelKey: "globalDadMaster.effectiveStartDate" },
+  { index: 9, labelKey: "globalDadMaster.expirationDate" },
+  { index: 10, labelKey: "globalDadMaster.patternId" },
+  { index: 11, labelKey: "globalDadMaster.deletionFlag", width: 80, isDeletionFlag: true },
+];
 
 // ---------------------------------------------------------------------------
 // Standard Cost Master Screen
@@ -464,6 +479,22 @@ export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
 /** Header labels array for backward compatibility */
 export const STANDARD_COST_MASTER_HEADERS: string[] = STANDARD_COST_MASTER_COLUMNS.map((col) => col.label);
 
+export const STANDARD_COST_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "standardCostMaster.mfrPartNumber" },
+  { index: 2, labelKey: "standardCostMaster.manufacturer" },
+  { index: 3, labelKey: "standardCostMaster.manufacturerName" },
+  { index: 4, labelKey: "standardCostMaster.locationCode" },
+  { index: 5, labelKey: "standardCostMaster.locationName" },
+  { index: 6, labelKey: "standardCostMaster.corporateCode" },
+  { index: 7, labelKey: "standardCostMaster.corporateName" },
+  { index: 8, labelKey: "standardCostMaster.effectiveStartDate" },
+  { index: 9, labelKey: "standardCostMaster.currency" },
+  { index: 10, labelKey: "standardCostMaster.standardCost" },
+  { index: 11, labelKey: "standardCostMaster.overwritePreventionFlag" },
+  { index: 12, labelKey: "standardCostMaster.deletionFlag", width: 80, isDeletionFlag: true },
+];
+
 // ---------------------------------------------------------------------------
 // Kit Item Classification Master Screen
 // ---------------------------------------------------------------------------
@@ -492,6 +523,18 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMaster
 /** Header labels array for backward compatibility */
 export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS.map((col) => col.label);
 
+export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "kitItemClassificationMaster.kitMfrPartNumber" },
+  { index: 2, labelKey: "kitItemClassificationMaster.kitManufacturer" },
+  { index: 3, labelKey: "kitItemClassificationMaster.manufacturerName" },
+  { index: 4, labelKey: "kitItemClassificationMaster.componentMfrPartNumber" },
+  { index: 5, labelKey: "kitItemClassificationMaster.componentsManufacturer" },
+  { index: 6, labelKey: "kitItemClassificationMaster.componentLocationCode" },
+  { index: 7, labelKey: "kitItemClassificationMaster.quantity" },
+  { index: 8, labelKey: "kitItemClassificationMaster.deletionFlag", width: 80, isDeletionFlag: true },
+];
+
 // ---------------------------------------------------------------------------
 // Fx Rate Entry Master Screen
 // ---------------------------------------------------------------------------
@@ -503,6 +546,16 @@ export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
   "To Currency",
   "Exchange Rate",
   "Deletion Flag",
+];
+
+export const FX_RATE_ENTRY_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "fxRateEntryMaster.processingDate" },
+  { index: 2, labelKey: "fxRateEntryMaster.currencyType" },
+  { index: 3, labelKey: "fxRateEntryMaster.fromCurrency" },
+  { index: 4, labelKey: "fxRateEntryMaster.toCurrency" },
+  { index: 5, labelKey: "fxRateEntryMaster.exchangeRate" },
+  { index: 6, labelKey: "fxRateEntryMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -649,20 +702,61 @@ export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
 /** Header labels array for backward compatibility */
 export const GPC_MASTER_HEADERS: string[] = GPC_MASTER_COLUMNS.map((col) => col.label);
 
+export const GPC_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "gpcMasterColumns.manufacturer" },
+  { index: 2, labelKey: "gpcMasterColumns.manufacturerName" },
+  { index: 3, labelKey: "gpcMasterColumns.mfrPartNumber" },
+  { index: 4, labelKey: "gpcMasterColumns.gpcCode" },
+  { index: 5, labelKey: "gpcMasterColumns.gpcName" },
+  { index: 6, labelKey: "gpcMasterColumns.validYear" },
+  { index: 7, labelKey: "gpcMasterColumns.bu3Code" },
+  { index: 8, labelKey: "gpcMasterColumns.bu3Name" },
+  { index: 9, labelKey: "gpcMasterColumns.overwritePreventionFlag" },
+  { index: 10, labelKey: "gpcMasterColumns.deletionFlag", width: 80, isDeletionFlag: true },
+];
+
 // ---------------------------------------------------------------------------
 // Common Conversion Master Screen
 // ---------------------------------------------------------------------------
 
 export const COMMON_CONVERSION_MASTER_HEADERS: string[] = [
-  "Item Id",
-  "System Id",
-  "Preconversion Code 1",
-  "Preconversion Code 1 Name",
-  "Preconversion Code 2",
-  "Preconversion Code 2 Name",
+  "Item ID",
+  "Item Name",
+  "System ID",
+  "Pre Conversion Code 1",
+  "Pre Conversion Name 1",
+  "Pre Conversion Code 2",
+  "Pre Conversion Name 2",
   "Converted Code",
-  "Converted Code Name",
-  "Deletion flag",
+  "Converted Name",
+  "Abstract",
+  "Reserve 1",
+  "Reserve 2",
+  "Reserve 3",
+  "Reserve 4",
+  "Reserve 5",
+  "Deletion Flag",
+];
+
+export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "commonConversionMaster.itemId" },
+  { index: 2, labelKey: "commonConversionMaster.itemName" },
+  { index: 3, labelKey: "commonConversionMaster.systemId" },
+  { index: 4, labelKey: "commonConversionMaster.preConversionCode1" },
+  { index: 5, labelKey: "commonConversionMaster.preConversionName1" },
+  { index: 6, labelKey: "commonConversionMaster.preConversionCode2" },
+  { index: 7, labelKey: "commonConversionMaster.preConversionName2" },
+  { index: 8, labelKey: "commonConversionMaster.convertedCode" },
+  { index: 9, labelKey: "commonConversionMaster.convertedName" },
+  { index: 10, labelKey: "commonConversionMaster.abstract" },
+  { index: 11, labelKey: "commonConversionMaster.reserve1" },
+  { index: 12, labelKey: "commonConversionMaster.reserve2" },
+  { index: 13, labelKey: "commonConversionMaster.reserve3" },
+  { index: 14, labelKey: "commonConversionMaster.reserve4" },
+  { index: 15, labelKey: "commonConversionMaster.reserve5" },
+  { index: 16, labelKey: "commonConversionMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -673,6 +767,31 @@ export const COMMON_MASTER_HEADERS: string[] = [
   "Group Id",
   "Group Name",
   "Code",
-  "Code Name",
-  "Deletion flag",
+  "Name (English)",
+  "Name(Japanese)",
+  "Abstract",
+  "Display Order",
+  "Reserve 1",
+  "Reserve 2",
+  "Reserve 3",
+  "Reserve 4",
+  "Reserve 5",
+  "Deletion Flag",
+];
+
+export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
+  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
+  { index: 1, labelKey: "commonMaster.groupId" },
+  { index: 2, labelKey: "commonMaster.groupName" },
+  { index: 3, labelKey: "commonMaster.code" },
+  { index: 4, labelKey: "commonMaster.nameEnglish" },
+  { index: 5, labelKey: "commonMaster.nameJapanese" },
+  { index: 6, labelKey: "commonMaster.abstract" },
+  { index: 7, labelKey: "commonMaster.displayOrder" },
+  { index: 8, labelKey: "commonMaster.reserve1" },
+  { index: 9, labelKey: "commonMaster.reserve2" },
+  { index: 10, labelKey: "commonMaster.reserve3" },
+  { index: 11, labelKey: "commonMaster.reserve4" },
+  { index: 12, labelKey: "commonMaster.reserve5" },
+  { index: 13, labelKey: "commonMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];

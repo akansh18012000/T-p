@@ -105,7 +105,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
-import { FX_RATE_ENTRY_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { FX_RATE_ENTRY_MASTER_HEADERS, FX_RATE_ENTRY_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -559,14 +559,10 @@ function FxRateEntryMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: i === deletionFlagColIndex,
-    })),
-  ];
+  const freezeColumnsConfig = FX_RATE_ENTRY_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,

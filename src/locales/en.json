@@ -501,6 +501,11 @@
     "corporateCode": "Corporate Code",
     "corporateName": "Corporate Name",
     "effectiveStartDate": "Effective Start Date (Year/Month)",
+    "currency": "Currency",
+    "standardCost": "Standard Cost",
+    "overwritePreventionFlag": "Overwrite Prevention Flag",
+    "deletionFlag": "Deletion Flag",
+    "mfrPartNumber": "Mfr Part Number",
     "search": "Search",
     "resultData": "Result Data",
     "addRow": "Add Row",
@@ -530,5 +535,92 @@
     "supportedFormatCsv": "Supported format: CSV",
     "cancel": "Cancel",
     "register": "Register"
+  },
+  "commonMaster": {
+    "groupId": "Group Id",
+    "groupName": "Group Name",
+    "code": "Code",
+    "nameEnglish": "Name (English)",
+    "nameJapanese": "Name(Japanese)",
+    "abstract": "Abstract",
+    "displayOrder": "Display Order",
+    "reserve1": "Reserve 1",
+    "reserve2": "Reserve 2",
+    "reserve3": "Reserve 3",
+    "reserve4": "Reserve 4",
+    "reserve5": "Reserve 5",
+    "deletionFlag": "Deletion Flag"
+  },
+  "commonConversionMaster": {
+    "itemId": "Item ID",
+    "itemName": "Item Name",
+    "systemId": "System ID",
+    "preConversionCode1": "Pre Conversion Code 1",
+    "preConversionName1": "Pre Conversion Name 1",
+    "preConversionCode2": "Pre Conversion Code 2",
+    "preConversionName2": "Pre Conversion Name 2",
+    "convertedCode": "Converted Code",
+    "convertedName": "Converted Name",
+    "abstract": "Abstract",
+    "reserve1": "Reserve 1",
+    "reserve2": "Reserve 2",
+    "reserve3": "Reserve 3",
+    "reserve4": "Reserve 4",
+    "reserve5": "Reserve 5",
+    "deletionFlag": "Deletion Flag"
+  },
+  "yearMonthMaster": {
+    "processingClassification": "Processing Classification",
+    "processingName": "Processing Name",
+    "processingYear": "Processing Year",
+    "processingDate": "Processing Date",
+    "lastUpdatedDate": "Last Updated Date",
+    "lastUpdatedBy": "Last Updated By"
+  },
+  "globalDadMaster": {
+    "systemId": "System ID",
+    "salesLocationCode": "Sales Location Code",
+    "localCustomerCode": "Local Customer Code",
+    "localCustomerName": "Local Customer Name",
+    "productClassification": "Product Classification",
+    "productClassificationName": "Product Classification Name",
+    "transferDestBU3": "Transfer Destination BU3",
+    "effectiveStartDate": "Effective Start Date",
+    "expirationDate": "Expiration Date",
+    "patternId": "Pattern Id",
+    "deletionFlag": "Deletion Flag"
+  },
+  "kitItemClassificationMaster": {
+    "kitMfrPartNumber": "Kit Mfr Part Number",
+    "kitManufacturer": "Kit Manufacturer",
+    "manufacturerName": "Manufacturer Name",
+    "componentMfrPartNumber": "Component Mfr Part Number",
+    "componentsManufacturer": "Components Manufacturer",
+    "componentLocationCode": "Component Location Code",
+    "quantity": "Quantity",
+    "deletionFlag": "Deletion Flag"
+  },
+  "fxRateEntryMaster": {
+    "processingDate": "Processing Date",
+    "currencyType": "Currency Type",
+    "fromCurrency": "From Currency",
+    "toCurrency": "To Currency",
+    "exchangeRate": "Exchange Rate",
+    "deletionFlag": "Deletion Flag"
+  },
+  "gpcMasterColumns": {
+    "manufacturer": "Manufacturer",
+    "manufacturerName": "Manufacturer Name",
+    "mfrPartNumber": "Mfr Part Number",
+    "gpcCode": "GPC Code",
+    "gpcName": "GPC Name",
+    "validYear": "Valid Year",
+    "bu3Code": "BU3 Code",
+    "bu3Name": "BU3 Name",
+    "overwritePreventionFlag": "Overwrite Prevention Flag",
+    "deletionFlag": "Deletion Flag"
+  },
+  "tableCommon": {
+    "rowNumber": "#"
   }
 }

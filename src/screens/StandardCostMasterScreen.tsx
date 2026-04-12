@@ -41,7 +41,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { STANDARD_COST_MASTER_HEADERS, STANDARD_COST_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { STANDARD_COST_MASTER_HEADERS, STANDARD_COST_MASTER_COLUMNS, STANDARD_COST_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -966,14 +966,10 @@ export default function StandardCostMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  const freezeColumnsConfig = [
-    { index: 0, label: "#", width: 48 },
-    ...displayData.headers.map((h, i) => ({
-      index: i + 1,
-      label: h,
-      isDeletionFlag: STANDARD_COST_MASTER_COLUMNS[i]?.isCheckbox === true,
-    })),
-  ];
+  const freezeColumnsConfig = STANDARD_COST_MASTER_FREEZE_CONFIG.map((c) => ({
+    ...c,
+    label: c.labelKey ? t(c.labelKey) : c.label!,
+  }));
   const {
     freezeIndices,
     dialogOpen,
