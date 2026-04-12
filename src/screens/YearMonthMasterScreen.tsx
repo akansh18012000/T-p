@@ -18,7 +18,7 @@ import {
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { YEAR_MONTH_MASTER_HEADERS } from "../constants/tableColumns.js";
+import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -143,24 +143,24 @@ function YearMonthMasterScreen() {
 
   const handleAddRow = () => {
     setRows((prev) => [...prev, createNewRow()]);
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("yearMonthMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const handleRefresh = () => {
     setRows(getEmptyRows());
-    setSnackbarMessage("Table refreshed.");
+    setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleRegistration = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("yearMonthMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("yearMonthMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -215,7 +215,7 @@ function YearMonthMasterScreen() {
             <StyledToolbar>
               <StyledToolbarTitleBox>
                 <StyledToolbarTitle variant="h6">
-                  Result Data
+                  {t("yearMonthMaster.resultData")}
                 </StyledToolbarTitle>
               </StyledToolbarTitleBox>
               <StyledToolbarButtonsBox>
@@ -225,7 +225,7 @@ function YearMonthMasterScreen() {
                   startIcon={<AddIcon />}
                   onClick={handleAddRow}
                 >
-                  Add Row
+                  {t("yearMonthMaster.addRow")}
                 </StyledAddRowButton>
                 <StyledSecondaryButton
                   variant="outlined"
@@ -233,7 +233,7 @@ function YearMonthMasterScreen() {
                   startIcon={<RefreshIcon />}
                   onClick={handleRefresh}
                 >
-                  Refresh
+                  {t("yearMonthMaster.refresh")}
                 </StyledSecondaryButton>
                 <StyledPrimaryContainedButton
                   variant="contained"
@@ -242,7 +242,7 @@ function YearMonthMasterScreen() {
                   onClick={handleRegistration}
                   disabled={!hasRows}
                 >
-                  Registration
+                  {t("yearMonthMaster.registration")}
                 </StyledPrimaryContainedButton>
               </StyledToolbarButtonsBox>
             </StyledToolbar>
@@ -250,7 +250,7 @@ function YearMonthMasterScreen() {
               <StyledSearchInputWrapper>
                 <StyledSearchTextField
                   size="small"
-                  placeholder="Search all data..."
+                  placeholder={t("yearMonthMaster.searchAllDataPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
@@ -274,7 +274,7 @@ function YearMonthMasterScreen() {
                 <StyledSpacer />
                 {searchTerm && (
                   <StyledSearchResultText variant="body2">
-                    Showing {filteredRowIndices.length} of {rows.length} rows
+                    {t("yearMonthMaster.showingRows", { filtered: filteredRowIndices.length, total: rows.length })}
                   </StyledSearchResultText>
                 )}
               </StyledSearchInputWrapper>
@@ -282,10 +282,10 @@ function YearMonthMasterScreen() {
             {rows.length === 0 ? (
               <StyledEmptyStateBox>
                 <StyledEmptyStateTitle variant="h6">
-                  No rows
+                  {t("yearMonthMaster.noRows")}
                 </StyledEmptyStateTitle>
                 <StyledEmptyStateSubtitle variant="body2">
-                  Use Add Row to add data.
+                  {t("yearMonthMaster.noRowsHint")}
                 </StyledEmptyStateSubtitle>
               </StyledEmptyStateBox>
             ) : (
@@ -297,10 +297,10 @@ function YearMonthMasterScreen() {
                         <StyledTableHeaderCell $indexCell>
                           #
                         </StyledTableHeaderCell>
-                        {TABLE_HEADERS.map((header, colIndex) => (
+                        {YEAR_MONTH_MASTER_COLUMNS.map((col, colIndex) => (
                           <StyledTableHeaderCell key={colIndex}>
                             <StyledTableHeaderText variant="body2">
-                              {header}
+                              {t(col.labelKey)}
                             </StyledTableHeaderText>
                           </StyledTableHeaderCell>
                         ))}

@@ -99,7 +99,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_COLUMNS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -352,14 +352,14 @@ export default function CommonConversionMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("commonConversionMaster.searchCompletedWithData")
+          : t("commonConversionMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("commonConversionMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -367,7 +367,7 @@ export default function CommonConversionMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("commonConversionMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -380,7 +380,7 @@ export default function CommonConversionMasterScreen() {
     link.download = "common_conversion_master_export.csv";
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("commonConversionMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -391,7 +391,7 @@ export default function CommonConversionMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, base.headers.map(() => "")],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("commonConversionMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -400,11 +400,11 @@ export default function CommonConversionMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("commonConversionMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("commonConversionMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -474,13 +474,13 @@ export default function CommonConversionMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("commonConversionMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("commonConversionMaster.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -492,17 +492,17 @@ export default function CommonConversionMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("commonConversionMaster.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("commonConversionMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("commonConversionMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -560,7 +560,7 @@ export default function CommonConversionMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("commonConversionMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -596,8 +596,8 @@ export default function CommonConversionMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
-                          label="Item Id"
-                          placeholder="Enter 3 characters to search"
+                          label={t("commonConversionMaster.itemId")}
+                          placeholder={t("commonConversionMaster.enterCharsToSearch")}
                         />
                       )}
                     />
@@ -635,8 +635,8 @@ export default function CommonConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
-                        label="System Id"
-                        placeholder="Enter 3 characters to search"
+                        label={t("commonConversionMaster.systemId")}
+                        placeholder={t("commonConversionMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -645,7 +645,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Preconversion Code 1"
+                    label={t("commonConversionMaster.preConversionCode1")}
                     value={preconversionCode1}
                     onChange={(e) => {
                       setPreconversionCode1(e.target.value);
@@ -658,7 +658,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Preconversion Code 1 Name"
+                    label={t("commonConversionMaster.preConversionName1")}
                     value={preconversionCode1Name}
                     onChange={(e) => {
                       setPreconversionCode1Name(e.target.value);
@@ -671,7 +671,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Preconversion Code 2"
+                    label={t("commonConversionMaster.preConversionCode2")}
                     value={preconversionCode2}
                     onChange={(e) => {
                       setPreconversionCode2(e.target.value);
@@ -684,7 +684,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Preconversion Code 2 Name"
+                    label={t("commonConversionMaster.preConversionName2")}
                     value={preconversionCode2Name}
                     onChange={(e) => {
                       setPreconversionCode2Name(e.target.value);
@@ -697,7 +697,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Converted Code"
+                    label={t("commonConversionMaster.convertedCode")}
                     value={convertedCode}
                     onChange={(e) => {
                       setConvertedCode(e.target.value);
@@ -710,7 +710,7 @@ export default function CommonConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Converted Code Name"
+                    label={t("commonConversionMaster.convertedName")}
                     value={convertedCodeName}
                     onChange={(e) => {
                       setConvertedCodeName(e.target.value);
@@ -732,7 +732,7 @@ export default function CommonConversionMasterScreen() {
                           }}
                         />
                       }
-                      label="Deletion flag"
+                      label={t("commonConversionMaster.deletionFlag")}
                     />
                     <StyledSearchButton
                       variant="contained"
@@ -742,7 +742,7 @@ export default function CommonConversionMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("commonConversionMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -754,7 +754,7 @@ export default function CommonConversionMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("commonConversionMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -764,7 +764,7 @@ export default function CommonConversionMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("commonConversionMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -772,7 +772,7 @@ export default function CommonConversionMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("commonConversionMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -781,7 +781,7 @@ export default function CommonConversionMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("commonConversionMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -790,7 +790,7 @@ export default function CommonConversionMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("commonConversionMaster.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -804,7 +804,7 @@ export default function CommonConversionMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("commonConversionMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -828,8 +828,7 @@ export default function CommonConversionMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("commonConversionMaster.showingRows", { filtered: filteredRowIndices.length, total: displayData.rows.length })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -837,10 +836,10 @@ export default function CommonConversionMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("commonConversionMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("commonConversionMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -868,11 +867,11 @@ export default function CommonConversionMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {COMMON_CONVERSION_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
                                     key={colIndex}
                                     $deletionFlag={
-                                      colIndex === deletionFlagColIndex
+                                      col.key === "deletionFlag"
                                     }
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
@@ -883,7 +882,7 @@ export default function CommonConversionMasterScreen() {
                                     )}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
@@ -948,7 +947,7 @@ export default function CommonConversionMasterScreen() {
                                             editable
                                             searchable
                                             searchOptions={ITEM_ID_OPTIONS}
-                                            searchTitle="Search Item ID"
+                                            searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.itemId")}
                                           />
                                         ) : colIndex === itemNameColIndex ||
                                           colIndex === abstractColIndex ? (
@@ -1004,7 +1003,7 @@ export default function CommonConversionMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">{t("commonConversionMaster.uploadFile")}</StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1035,11 +1034,11 @@ export default function CommonConversionMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("standardCostMaster.dropFileHere")
+                        : t("commonConversionMaster.dragDropFile")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("commonConversionMaster.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -1049,10 +1048,10 @@ export default function CommonConversionMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("commonConversionMaster.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("commonConversionMaster.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
                   {selectedFile && (
@@ -1147,14 +1146,14 @@ export default function CommonConversionMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("commonConversionMaster.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("commonConversionMaster.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>

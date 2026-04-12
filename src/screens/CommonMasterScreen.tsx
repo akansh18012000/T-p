@@ -25,7 +25,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { COMMON_MASTER_HEADERS, COMMON_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { COMMON_MASTER_HEADERS, COMMON_MASTER_COLUMNS, COMMON_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -224,14 +224,14 @@ export default function CommonMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("commonMaster.searchCompletedWithData")
+          : t("commonMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("commonMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -239,7 +239,7 @@ export default function CommonMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("commonMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -252,7 +252,7 @@ export default function CommonMasterScreen() {
     link.download = "common_master_export.csv";
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("commonMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -263,7 +263,7 @@ export default function CommonMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, base.headers.map(() => "")],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("commonMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -272,11 +272,11 @@ export default function CommonMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("commonMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("commonMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -310,7 +310,7 @@ export default function CommonMasterScreen() {
       (row) => row[deletionFlagColIndex] !== "1",
     );
     setCsvData({ ...csvData, rows: newRows });
-    setSnackbarMessage("Row(s) deleted.");
+    setSnackbarMessage(t("commonMaster.rowsDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -371,7 +371,7 @@ export default function CommonMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("commonMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -407,8 +407,8 @@ export default function CommonMasterScreen() {
                       renderInput={(params) => (
                         <StyledInputBase
                           {...params}
-                          label="Group Id"
-                          placeholder="Enter 3 characters to search"
+                          label={t("commonMaster.groupId")}
+                          placeholder={t("commonMaster.enterCharsToSearch")}
                         />
                       )}
                     />
@@ -454,8 +454,8 @@ export default function CommonMasterScreen() {
                     renderInput={(params) => (
                       <StyledInputBase
                         {...params}
-                        label="Code"
-                        placeholder="Enter 3 characters to search"
+                        label={t("commonMaster.code")}
+                        placeholder={t("commonMaster.enterCharsToSearch")}
                       />
                     )}
                   />
@@ -464,7 +464,7 @@ export default function CommonMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
-                    label="Code Name"
+                    label={t("commonMaster.codeName")}
                     value={codeName}
                     onChange={(e) => {
                       setCodeName(e.target.value);
@@ -485,7 +485,7 @@ export default function CommonMasterScreen() {
                           }}
                         />
                       }
-                      label="Deletion flag"
+                      label={t("commonMaster.deletionFlag")}
                     />
                     <StyledSearchButton
                       variant="contained"
@@ -495,7 +495,7 @@ export default function CommonMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("commonMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -507,7 +507,7 @@ export default function CommonMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("commonMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -517,7 +517,7 @@ export default function CommonMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("commonMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -525,7 +525,7 @@ export default function CommonMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("commonMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -534,7 +534,7 @@ export default function CommonMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("commonMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -543,7 +543,7 @@ export default function CommonMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("commonMaster.registration")}
                         </StyledPrimaryContainedButton>
 
                         <FreezeColumnsButton
@@ -557,7 +557,7 @@ export default function CommonMasterScreen() {
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("commonMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -581,8 +581,7 @@ export default function CommonMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("commonMaster.showingRows", { filtered: filteredRowIndices.length, total: displayData.rows.length })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -590,10 +589,10 @@ export default function CommonMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("commonMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("commonMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
@@ -621,10 +620,10 @@ export default function CommonMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {COMMON_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
                                     key={colIndex}
-                                    $deletionFlag={header === "Deletion Flag"}
+                                    $deletionFlag={col.key === "deletionFlag"}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -634,7 +633,7 @@ export default function CommonMasterScreen() {
                                     )}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
@@ -699,7 +698,7 @@ export default function CommonMasterScreen() {
                                             editable
                                             searchable
                                             searchOptions={GROUP_ID_OPTIONS}
-                                            searchTitle="Search Group Id"
+                                            searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (
                                           <SearchableCell

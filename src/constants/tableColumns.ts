@@ -396,6 +396,16 @@ export const YEAR_MONTH_MASTER_HEADERS: string[] = [
   "Last Updated By",
 ];
 
+/** i18n column config for Year Month Master table */
+export const YEAR_MONTH_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processingClassification", labelKey: "yearMonthMaster.processingClassification", editable: true },
+  { key: "processingName", labelKey: "yearMonthMaster.processingName", editable: true },
+  { key: "processingYear", labelKey: "yearMonthMaster.processingYear", editable: true },
+  { key: "processingDate", labelKey: "yearMonthMaster.processingDate", editable: true },
+  { key: "lastUpdatedDate", labelKey: "yearMonthMaster.lastUpdatedDate", editable: false },
+  { key: "lastUpdatedBy", labelKey: "yearMonthMaster.lastUpdatedBy", editable: false },
+];
+
 // ---------------------------------------------------------------------------
 // Global Dad Master Screen
 // ---------------------------------------------------------------------------
@@ -739,6 +749,26 @@ export const COMMON_CONVERSION_MASTER_HEADERS: string[] = [
   "Deletion Flag",
 ];
 
+/** i18n column config for Common Conversion Master table */
+export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "itemId", labelKey: "commonConversionMaster.itemId", editable: true },
+  { key: "itemName", labelKey: "commonConversionMaster.itemName", editable: false },
+  { key: "systemId", labelKey: "commonConversionMaster.systemId", editable: true },
+  { key: "preConversionCode1", labelKey: "commonConversionMaster.preConversionCode1", editable: true },
+  { key: "preConversionName1", labelKey: "commonConversionMaster.preConversionName1", editable: true },
+  { key: "preConversionCode2", labelKey: "commonConversionMaster.preConversionCode2", editable: true },
+  { key: "preConversionName2", labelKey: "commonConversionMaster.preConversionName2", editable: true },
+  { key: "convertedCode", labelKey: "commonConversionMaster.convertedCode", editable: true },
+  { key: "convertedName", labelKey: "commonConversionMaster.convertedName", editable: true },
+  { key: "abstract", labelKey: "commonConversionMaster.abstract", editable: false },
+  { key: "reserve1", labelKey: "commonConversionMaster.reserve1", editable: true },
+  { key: "reserve2", labelKey: "commonConversionMaster.reserve2", editable: true },
+  { key: "reserve3", labelKey: "commonConversionMaster.reserve3", editable: true },
+  { key: "reserve4", labelKey: "commonConversionMaster.reserve4", editable: true },
+  { key: "reserve5", labelKey: "commonConversionMaster.reserve5", editable: true },
+  { key: "deletionFlag", labelKey: "commonConversionMaster.deletionFlag", editable: true },
+];
+
 export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
   { index: 1, labelKey: "commonConversionMaster.itemId" },
@@ -777,6 +807,23 @@ export const COMMON_MASTER_HEADERS: string[] = [
   "Reserve 4",
   "Reserve 5",
   "Deletion Flag",
+];
+
+/** i18n column config for Common Master table */
+export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "groupId", labelKey: "commonMaster.groupId", editable: true },
+  { key: "groupName", labelKey: "commonMaster.groupName", editable: false },
+  { key: "code", labelKey: "commonMaster.code", editable: true },
+  { key: "nameEnglish", labelKey: "commonMaster.nameEnglish", editable: true },
+  { key: "nameJapanese", labelKey: "commonMaster.nameJapanese", editable: true },
+  { key: "abstract", labelKey: "commonMaster.abstract", editable: true },
+  { key: "displayOrder", labelKey: "commonMaster.displayOrder", editable: true },
+  { key: "reserve1", labelKey: "commonMaster.reserve1", editable: true },
+  { key: "reserve2", labelKey: "commonMaster.reserve2", editable: true },
+  { key: "reserve3", labelKey: "commonMaster.reserve3", editable: true },
+  { key: "reserve4", labelKey: "commonMaster.reserve4", editable: true },
+  { key: "reserve5", labelKey: "commonMaster.reserve5", editable: true },
+  { key: "deletionFlag", labelKey: "commonMaster.deletionFlag", editable: true },
 ];
 
 export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
