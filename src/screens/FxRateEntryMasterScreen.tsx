@@ -95,18 +95,12 @@ import {
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
   Clear as ClearIcon,
-  ExpandLess as ExpandLessIcon,
-  ExpandMore as ExpandMoreIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
-  DescriptionOutlined as DescriptionOutlinedIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
-import { FX_RATE_ENTRY_MASTER_HEADERS, FX_RATE_ENTRY_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
-import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import { FX_RATE_ENTRY_MASTER_HEADERS, FX_RATE_ENTRY_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -116,11 +110,12 @@ import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 
+/** Currency type options with value (for data storage) and labelKey (for i18n) */
 const CURRENCY_TYPE_OPTIONS = [
-  "Current Exchange Rate",
-  "Current year planned rate",
-  "End of month rates",
-  "Planning rates",
+  { value: "Current Exchange Rate", labelKey: "fxRateEntryMaster.currentExchangeRate" },
+  { value: "Current year planned rate", labelKey: "fxRateEntryMaster.currentYearPlannedRate" },
+  { value: "End of month rates", labelKey: "fxRateEntryMaster.endOfMonthRates" },
+  { value: "Planning rates", labelKey: "fxRateEntryMaster.planningRates" },
 ];
 
 const CURRENCY_CODES = [
@@ -347,9 +342,12 @@ function FxRateEntryMasterScreen() {
 
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
-  const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
-    (h) => h === "Deletion Flag",
-  );
+  // Column indices for special cell rendering
+  const fromCurrencyColIndex = 1;
+  const toCurrencyColIndex = 2;
+  const currencyTypeColIndex = 3;
+  const overwriteFlagColIndex = 5;
+  const deletionFlagColIndex = 6;
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -366,18 +364,19 @@ function FxRateEntryMasterScreen() {
       const procDateStr = conditions.processingDate
         ? `${conditions.processingDate.getFullYear()}-${String(conditions.processingDate.getMonth() + 1).padStart(2, "0")}`
         : "";
+      // Columns: Processing Date, From Currency, To Currency, Currency Type, Currency Exchange Rate, Overwrite Prevention Flag, Deletion Flag
       const allRows: string[][] = [
-        ["2026-01", "Current Exchange Rate", "USD", "EUR", "0.92", "N"],
-        ["2026-01", "Current Exchange Rate", "USD", "JPY", "149.50", "N"],
-        ["2026-01", "Current year planned rate", "EUR", "GBP", "0.85", "N"],
-        ["2026-02", "End of month rates", "GBP", "USD", "1.27", "N"],
-        ["2026-02", "Planning rates", "CHF", "USD", "1.13", "Y"],
-        ["2026-01", "Current Exchange Rate", "CAD", "USD", "0.74", "N"],
-        ["2026-02", "Current year planned rate", "AUD", "USD", "0.65", "N"],
-        ["2026-03", "End of month rates", "CNY", "USD", "0.14", "N"],
+        ["2026-01", "USD", "EUR", "Current Exchange Rate", "0.92", "N", "N"],
+        ["2026-01", "USD", "JPY", "Current Exchange Rate", "149.50", "N", "N"],
+        ["2026-01", "EUR", "GBP", "Current year planned rate", "0.85", "N", "N"],
+        ["2026-02", "GBP", "USD", "End of month rates", "1.27", "Y", "N"],
+        ["2026-02", "CHF", "USD", "Planning rates", "1.13", "N", "Y"],
+        ["2026-01", "CAD", "USD", "Current Exchange Rate", "0.74", "N", "N"],
+        ["2026-02", "AUD", "USD", "Current year planned rate", "0.65", "N", "N"],
+        ["2026-03", "CNY", "USD", "End of month rates", "0.14", "N", "N"],
       ];
       const filteredRows = allRows.filter((row) => {
-        const [rowDate, rowType, rowFrom, rowTo, , rowDel] = row;
+        const [rowDate, rowFrom, rowTo, rowType, , , rowDel] = row;
         if (procDateStr && rowDate !== procDateStr) return false;
         if (
           conditions.currencyType.trim() &&
@@ -400,14 +399,14 @@ function FxRateEntryMasterScreen() {
       });
       setSnackbarMessage(
         filteredRows.length > 0
-          ? "Search completed. Data loaded."
-          : "Search completed with no results.",
+          ? t("fxRateEntryMaster.searchCompletedWithData")
+          : t("fxRateEntryMaster.searchCompletedNoResults"),
       );
       setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage("Search completed with no results.");
+      setSnackbarMessage(t("fxRateEntryMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     }
@@ -415,7 +414,7 @@ function FxRateEntryMasterScreen() {
 
   const handleDownloadCsv = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage("No data to download.");
+      setSnackbarMessage(t("fxRateEntryMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
@@ -431,7 +430,7 @@ function FxRateEntryMasterScreen() {
     link.download = `fx_rate_entry_${dateStr}.csv`;
     link.click();
     window.URL.revokeObjectURL(url);
-    setSnackbarMessage("CSV downloaded.");
+    setSnackbarMessage(t("fxRateEntryMaster.csvDownloaded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -443,7 +442,7 @@ function FxRateEntryMasterScreen() {
       headers: base.headers,
       rows: [...base.rows, newRow],
     });
-    setSnackbarMessage("Row added.");
+    setSnackbarMessage(t("fxRateEntryMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -454,11 +453,11 @@ function FxRateEntryMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("fxRateEntryMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("fxRateEntryMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -524,13 +523,13 @@ function FxRateEntryMasterScreen() {
       const parsed = await parseCsv(text);
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage("File uploaded successfully.");
+      setSnackbarMessage(t("fxRateEntryMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage("Failed to parse CSV.");
+      setSnackbarMessage(t("fxRateEntryMaster.parseCsvFailed"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -542,36 +541,22 @@ function FxRateEntryMasterScreen() {
     setUploadStatus("idle");
     setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
+    setSnackbarMessage(t("fxRateEntryMaster.uploadCancelled"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
+    setSnackbarMessage(t("fxRateEntryMaster.registrationInProgress"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
+    setSnackbarMessage(t("fxRateEntryMaster.registrationCompleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const displayData = csvData || getEmptyCsvData();
-
-  const freezeColumnsConfig = FX_RATE_ENTRY_MASTER_FREEZE_CONFIG.map((c) => ({
-    ...c,
-    label: c.labelKey ? t(c.labelKey) : c.label!,
-  }));
-  const {
-    freezeIndices,
-    dialogOpen,
-    setDialogOpen,
-    handleSave,
-    getLeftOffset,
-    initialSelected,
-    isLastFrozenColumn,
-  } = useFreezeColumns("freezeColumns_FxRateEntry", freezeColumnsConfig);
 
   const filteredRowIndices = csvSearchTerm.trim()
     ? displayData.rows
@@ -611,7 +596,7 @@ function FxRateEntryMasterScreen() {
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
             <StyledSectionTitle variant="h6">
-              Search Condition
+              {t("fxRateEntryMaster.searchCondition")}
             </StyledSectionTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
@@ -627,7 +612,7 @@ function FxRateEntryMasterScreen() {
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       enableAccessibleFieldDOMStructure={false}
-                      label="Processing Date"
+                      label={t("fxRateEntryMaster.processingDate")}
                       value={processingDate}
                       onChange={(newValue) => {
                         setProcessingDate(newValue);
@@ -646,10 +631,10 @@ function FxRateEntryMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledFormControl fullWidth size="small">
-                    <InputLabel>Currency Type</InputLabel>
+                    <InputLabel>{t("fxRateEntryMaster.currencyType")}</InputLabel>
                     <Select
                       value={currencyType}
-                      label="Currency Type"
+                      label={t("fxRateEntryMaster.currencyType")}
                       onChange={(e) => {
                         const val = e.target.value;
                         setCurrencyType(val);
@@ -657,11 +642,11 @@ function FxRateEntryMasterScreen() {
                       }}
                     >
                       <MenuItem value="">
-                        <em>All</em>
+                        <em>{t("fxRateEntryMaster.all")}</em>
                       </MenuItem>
                       {CURRENCY_TYPE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
+                        <MenuItem key={opt.value} value={opt.value}>
+                          {t(opt.labelKey)}
                         </MenuItem>
                       ))}
                     </Select>
@@ -669,10 +654,10 @@ function FxRateEntryMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledFormControl fullWidth size="small">
-                    <InputLabel>From Currency</InputLabel>
+                    <InputLabel>{t("fxRateEntryMaster.fromCurrency")}</InputLabel>
                     <Select
                       value={fromCurrency}
-                      label="From Currency"
+                      label={t("fxRateEntryMaster.fromCurrency")}
                       onChange={(e) => {
                         const val = e.target.value;
                         setFromCurrency(val);
@@ -680,7 +665,7 @@ function FxRateEntryMasterScreen() {
                       }}
                     >
                       <MenuItem value="">
-                        <em>All</em>
+                        <em>{t("fxRateEntryMaster.all")}</em>
                       </MenuItem>
                       {CURRENCY_CODES.map((code) => (
                         <MenuItem key={code} value={code}>
@@ -692,10 +677,10 @@ function FxRateEntryMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <StyledFormControl fullWidth size="small">
-                    <InputLabel>To Currency</InputLabel>
+                    <InputLabel>{t("fxRateEntryMaster.toCurrency")}</InputLabel>
                     <Select
                       value={toCurrency}
-                      label="To Currency"
+                      label={t("fxRateEntryMaster.toCurrency")}
                       onChange={(e) => {
                         const val = e.target.value;
                         setToCurrency(val);
@@ -703,7 +688,7 @@ function FxRateEntryMasterScreen() {
                       }}
                     >
                       <MenuItem value="">
-                        <em>All</em>
+                        <em>{t("fxRateEntryMaster.all")}</em>
                       </MenuItem>
                       {CURRENCY_CODES.map((code) => (
                         <MenuItem key={code} value={code}>
@@ -722,7 +707,7 @@ function FxRateEntryMasterScreen() {
                           onChange={(e) => setDeletionFlag(e.target.checked)}
                         />
                       }
-                      label="Deletion Flag"
+                      label={t("fxRateEntryMaster.deletionFlag")}
                     />
                     <StyledSearchButton
                       variant="contained"
@@ -732,7 +717,7 @@ function FxRateEntryMasterScreen() {
                       }}
                       startIcon={<SearchIcon />}
                     >
-                      Search
+                      {t("fxRateEntryMaster.search")}
                     </StyledSearchButton>
                   </StyledSearchButtonsBox>
                 </Grid>
@@ -745,7 +730,7 @@ function FxRateEntryMasterScreen() {
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
-                          Result Data
+                          {t("fxRateEntryMaster.resultData")}
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
@@ -755,7 +740,7 @@ function FxRateEntryMasterScreen() {
                           startIcon={<AddIcon />}
                           onClick={handleAddRow}
                         >
-                          Add Row
+                          {t("fxRateEntryMaster.addRow")}
                         </StyledAddRowButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -763,7 +748,7 @@ function FxRateEntryMasterScreen() {
                           startIcon={<RefreshIcon />}
                           onClick={handleRefresh}
                         >
-                          Refresh
+                          {t("fxRateEntryMaster.refresh")}
                         </StyledSecondaryButton>
                         <StyledSecondaryButton
                           variant="outlined"
@@ -772,7 +757,7 @@ function FxRateEntryMasterScreen() {
                           onClick={handleDownloadCsv}
                           disabled={!hasRows}
                         >
-                          Download
+                          {t("fxRateEntryMaster.download")}
                         </StyledSecondaryButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
@@ -781,21 +766,15 @@ function FxRateEntryMasterScreen() {
                           onClick={handleRegistration}
                           disabled={!hasRows}
                         >
-                          Registration
+                          {t("fxRateEntryMaster.registration")}
                         </StyledPrimaryContainedButton>
-
-                        <FreezeColumnsButton
-                          component={StyledSecondaryButton}
-                          onClick={() => setDialogOpen(true)}
-                          disabled={!hasRows}
-                        />
                       </StyledToolbarButtonsBox>
                     </StyledToolbar>
                     <StyledSearchBarBox>
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
                           size="small"
-                          placeholder="Search all data..."
+                          placeholder={t("fxRateEntryMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
                           InputProps={{
@@ -819,8 +798,7 @@ function FxRateEntryMasterScreen() {
                         <StyledSpacer />
                         {csvSearchTerm && (
                           <StyledSearchResultText variant="body2">
-                            Showing {filteredRowIndices.length} of{" "}
-                            {displayData.rows.length} rows
+                            {t("fxRateEntryMaster.showingRows", { filtered: filteredRowIndices.length, total: displayData.rows.length })}
                           </StyledSearchResultText>
                         )}
                       </StyledSearchInputWrapper>
@@ -828,53 +806,28 @@ function FxRateEntryMasterScreen() {
                     {displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
-                          No rows
+                          {t("fxRateEntryMaster.noRows")}
                         </StyledEmptyStateTitle>
                         <StyledEmptyStateSubtitle variant="body2">
-                          Use Add Row to add data.
+                          {t("fxRateEntryMaster.noRowsHint")}
                         </StyledEmptyStateSubtitle>
                       </StyledEmptyStateBox>
                     ) : (
                       <>
-                        <FreezeColumnsDialog
-                          open={dialogOpen}
-                          onClose={() => setDialogOpen(false)}
-                          columns={freezeColumnsConfig.map((c) => ({
-                            index: c.index,
-                            label: c.label,
-                          }))}
-                          initialSelected={initialSelected}
-                          onSave={handleSave}
-                        />
-
                         <StyledResultTableContainer>
                           <StyledResultTable stickyHeader size="small">
                             <TableHead>
                               <TableRow>
-                                <StyledTableHeaderCell
-                                  $indexCell
-                                  $isFrozen={freezeIndices.includes(0)}
-                                  $leftOffset={getLeftOffset(0)}
-                                  $isLastFrozen={isLastFrozenColumn(0)}
-                                >
+                                <StyledTableHeaderCell $indexCell>
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {FX_RATE_ENTRY_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
                                     key={colIndex}
-                                    $deletionFlag={
-                                      colIndex === deletionFlagColIndex
-                                    }
-                                    $isFrozen={freezeIndices.includes(
-                                      colIndex + 1,
-                                    )}
-                                    $leftOffset={getLeftOffset(colIndex + 1)}
-                                    $isLastFrozen={isLastFrozenColumn(
-                                      colIndex + 1,
-                                    )}
+                                    $deletionFlag={col.key === "deletionFlag" || col.key === "overwritePreventionFlag"}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
@@ -889,32 +842,16 @@ function FxRateEntryMasterScreen() {
                                     key={originalRowIndex}
                                     $index={i}
                                   >
-                                    <StyledTableIndexCell
-                                      $isFrozen={freezeIndices.includes(0)}
-                                      $leftOffset={getLeftOffset(0)}
-                                      $rowIndex={i}
-                                      $isLastFrozen={isLastFrozenColumn(0)}
-                                    >
+                                    <StyledTableIndexCell $rowIndex={i}>
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
                                     {row.map((cell, colIndex) => (
                                       <StyledTableDataCell
                                         key={colIndex}
-                                        $deletionFlag={
-                                          colIndex === deletionFlagColIndex
-                                        }
-                                        $isFrozen={freezeIndices.includes(
-                                          colIndex + 1,
-                                        )}
-                                        $leftOffset={getLeftOffset(
-                                          colIndex + 1,
-                                        )}
+                                        $deletionFlag={colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex}
                                         $rowIndex={i}
-                                        $isLastFrozen={isLastFrozenColumn(
-                                          colIndex + 1,
-                                        )}
                                       >
-                                        {colIndex === deletionFlagColIndex ? (
+                                        {colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex ? (
                                           <StyledCheckbox
                                             size="small"
                                             checked={
@@ -930,6 +867,46 @@ function FxRateEntryMasterScreen() {
                                               )
                                             }
                                           />
+                                        ) : colIndex === fromCurrencyColIndex || colIndex === toCurrencyColIndex ? (
+                                          <Select
+                                            value={cell}
+                                            onChange={(e) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                e.target.value,
+                                              )
+                                            }
+                                            size="small"
+                                            variant="standard"
+                                            fullWidth
+                                          >
+                                            {CURRENCY_CODES.map((code) => (
+                                              <MenuItem key={code} value={code}>
+                                                {code}
+                                              </MenuItem>
+                                            ))}
+                                          </Select>
+                                        ) : colIndex === currencyTypeColIndex ? (
+                                          <Select
+                                            value={cell}
+                                            onChange={(e) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                e.target.value,
+                                              )
+                                            }
+                                            size="small"
+                                            variant="standard"
+                                            fullWidth
+                                          >
+                                            {CURRENCY_TYPE_OPTIONS.map((opt) => (
+                                              <MenuItem key={opt.value} value={opt.value}>
+                                                {t(opt.labelKey)}
+                                              </MenuItem>
+                                            ))}
+                                          </Select>
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}
@@ -978,7 +955,7 @@ function FxRateEntryMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">Upload File</StyledSectionTitle>
+            <StyledSectionTitle variant="h6">{t("fxRateEntryMaster.uploadFile")}</StyledSectionTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1010,11 +987,11 @@ function FxRateEntryMasterScreen() {
                     </StyledUploadIconCircle>
                     <StyledDragDropTitle variant="h6">
                       {dragActive
-                        ? "Drop file here"
-                        : "Drag and drop your file here"}
+                        ? t("fxRateEntryMaster.dropFileHere")
+                        : t("fxRateEntryMaster.dragDropFile")}
                     </StyledDragDropTitle>
                     <StyledDragDropSubtitle variant="body2">
-                      or click to browse
+                      {t("fxRateEntryMaster.orClickToBrowse")}
                     </StyledDragDropSubtitle>
                     <StyledBrowseFilesButton
                       variant="contained"
@@ -1024,10 +1001,10 @@ function FxRateEntryMasterScreen() {
                         handleUploadBrowseClick();
                       }}
                     >
-                      Browse Files
+                      {t("fxRateEntryMaster.browseFiles")}
                     </StyledBrowseFilesButton>
                     <StyledSupportedFormatText variant="caption">
-                      Supported format: CSV
+                      {t("fxRateEntryMaster.supportedFormatCsv")}
                     </StyledSupportedFormatText>
                   </StyledDragDropZone>
 
@@ -1051,7 +1028,7 @@ function FxRateEntryMasterScreen() {
                           onClick={handleUploadClick}
                           disabled={uploadStatus === "uploading"}
                         >
-                          Upload
+                          {t("upload.upload")}
                         </StyledUploadButton>
                         <StyledViewButton
                           variant="outlined"
@@ -1123,14 +1100,14 @@ function FxRateEntryMasterScreen() {
                       variant="outlined"
                       onClick={handleUploadCancel}
                     >
-                      Cancel
+                      {t("fxRateEntryMaster.cancel")}
                     </StyledCancelButton>
                     <StyledPrimaryContainedButton
                       variant="contained"
                       onClick={handleUploadRegister}
                       startIcon={<AppRegistrationIcon />}
                     >
-                      Register
+                      {t("fxRateEntryMaster.register")}
                     </StyledPrimaryContainedButton>
                   </StyledActionButtonsBox>
                 </>

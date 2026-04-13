@@ -551,21 +551,23 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = 
 
 export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
   "Processing Date",
-  "Currency Type",
   "From Currency",
   "To Currency",
-  "Exchange Rate",
+  "Currency Type",
+  "Currency Exchange Rate",
+  "Overwrite Prevention Flag",
   "Deletion Flag",
 ];
 
-export const FX_RATE_ENTRY_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
-  { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "fxRateEntryMaster.processingDate" },
-  { index: 2, labelKey: "fxRateEntryMaster.currencyType" },
-  { index: 3, labelKey: "fxRateEntryMaster.fromCurrency" },
-  { index: 4, labelKey: "fxRateEntryMaster.toCurrency" },
-  { index: 5, labelKey: "fxRateEntryMaster.exchangeRate" },
-  { index: 6, labelKey: "fxRateEntryMaster.deletionFlag", width: 80, isDeletionFlag: true },
+/** i18n column config for Fx Rate Entry Master table */
+export const FX_RATE_ENTRY_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processingDate", labelKey: "fxRateEntryMaster.processingDate", editable: true },
+  { key: "fromCurrency", labelKey: "fxRateEntryMaster.fromCurrency", editable: true },
+  { key: "toCurrency", labelKey: "fxRateEntryMaster.toCurrency", editable: true },
+  { key: "currencyType", labelKey: "fxRateEntryMaster.currencyType", editable: true },
+  { key: "currencyExchangeRate", labelKey: "fxRateEntryMaster.currencyExchangeRate", editable: true },
+  { key: "overwritePreventionFlag", labelKey: "fxRateEntryMaster.overwritePreventionFlag", editable: true },
+  { key: "deletionFlag", labelKey: "fxRateEntryMaster.deletionFlag", editable: true },
 ];
 
 // ---------------------------------------------------------------------------
