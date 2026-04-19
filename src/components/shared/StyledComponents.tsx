@@ -1056,3 +1056,89 @@ export const StyledInfoAlert = styled(Alert)(({ theme }) => {
     border: `1px solid ${infoPalette.border ?? theme.palette.divider}`,
   };
 });
+
+// ---------------------------------------------------------------------------
+// Row Selection Mode Components (for Add Existing Rows feature)
+// ---------------------------------------------------------------------------
+
+export const StyledSelectionCheckboxCell = styled(TableCell)<{
+  $isHeader?: boolean;
+  $rowIndex?: number;
+}>(({ theme, $isHeader, $rowIndex }) => ({
+  width: 48,
+  minWidth: 48,
+  maxWidth: 48,
+  padding: "4px",
+  textAlign: "center",
+  border: `1px solid ${theme.palette.grey![200]}`,
+  ...($isHeader && {
+    backgroundColor: theme.palette.table!.headerBg,
+  }),
+  ...(!$isHeader &&
+    $rowIndex !== undefined && {
+      backgroundColor:
+        $rowIndex % 2 === 0
+          ? theme.palette.table!.rowEven
+          : theme.palette.table!.rowOdd,
+    }),
+}));
+
+export const StyledSelectionHeaderCheckbox = styled(Checkbox)(({ theme }) => ({
+  color: theme.palette.common.white,
+  padding: "4px",
+  "&.Mui-checked": {
+    color: theme.palette.common.white,
+  },
+  "&.MuiCheckbox-indeterminate": {
+    color: theme.palette.common.white,
+  },
+}));
+
+export const StyledSelectionRowCheckbox = styled(Checkbox)(({ theme }) => ({
+  color: theme.palette.grey![500],
+  padding: "4px",
+  "&.Mui-checked": {
+    color: theme.palette.primary.main,
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// Delete Action Column (for newly added rows)
+// ---------------------------------------------------------------------------
+
+export const StyledDeleteActionHeaderCell = styled(TableCell)(({ theme }) => ({
+  width: 60,
+  minWidth: 60,
+  maxWidth: 60,
+  padding: "8px",
+  textAlign: "center",
+  backgroundColor: theme.palette.table!.headerBg,
+  color: theme.palette.common.white,
+  fontWeight: 600,
+  border: `1px solid ${theme.palette.grey![200]}`,
+}));
+
+export const StyledDeleteActionCell = styled(TableCell)<{
+  $rowIndex?: number;
+}>(({ theme, $rowIndex }) => ({
+  width: 60,
+  minWidth: 60,
+  maxWidth: 60,
+  padding: "4px",
+  textAlign: "center",
+  border: `1px solid ${theme.palette.grey![200]}`,
+  ...($rowIndex !== undefined && {
+    backgroundColor:
+      $rowIndex % 2 === 0
+        ? theme.palette.table!.rowEven
+        : theme.palette.table!.rowOdd,
+  }),
+}));
+
+export const StyledNewRowDeleteButton = styled(IconButton)(({ theme }) => ({
+  color: theme.palette.error.red500 ?? theme.palette.error.main,
+  padding: "4px",
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.error.main, 0.08),
+  },
+}));

@@ -701,5 +701,16 @@
   },
   "tableCommon": {
     "rowNumber": "#"
+  },
+  "common": {
+    "addRow": "行を追加",
+    "addEmptyRow": "空行を追加",
+    "addExistingRows": "既存行を追加",
+    "addSelectedRows": "選択行を追加 ({{count}})",
+    "cancelSelection": "キャンセル",
+    "rowsAddedFromSelection": "{{count}}行が追加されました。",
+    "deleteRow": "行を削除",
+    "newRowDeleted": "新しい行が削除されました。",
+    "selectAll": "全て選択"
   }
 }

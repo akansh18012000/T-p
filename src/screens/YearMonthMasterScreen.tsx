@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { styled } from "@mui/material/styles";
 import {
   TableBody,
@@ -10,15 +12,17 @@ import {
   InputAdornment,
 } from "@mui/material";
 import {
-  Add as AddIcon,
   Refresh as RefreshIcon,
   AppRegistration as AppRegistrationIcon,
   Clear as ClearIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
+import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -31,8 +35,13 @@ import {
   StyledToolbar,
   StyledToolbarTitleBox,
   StyledToolbarButtonsBox,
-  StyledAddRowButton,
   StyledSecondaryButton,
+  StyledSelectionCheckboxCell,
+  StyledSelectionHeaderCheckbox,
+  StyledSelectionRowCheckbox,
+  StyledDeleteActionHeaderCell,
+  StyledDeleteActionCell,
+  StyledNewRowDeleteButton,
   StyledPrimaryContainedButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
@@ -141,14 +150,80 @@ function YearMonthMasterScreen() {
     "success" | "error" | "info"
   >("success");
 
-  const handleAddRow = () => {
-    setRows((prev) => [...prev, createNewRow()]);
+  // Row selection mode hooks
+  const {
+    isSelectingRows,
+    selectedRowIndices,
+    enterSelectionMode,
+    exitSelectionMode,
+    toggleRowSelection,
+    handleSelectAllChange,
+    selectedCount,
+  } = useRowSelectionMode();
+  const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
+
+  const handleAddEmptyRow = () => {
+    const newRow = createNewRow();
+    // Insert new row at appropriate position based on current page
+    const insertIndex = Math.min(pageOffset, rows.length);
+    const newRows = [
+      ...rows.slice(0, insertIndex),
+      newRow,
+      ...rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, 1);
+    markRowsAsNew([insertIndex]);
+    setRows(newRows);
     setSnackbarMessage(t("yearMonthMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
+  const handleEnterSelectionMode = () => {
+    if (rows.length === 0) {
+      setSnackbarMessage(t("common.noRowsToSelect"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+    enterSelectionMode();
+  };
+
+  const handleCancelSelectionMode = () => {
+    exitSelectionMode();
+  };
+
+  const handleAddSelectedRows = () => {
+    if (selectedCount === 0) return;
+    const selectedRows = Array.from(selectedRowIndices)
+      .sort((a, b) => a - b)
+      .map((idx) => [...rows[idx]]);
+    const insertIndex = Math.min(pageOffset, rows.length);
+    const newRows = [
+      ...rows.slice(0, insertIndex),
+      ...selectedRows,
+      ...rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    setRows(newRows);
+    exitSelectionMode();
+    setSnackbarMessage(t("yearMonthMaster.rowAdded"));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
+  const handleDeleteNewRow = (rowIndex: number) => {
+    const newRows = rows.filter((_, idx) => idx !== rowIndex);
+    shiftIndicesForDeletion(rowIndex);
+    setRows(newRows);
+    setSnackbarMessage(t("common.newRowDeleted"));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
   const handleRefresh = () => {
+    clearNewRowTracking();
     setRows(getEmptyRows());
     setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
     setSnackbarSeverity("info");
@@ -212,6 +287,13 @@ function YearMonthMasterScreen() {
 
         <YearMonthContentBox>
           <StyledResultPaper elevation={0}>
+            {isSelectingRows ? (
+              <SelectionModeToolbar
+                selectedCount={selectedCount}
+                onAddSelectedRows={handleAddSelectedRows}
+                onCancel={handleCancelSelectionMode}
+              />
+            ) : (
             <StyledToolbar>
               <StyledToolbarTitleBox>
                 <StyledToolbarTitle variant="h6">
@@ -219,14 +301,10 @@ function YearMonthMasterScreen() {
                 </StyledToolbarTitle>
               </StyledToolbarTitleBox>
               <StyledToolbarButtonsBox>
-                <StyledAddRowButton
-                  variant="outlined"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddRow}
-                >
-                  {t("yearMonthMaster.addRow")}
-                </StyledAddRowButton>
+                <AddRowMenuButton
+                  onAddEmptyRow={handleAddEmptyRow}
+                  onAddExistingRows={handleEnterSelectionMode}
+                />
                 <StyledSecondaryButton
                   variant="outlined"
                   size="small"
@@ -246,6 +324,7 @@ function YearMonthMasterScreen() {
                 </StyledPrimaryContainedButton>
               </StyledToolbarButtonsBox>
             </StyledToolbar>
+            )}
             <StyledSearchBarBox>
               <StyledSearchInputWrapper>
                 <StyledSearchTextField
@@ -294,6 +373,15 @@ function YearMonthMasterScreen() {
                   <StyledResultTable stickyHeader size="small">
                     <TableHead>
                       <TableRow>
+                        {isSelectingRows && (
+                          <StyledSelectionCheckboxCell>
+                            <StyledSelectionHeaderCheckbox
+                              checked={selectedCount === rows.length && rows.length > 0}
+                              indeterminate={selectedCount > 0 && selectedCount < rows.length}
+                              onChange={(e) => handleSelectAllChange(e.target.checked, Array.from({ length: rows.length }, (_, i) => i))}
+                            />
+                          </StyledSelectionCheckboxCell>
+                        )}
                         <StyledTableHeaderCell $indexCell>
                           #
                         </StyledTableHeaderCell>
@@ -304,6 +392,7 @@ function YearMonthMasterScreen() {
                             </StyledTableHeaderText>
                           </StyledTableHeaderCell>
                         ))}
+                        {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -312,6 +401,14 @@ function YearMonthMasterScreen() {
                         const row = rows[originalRowIndex];
                         return (
                           <StyledTableBodyRow key={originalRowIndex} $index={i}>
+                            {isSelectingRows && (
+                              <StyledSelectionCheckboxCell>
+                                <StyledSelectionRowCheckbox
+                                  checked={selectedRowIndices.has(originalRowIndex)}
+                                  onChange={() => toggleRowSelection(originalRowIndex)}
+                                />
+                              </StyledSelectionCheckboxCell>
+                            )}
                             <StyledTableIndexCell $rowIndex={i}>
                               {pageOffset + i + 1}
                             </StyledTableIndexCell>
@@ -343,6 +440,19 @@ function YearMonthMasterScreen() {
                                 )}
                               </StyledTableDataCell>
                             ))}
+                            {newRowCount > 0 && (
+                              <StyledDeleteActionCell>
+                                {isNewRow(originalRowIndex) && (
+                                  <StyledNewRowDeleteButton
+                                    size="small"
+                                    onClick={() => handleDeleteNewRow(originalRowIndex)}
+                                    title={t("common.deleteRow")}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </StyledNewRowDeleteButton>
+                                )}
+                              </StyledDeleteActionCell>
+                            )}
                           </StyledTableBodyRow>
                         );
                       })}

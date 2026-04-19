@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
+import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -36,9 +38,14 @@ import {
   StyledToolbar,
   StyledToolbarTitleBox,
   StyledToolbarButtonsBox,
-  StyledAddRowButton,
   StyledSecondaryButton,
   StyledPrimaryContainedButton,
+  StyledSelectionCheckboxCell,
+  StyledSelectionHeaderCheckbox,
+  StyledSelectionRowCheckbox,
+  StyledDeleteActionHeaderCell,
+  StyledDeleteActionCell,
+  StyledNewRowDeleteButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
   StyledSearchIcon,
@@ -87,7 +94,6 @@ import {
 } from "../components/shared/StyledComponents.js";
 import {
   Search as SearchIcon,
-  Add as AddIcon,
   Refresh as RefreshIcon,
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
@@ -96,7 +102,10 @@ import {
   ExpandMore as ExpandMoreIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
+import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
+import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
@@ -271,6 +280,28 @@ export default function GpcMasterScreen() {
     "success" | "error" | "info"
   >("success");
 
+  // Row selection mode state (for adding existing rows)
+  const {
+    isSelectingRows,
+    selectedRowIndices,
+    enterSelectionMode,
+    exitSelectionMode,
+    toggleRowSelection,
+    isRowSelected,
+    handleSelectAllChange,
+    selectedCount,
+  } = useRowSelectionMode({ visibleRowCount: 0 });
+
+  // Track newly added rows for delete icon
+  const {
+    isNewRow,
+    markRowsAsNew,
+    shiftIndicesForInsertion,
+    shiftIndicesForDeletion,
+    clearNewRowTracking,
+    newRowCount,
+  } = useNewRowTracking();
+
   const handleSearch = async () => {
     setSearchExecuted(true);
     try {
@@ -422,19 +453,88 @@ export default function GpcMasterScreen() {
     setSnackbarOpen(true);
   };
 
-  const handleAddRow = () => {
+  const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
-    const newRow = base.headers.map(() => "");
-    setCsvData({
-      headers: base.headers,
-      rows: [...base.rows, newRow],
-    });
+    const emptyRow = base.headers.map(() => "");
+    
+    if (insertAtPagePosition && base.rows.length > 0) {
+      const insertIndex = pageOffset;
+      const newRows = [
+        ...base.rows.slice(0, insertIndex),
+        emptyRow,
+        ...base.rows.slice(insertIndex),
+      ];
+      setCsvData({ headers: base.headers, rows: newRows });
+      shiftIndicesForInsertion(insertIndex, 1);
+      markRowsAsNew([insertIndex]);
+    } else {
+      setCsvData({
+        headers: base.headers,
+        rows: [...base.rows, emptyRow],
+      });
+      markRowsAsNew([base.rows.length]);
+    }
     setSnackbarMessage(t("gpcMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
+  const handleAddEmptyRow = () => {
+    handleAddRow(true);
+  };
+
+  const handleEnterSelectionMode = () => {
+    enterSelectionMode();
+  };
+
+  const handleCancelSelectionMode = () => {
+    exitSelectionMode();
+  };
+
+  const handleAddSelectedRows = () => {
+    if (selectedCount === 0) {
+      exitSelectionMode();
+      return;
+    }
+
+    const base = csvData || getEmptyCsvData();
+    const insertIndex = pageOffset;
+
+    const selectedRows = Array.from(selectedRowIndices)
+      .sort((a, b) => a - b)
+      .map((idx) => {
+        const actualIndex = pagedRowIndices[idx];
+        return displayData.rows[actualIndex] ? [...displayData.rows[actualIndex]] : base.headers.map(() => "");
+      });
+
+    const newRows = [
+      ...base.rows.slice(0, insertIndex),
+      ...selectedRows,
+      ...base.rows.slice(insertIndex),
+    ];
+
+    setCsvData({ headers: base.headers, rows: newRows });
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    
+    exitSelectionMode();
+    setSnackbarMessage(t("common.rowsAddedFromSelection", { count: selectedRows.length }));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
+  const handleDeleteNewRow = (rowIndex: number) => {
+    if (!csvData || !isNewRow(rowIndex)) return;
+    
+    const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
+    setCsvData({ ...csvData, rows: newRows });
+    shiftIndicesForDeletion(rowIndex);
+    setSnackbarMessage(t("common.newRowDeleted"));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
   const handleRefresh = () => {
+    clearNewRowTracking();
     handleSearch();
   };
 
@@ -773,46 +873,52 @@ export default function GpcMasterScreen() {
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
-                        <StyledAddRowButton
-                          variant="outlined"
-                          size="small"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddRow}
-                        >
-                          {t("gpcMaster.addRow")}
-                        </StyledAddRowButton>
-                        <StyledSecondaryButton
-                          variant="outlined"
-                          size="small"
-                          startIcon={<RefreshIcon />}
-                          onClick={handleRefresh}
-                        >
-                          {t("gpcMaster.refresh")}
-                        </StyledSecondaryButton>
-                        <StyledSecondaryButton
-                          variant="outlined"
-                          size="small"
-                          startIcon={<GetAppIcon />}
-                          onClick={handleDownloadCsv}
-                          disabled={!hasRows}
-                        >
-                          {t("gpcMaster.download")}
-                        </StyledSecondaryButton>
-                        <StyledPrimaryContainedButton
-                          variant="contained"
-                          size="small"
-                          startIcon={<AppRegistrationIcon />}
-                          onClick={handleRegistration}
-                          disabled={!hasRows}
-                        >
-                          {t("gpcMaster.registration")}
-                        </StyledPrimaryContainedButton>
+                        {isSelectingRows ? (
+                          <SelectionModeToolbar
+                            selectedCount={selectedCount}
+                            onAddSelectedRows={handleAddSelectedRows}
+                            onCancel={handleCancelSelectionMode}
+                          />
+                        ) : (
+                          <>
+                            <AddRowMenuButton
+                              onAddEmptyRow={handleAddEmptyRow}
+                              onAddExistingRows={handleEnterSelectionMode}
+                            />
+                            <StyledSecondaryButton
+                              variant="outlined"
+                              size="small"
+                              startIcon={<RefreshIcon />}
+                              onClick={handleRefresh}
+                            >
+                              {t("gpcMaster.refresh")}
+                            </StyledSecondaryButton>
+                            <StyledSecondaryButton
+                              variant="outlined"
+                              size="small"
+                              startIcon={<GetAppIcon />}
+                              onClick={handleDownloadCsv}
+                              disabled={!hasRows}
+                            >
+                              {t("gpcMaster.download")}
+                            </StyledSecondaryButton>
+                            <StyledPrimaryContainedButton
+                              variant="contained"
+                              size="small"
+                              startIcon={<AppRegistrationIcon />}
+                              onClick={handleRegistration}
+                              disabled={!hasRows}
+                            >
+                              {t("gpcMaster.registration")}
+                            </StyledPrimaryContainedButton>
 
-                        <FreezeColumnsButton
-                          component={StyledSecondaryButton}
-                          onClick={() => setDialogOpen(true)}
-                          disabled={!hasRows}
-                        />
+                            <FreezeColumnsButton
+                              component={StyledSecondaryButton}
+                              onClick={() => setDialogOpen(true)}
+                              disabled={!hasRows}
+                            />
+                          </>
+                        )}
                       </StyledToolbarButtonsBox>
                     </StyledToolbar>
                     <StyledSearchBarBox>
@@ -877,6 +983,20 @@ export default function GpcMasterScreen() {
                           <StyledResultTable stickyHeader size="small">
                             <TableHead>
                               <TableRow>
+                                {/* Selection checkbox column (only in selection mode) */}
+                                {isSelectingRows && (
+                                  <StyledSelectionCheckboxCell $isHeader>
+                                    <StyledSelectionHeaderCheckbox
+                                      size="small"
+                                      checked={pagedRowIndices.length > 0 && selectedCount === pagedRowIndices.length}
+                                      indeterminate={selectedCount > 0 && selectedCount < pagedRowIndices.length}
+                                      onChange={(e) => {
+                                        const visibleIndices = pagedRowIndices.map((_, i) => i);
+                                        handleSelectAllChange(e.target.checked, visibleIndices);
+                                      }}
+                                    />
+                                  </StyledSelectionCheckboxCell>
+                                )}
                                 <StyledTableHeaderCell
                                   $indexCell
                                   $isFrozen={freezeIndices.includes(0)}
@@ -904,6 +1024,12 @@ export default function GpcMasterScreen() {
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
+                                {/* Delete action column header (only visible when there are new rows) */}
+                                {newRowCount > 0 && (
+                                  <StyledDeleteActionHeaderCell>
+                                    {t("common.deleteRow")}
+                                  </StyledDeleteActionHeaderCell>
+                                )}
                               </TableRow>
                             </TableHead>
                             <TableBody>
@@ -915,6 +1041,16 @@ export default function GpcMasterScreen() {
                                     key={originalRowIndex}
                                     $index={i}
                                   >
+                                    {/* Selection checkbox cell (only in selection mode) */}
+                                    {isSelectingRows && (
+                                      <StyledSelectionCheckboxCell $rowIndex={i}>
+                                        <StyledSelectionRowCheckbox
+                                          size="small"
+                                          checked={isRowSelected(i)}
+                                          onChange={() => toggleRowSelection(i)}
+                                        />
+                                      </StyledSelectionCheckboxCell>
+                                    )}
                                     <StyledTableIndexCell
                                       $isFrozen={freezeIndices.includes(0)}
                                       $leftOffset={getLeftOffset(0)}
@@ -976,6 +1112,20 @@ export default function GpcMasterScreen() {
                                         </StyledTableDataCell>
                                       );
                                     })}
+                                    {/* Delete action cell (only visible when there are new rows) */}
+                                    {newRowCount > 0 && (
+                                      <StyledDeleteActionCell $rowIndex={i}>
+                                        {isNewRow(originalRowIndex) && (
+                                          <StyledNewRowDeleteButton
+                                            size="small"
+                                            onClick={() => handleDeleteNewRow(originalRowIndex)}
+                                            title={t("common.deleteRow")}
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </StyledNewRowDeleteButton>
+                                        )}
+                                      </StyledDeleteActionCell>
+                                    )}
                                   </StyledTableBodyRow>
                                 );
                               })}

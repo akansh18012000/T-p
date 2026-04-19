@@ -27,3 +27,11 @@ export {
   SearchableCell,
   type SearchableCellProps,
 } from "./SearchableCell.js";
+export {
+  AddRowMenuButton,
+  type AddRowMenuButtonProps,
+} from "./AddRowMenuButton.js";
+export {
+  SelectionModeToolbar,
+  type SelectionModeToolbarProps,
+} from "./SelectionModeToolbar.js";

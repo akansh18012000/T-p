@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
+import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -36,8 +38,13 @@ import {
   StyledToolbar,
   StyledToolbarTitleBox,
   StyledToolbarButtonsBox,
-  StyledAddRowButton,
   StyledSecondaryButton,
+  StyledSelectionCheckboxCell,
+  StyledSelectionHeaderCheckbox,
+  StyledSelectionRowCheckbox,
+  StyledDeleteActionHeaderCell,
+  StyledDeleteActionCell,
+  StyledNewRowDeleteButton,
   StyledPrimaryContainedButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
@@ -88,17 +95,19 @@ import {
 } from "../components/shared/StyledComponents.js";
 import {
   Search as SearchIcon,
-  Add as AddIcon,
   Refresh as RefreshIcon,
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
   Clear as ClearIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
+import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
+import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_COLUMNS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -274,6 +283,18 @@ export default function CommonConversionMasterScreen() {
     "success" | "error" | "info"
   >("success");
 
+  // Row selection mode hooks
+  const {
+    isSelectingRows,
+    selectedRowIndices,
+    enterSelectionMode,
+    exitSelectionMode,
+    toggleRowSelection,
+    handleSelectAllChange,
+    selectedCount,
+  } = useRowSelectionMode();
+  const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
+
   const handleSearch = async () => {
     setSearchExecuted(true);
     try {
@@ -385,18 +406,80 @@ export default function CommonConversionMasterScreen() {
     setSnackbarOpen(true);
   };
 
-  const handleAddRow = () => {
+  // Add row menu handlers
+  const handleAddEmptyRow = () => {
     const base = csvData || getEmptyCsvData();
+    const newRow = base.headers.map(() => "");
+    // Insert new row at appropriate position based on current page
+    const insertIndex = Math.min(pageOffset, base.rows.length);
+    const newRows = [
+      ...base.rows.slice(0, insertIndex),
+      newRow,
+      ...base.rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, 1);
+    markRowsAsNew([insertIndex]);
     setCsvData({
       headers: base.headers,
-      rows: [...base.rows, base.headers.map(() => "")],
+      rows: newRows,
     });
     setSnackbarMessage(t("commonConversionMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
-  const handleRefresh = () => handleSearch();
+  const handleEnterSelectionMode = () => {
+    if (!csvData || csvData.rows.length === 0) {
+      setSnackbarMessage(t("common.noRowsToSelect"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+    enterSelectionMode();
+  };
+
+  const handleCancelSelectionMode = () => {
+    exitSelectionMode();
+  };
+
+  const handleAddSelectedRows = () => {
+    if (selectedCount === 0) return;
+    const base = csvData || getEmptyCsvData();
+    const selectedRows = Array.from(selectedRowIndices)
+      .sort((a, b) => a - b)
+      .map((idx) => [...base.rows[idx]]);
+    const insertIndex = Math.min(pageOffset, base.rows.length);
+    const newRows = [
+      ...base.rows.slice(0, insertIndex),
+      ...selectedRows,
+      ...base.rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    setCsvData({
+      headers: base.headers,
+      rows: newRows,
+    });
+    exitSelectionMode();
+    setSnackbarMessage(t("commonConversionMaster.rowAdded"));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
+  const handleDeleteNewRow = (rowIndex: number) => {
+    if (!csvData) return;
+    const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
+    shiftIndicesForDeletion(rowIndex);
+    setCsvData({ ...csvData, rows: newRows });
+    setSnackbarMessage(t("common.newRowDeleted"));
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
+
+  const handleRefresh = () => {
+    clearNewRowTracking();
+    handleSearch();
+  };
 
   const handleRegistration = async () => {
     if (!csvData) return;
@@ -751,6 +834,13 @@ export default function CommonConversionMasterScreen() {
               {searchExecuted && (
                 <StyledResultBorderBox>
                   <StyledResultPaper elevation={0}>
+                    {isSelectingRows ? (
+                      <SelectionModeToolbar
+                        selectedCount={selectedCount}
+                        onAddSelectedRows={handleAddSelectedRows}
+                        onCancel={handleCancelSelectionMode}
+                      />
+                    ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
@@ -758,14 +848,10 @@ export default function CommonConversionMasterScreen() {
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
-                        <StyledAddRowButton
-                          variant="outlined"
-                          size="small"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddRow}
-                        >
-                          {t("commonConversionMaster.addRow")}
-                        </StyledAddRowButton>
+                        <AddRowMenuButton
+                          onAddEmptyRow={handleAddEmptyRow}
+                          onAddExistingRows={handleEnterSelectionMode}
+                        />
                         <StyledSecondaryButton
                           variant="outlined"
                           size="small"
@@ -800,6 +886,7 @@ export default function CommonConversionMasterScreen() {
                         />
                       </StyledToolbarButtonsBox>
                     </StyledToolbar>
+                    )}
                     <StyledSearchBarBox>
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
@@ -859,6 +946,15 @@ export default function CommonConversionMasterScreen() {
                           <StyledResultTable stickyHeader size="small">
                             <TableHead>
                               <TableRow>
+                                {isSelectingRows && (
+                                  <StyledSelectionCheckboxCell>
+                                    <StyledSelectionHeaderCheckbox
+                                      checked={selectedCount === displayData.rows.length && displayData.rows.length > 0}
+                                      indeterminate={selectedCount > 0 && selectedCount < displayData.rows.length}
+                                      onChange={(e) => handleSelectAllChange(e.target.checked, Array.from({ length: displayData.rows.length }, (_, i) => i))}
+                                    />
+                                  </StyledSelectionCheckboxCell>
+                                )}
                                 <StyledTableHeaderCell
                                   $indexCell
                                   $isFrozen={freezeIndices.includes(0)}
@@ -886,6 +982,7 @@ export default function CommonConversionMasterScreen() {
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
+                                {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                               </TableRow>
                             </TableHead>
                             <TableBody>
@@ -897,6 +994,14 @@ export default function CommonConversionMasterScreen() {
                                     key={originalRowIndex}
                                     $index={i}
                                   >
+                                    {isSelectingRows && (
+                                      <StyledSelectionCheckboxCell>
+                                        <StyledSelectionRowCheckbox
+                                          checked={selectedRowIndices.has(originalRowIndex)}
+                                          onChange={() => toggleRowSelection(originalRowIndex)}
+                                        />
+                                      </StyledSelectionCheckboxCell>
+                                    )}
                                     <StyledTableIndexCell
                                       $isFrozen={freezeIndices.includes(0)}
                                       $leftOffset={getLeftOffset(0)}
@@ -975,6 +1080,19 @@ export default function CommonConversionMasterScreen() {
                                         )}
                                       </StyledTableDataCell>
                                     ))}
+                                    {newRowCount > 0 && (
+                                      <StyledDeleteActionCell>
+                                        {isNewRow(originalRowIndex) && (
+                                          <StyledNewRowDeleteButton
+                                            size="small"
+                                            onClick={() => handleDeleteNewRow(originalRowIndex)}
+                                            title={t("common.deleteRow")}
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </StyledNewRowDeleteButton>
+                                        )}
+                                      </StyledDeleteActionCell>
+                                    )}
                                   </StyledTableBodyRow>
                                 );
                               })}

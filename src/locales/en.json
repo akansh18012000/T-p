@@ -701,5 +701,16 @@
   },
   "tableCommon": {
     "rowNumber": "#"
+  },
+  "common": {
+    "addRow": "Add Row",
+    "addEmptyRow": "Add Empty Row",
+    "addExistingRows": "Add Existing Rows",
+    "addSelectedRows": "Add Selected Rows ({{count}})",
+    "cancelSelection": "Cancel",
+    "rowsAddedFromSelection": "{{count}} row(s) added.",
+    "deleteRow": "Delete Row",
+    "newRowDeleted": "New row deleted.",
+    "selectAll": "Select All"
   }
 }
