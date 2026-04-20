@@ -879,6 +879,13 @@ export default function GlobalDadMasterScreen() {
               {searchExecuted && (
                 <StyledResultBorderBox>
                   <StyledResultPaper elevation={0}>
+                    {isSelectingRows ? (
+                      <SelectionModeToolbar
+                        selectedCount={selectedCount}
+                        onAddSelectedRows={handleAddSelectedRows}
+                        onCancel={handleCancelSelectionMode}
+                      />
+                    ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
                         <StyledSectionTitle variant="h6">
@@ -886,54 +893,45 @@ export default function GlobalDadMasterScreen() {
                         </StyledSectionTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
-                        {isSelectingRows ? (
-                          <SelectionModeToolbar
-                            selectedCount={selectedCount}
-                            onAddSelectedRows={handleAddSelectedRows}
-                            onCancel={handleCancelSelectionMode}
-                          />
-                        ) : (
-                          <>
-                            <AddRowMenuButton
-                              onAddEmptyRow={handleAddEmptyRow}
-                              onAddExistingRows={handleEnterSelectionMode}
-                            />
-                            <StyledSecondaryButton
-                              variant="outlined"
-                              size="small"
-                              startIcon={<RefreshIcon />}
-                              onClick={handleRefresh}
-                            >
-                              {t("globalDadMaster.refresh")}
-                            </StyledSecondaryButton>
-                            <StyledSecondaryButton
-                              variant="outlined"
-                              size="small"
-                              startIcon={<GetAppIcon />}
-                              onClick={handleDownloadCsv}
-                              disabled={!hasRows}
-                            >
-                              {t("globalDadMaster.download")}
-                            </StyledSecondaryButton>
-                            <StyledPrimaryContainedButton
-                              variant="contained"
-                              size="small"
-                              startIcon={<AppRegistrationIcon />}
-                              onClick={handleRegistration}
-                              disabled={!hasRows}
-                            >
-                              {t("globalDadMaster.registration")}
-                            </StyledPrimaryContainedButton>
+                        <AddRowMenuButton
+                          onAddEmptyRow={handleAddEmptyRow}
+                          onAddExistingRows={handleEnterSelectionMode}
+                        />
+                        <StyledSecondaryButton
+                          variant="outlined"
+                          size="small"
+                          startIcon={<RefreshIcon />}
+                          onClick={handleRefresh}
+                        >
+                          {t("globalDadMaster.refresh")}
+                        </StyledSecondaryButton>
+                        <StyledSecondaryButton
+                          variant="outlined"
+                          size="small"
+                          startIcon={<GetAppIcon />}
+                          onClick={handleDownloadCsv}
+                          disabled={!hasRows}
+                        >
+                          {t("globalDadMaster.download")}
+                        </StyledSecondaryButton>
+                        <StyledPrimaryContainedButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<AppRegistrationIcon />}
+                          onClick={handleRegistration}
+                          disabled={!hasRows}
+                        >
+                          {t("globalDadMaster.registration")}
+                        </StyledPrimaryContainedButton>
 
-                            <FreezeColumnsButton
-                              component={StyledSecondaryButton}
-                              onClick={() => setDialogOpen(true)}
-                              disabled={!hasRows}
-                            />
-                          </>
-                        )}
+                        <FreezeColumnsButton
+                          component={StyledSecondaryButton}
+                          onClick={() => setDialogOpen(true)}
+                          disabled={!hasRows}
+                        />
                       </StyledToolbarButtonsBox>
                     </StyledToolbar>
+                    )}
                     <StyledSearchBarBox>
                       <StyledSearchInputWrapper>
                         <StyledSearchTextField
@@ -998,15 +996,11 @@ export default function GlobalDadMasterScreen() {
                               <TableRow>
                                 {/* Selection checkbox column (only in selection mode) */}
                                 {isSelectingRows && (
-                                  <StyledSelectionCheckboxCell $isHeader>
+                                  <StyledSelectionCheckboxCell>
                                     <StyledSelectionHeaderCheckbox
-                                      size="small"
-                                      checked={pagedRowIndices.length > 0 && selectedCount === pagedRowIndices.length}
-                                      indeterminate={selectedCount > 0 && selectedCount < pagedRowIndices.length}
-                                      onChange={(e) => {
-                                        const visibleIndices = pagedRowIndices.map((_, i) => i);
-                                        handleSelectAllChange(e.target.checked, visibleIndices);
-                                      }}
+                                      checked={selectedCount === displayData.rows.length && displayData.rows.length > 0}
+                                      indeterminate={selectedCount > 0 && selectedCount < displayData.rows.length}
+                                      onChange={(e) => handleSelectAllChange(e.target.checked, Array.from({ length: displayData.rows.length }, (_, i) => i))}
                                     />
                                   </StyledSelectionCheckboxCell>
                                 )}
