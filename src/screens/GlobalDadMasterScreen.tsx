@@ -1039,9 +1039,7 @@ export default function GlobalDadMasterScreen() {
                                 ))}
                                 {/* Delete action column header (only visible when there are new rows) */}
                                 {newRowCount > 0 && (
-                                  <StyledDeleteActionHeaderCell>
-                                    {t("common.deleteRow")}
-                                  </StyledDeleteActionHeaderCell>
+                                  <StyledDeleteActionHeaderCell />
                                 )}
                               </TableRow>
                             </TableHead>

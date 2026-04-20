@@ -852,7 +852,7 @@ export default function StandardCostMasterScreen() {
       newRow,
       ...base.rows.slice(insertIndex),
     ];
-    shiftIndicesForInsertion(insertIndex);
+    shiftIndicesForInsertion(insertIndex, 1);
     markRowsAsNew([insertIndex]);
     setCsvData({
       headers: base.headers,
