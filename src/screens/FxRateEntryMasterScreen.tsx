@@ -1063,7 +1063,7 @@ function FxRateEntryMasterScreen() {
                                     ))}
                                     {/* Delete action cell (only visible when there are new rows) */}
                                     {newRowCount > 0 && (
-                                      <StyledDeleteActionCell $rowIndex={i}>
+                                      <StyledDeleteActionCell>
                                         {isNewRow(originalRowIndex) && (
                                           <StyledNewRowDeleteButton
                                             size="small"
