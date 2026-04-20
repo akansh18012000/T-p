@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 
 export interface UseRowSelectionModeOptions {
   /** Total number of rows in the current view (for Select All) */
@@ -44,19 +44,19 @@ export function useRowSelectionMode(
   const [isSelectingRows, setIsSelectingRows] = useState(false);
   const [selectedRowIndices, setSelectedRowIndices] = useState<Set<number>>(new Set());
 
-  const enterSelectionMode = useCallback(() => {
+  const enterSelectionMode = () => {
     setIsSelectingRows(true);
     setSelectedRowIndices(new Set());
     onEnterSelectionMode?.();
-  }, [onEnterSelectionMode]);
+  };
 
-  const exitSelectionMode = useCallback(() => {
+  const exitSelectionMode = () => {
     setIsSelectingRows(false);
     setSelectedRowIndices(new Set());
     onExitSelectionMode?.();
-  }, [onExitSelectionMode]);
+  };
 
-  const toggleRowSelection = useCallback((rowIndex: number) => {
+  const toggleRowSelection = (rowIndex: number) => {
     setSelectedRowIndices((prev) => {
       const next = new Set(prev);
       if (next.has(rowIndex)) {
@@ -66,41 +66,31 @@ export function useRowSelectionMode(
       }
       return next;
     });
-  }, []);
+  };
 
-  const selectAllRows = useCallback((visibleIndices: number[]) => {
+  const selectAllRows = (visibleIndices: number[]) => {
     setSelectedRowIndices(new Set(visibleIndices));
-  }, []);
+  };
 
-  const clearAllSelections = useCallback(() => {
+  const clearAllSelections = () => {
     setSelectedRowIndices(new Set());
-  }, []);
+  };
 
-  const isRowSelected = useCallback(
-    (rowIndex: number) => selectedRowIndices.has(rowIndex),
-    [selectedRowIndices]
-  );
+  const isRowSelected = (rowIndex: number) => selectedRowIndices.has(rowIndex);
 
   const selectedCount = selectedRowIndices.size;
 
-  const allVisibleSelected = useMemo(() => {
-    return visibleRowCount > 0 && selectedCount === visibleRowCount;
-  }, [visibleRowCount, selectedCount]);
+  const allVisibleSelected = visibleRowCount > 0 && selectedCount === visibleRowCount;
 
-  const someVisibleSelected = useMemo(() => {
-    return selectedCount > 0 && selectedCount < visibleRowCount;
-  }, [selectedCount, visibleRowCount]);
+  const someVisibleSelected = selectedCount > 0 && selectedCount < visibleRowCount;
 
-  const handleSelectAllChange = useCallback(
-    (checked: boolean, visibleIndices: number[]) => {
-      if (checked) {
-        selectAllRows(visibleIndices);
-      } else {
-        clearAllSelections();
-      }
-    },
-    [selectAllRows, clearAllSelections]
-  );
+  const handleSelectAllChange = (checked: boolean, visibleIndices: number[]) => {
+    if (checked) {
+      selectAllRows(visibleIndices);
+    } else {
+      clearAllSelections();
+    }
+  };
 
   return {
     isSelectingRows,

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 
 export interface UseNewRowTrackingReturn {
   /** Set of indices that are newly added rows */
@@ -22,54 +22,48 @@ export interface UseNewRowTrackingReturn {
 export function useNewRowTracking(): UseNewRowTrackingReturn {
   const [newRowIndices, setNewRowIndices] = useState<Set<number>>(new Set());
 
-  const markRowsAsNew = useCallback((indices: number[]) => {
+  const markRowsAsNew = (indices: number[]) => {
     setNewRowIndices((prev) => {
       const next = new Set(prev);
       indices.forEach((idx) => next.add(idx));
       return next;
     });
-  }, []);
+  };
 
-  const isNewRow = useCallback(
-    (index: number) => newRowIndices.has(index),
-    [newRowIndices]
-  );
+  const isNewRow = (index: number) => newRowIndices.has(index);
 
-  const removeNewRowTracking = useCallback((index: number) => {
+  const removeNewRowTracking = (index: number) => {
     setNewRowIndices((prev) => {
       const next = new Set(prev);
       next.delete(index);
       return next;
     });
-  }, []);
+  };
 
-  const clearNewRowTracking = useCallback(() => {
+  const clearNewRowTracking = () => {
     setNewRowIndices(new Set());
-  }, []);
+  };
 
-  const shiftIndicesForInsertion = useCallback(
-    (insertionIndex: number, count: number) => {
-      setNewRowIndices((prev) => {
-        const next = new Set<number>();
-        prev.forEach((idx) => {
-          if (idx >= insertionIndex) {
-            // Shift existing indices up
-            next.add(idx + count);
-          } else {
-            next.add(idx);
-          }
-        });
-        // Add the new inserted indices
-        for (let i = 0; i < count; i++) {
-          next.add(insertionIndex + i);
+  const shiftIndicesForInsertion = (insertionIndex: number, count: number) => {
+    setNewRowIndices((prev) => {
+      const next = new Set<number>();
+      prev.forEach((idx) => {
+        if (idx >= insertionIndex) {
+          // Shift existing indices up
+          next.add(idx + count);
+        } else {
+          next.add(idx);
         }
-        return next;
       });
-    },
-    []
-  );
+      // Add the new inserted indices
+      for (let i = 0; i < count; i++) {
+        next.add(insertionIndex + i);
+      }
+      return next;
+    });
+  };
 
-  const shiftIndicesForDeletion = useCallback((deletedIndex: number) => {
+  const shiftIndicesForDeletion = (deletedIndex: number) => {
     setNewRowIndices((prev) => {
       const next = new Set<number>();
       prev.forEach((idx) => {
@@ -86,9 +80,9 @@ export function useNewRowTracking(): UseNewRowTrackingReturn {
       });
       return next;
     });
-  }, []);
+  };
 
-  const newRowCount = useMemo(() => newRowIndices.size, [newRowIndices]);
+  const newRowCount = newRowIndices.size;
 
   return {
     newRowIndices,
