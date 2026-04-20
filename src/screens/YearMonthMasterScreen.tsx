@@ -214,6 +214,7 @@ function YearMonthMasterScreen() {
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
+    if (!isNewRow(rowIndex)) return;
     const newRows = rows.filter((_, idx) => idx !== rowIndex);
     shiftIndicesForDeletion(rowIndex);
     setRows(newRows);

@@ -206,10 +206,9 @@ export default function CommonMasterScreen() {
     enterSelectionMode,
     exitSelectionMode,
     toggleRowSelection,
-    isRowSelected,
     handleSelectAllChange,
     selectedCount,
-  } = useRowSelectionMode({ visibleRowCount: 0 });
+  } = useRowSelectionMode();
 
   // Track newly added rows for delete icon
   const {
@@ -322,6 +321,12 @@ export default function CommonMasterScreen() {
   };
 
   const handleEnterSelectionMode = () => {
+    if (!csvData || csvData.rows.length === 0) {
+      setSnackbarMessage(t("common.noRowsToSelect"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
     enterSelectionMode();
   };
 
@@ -330,37 +335,25 @@ export default function CommonMasterScreen() {
   };
 
   const handleAddSelectedRows = () => {
-    if (selectedCount === 0) {
-      exitSelectionMode();
-      return;
-    }
-
+    if (selectedCount === 0) return;
     const base = csvData || getEmptyCsvData();
-    const insertIndex = pageOffset;
-
-    // Get the selected rows (use original display indices)
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => {
-        // Map the visible index to actual row
-        const actualIndex = pagedRowIndices[idx];
-        return displayData.rows[actualIndex] ? [...displayData.rows[actualIndex]] : base.headers.map(() => "");
-      });
-
-    // Insert selected rows at current page position
+      .map((idx) => [...base.rows[idx]]);
+    const insertIndex = Math.min(pageOffset, base.rows.length);
     const newRows = [
       ...base.rows.slice(0, insertIndex),
       ...selectedRows,
       ...base.rows.slice(insertIndex),
     ];
-
-    setCsvData({ headers: base.headers, rows: newRows });
-    
-    // Mark inserted rows as new
     shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    setCsvData({
+      headers: base.headers,
+      rows: newRows,
+    });
     exitSelectionMode();
-    setSnackbarMessage(t("common.rowsAddedFromSelection", { count: selectedRows.length }));
+    setSnackbarMessage(t("commonMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -785,11 +778,10 @@ export default function CommonMasterScreen() {
                                   >
                                     {/* Selection checkbox cell (only in selection mode) */}
                                     {isSelectingRows && (
-                                      <StyledSelectionCheckboxCell $rowIndex={i}>
+                                      <StyledSelectionCheckboxCell>
                                         <StyledSelectionRowCheckbox
-                                          size="small"
-                                          checked={isRowSelected(i)}
-                                          onChange={() => toggleRowSelection(i)}
+                                          checked={selectedRowIndices.has(originalRowIndex)}
+                                          onChange={() => toggleRowSelection(originalRowIndex)}
                                         />
                                       </StyledSelectionCheckboxCell>
                                     )}

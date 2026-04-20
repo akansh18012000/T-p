@@ -372,10 +372,9 @@ function FxRateEntryMasterScreen() {
     enterSelectionMode,
     exitSelectionMode,
     toggleRowSelection,
-    isRowSelected,
     handleSelectAllChange,
     selectedCount,
-  } = useRowSelectionMode({ visibleRowCount: 0 });
+  } = useRowSelectionMode();
 
   // Track newly added rows for delete icon
   const {
@@ -498,6 +497,12 @@ function FxRateEntryMasterScreen() {
   };
 
   const handleEnterSelectionMode = () => {
+    if (!csvData || csvData.rows.length === 0) {
+      setSnackbarMessage(t("common.noRowsToSelect"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
     enterSelectionMode();
   };
 
@@ -506,32 +511,25 @@ function FxRateEntryMasterScreen() {
   };
 
   const handleAddSelectedRows = () => {
-    if (selectedCount === 0) {
-      exitSelectionMode();
-      return;
-    }
-
+    if (selectedCount === 0) return;
     const base = csvData || getEmptyCsvData();
-    const insertIndex = pageOffset;
-
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => {
-        const actualIndex = pagedRowIndices[idx];
-        return displayData.rows[actualIndex] ? [...displayData.rows[actualIndex]] : base.headers.map(() => "");
-      });
-
+      .map((idx) => [...base.rows[idx]]);
+    const insertIndex = Math.min(pageOffset, base.rows.length);
     const newRows = [
       ...base.rows.slice(0, insertIndex),
       ...selectedRows,
       ...base.rows.slice(insertIndex),
     ];
-
-    setCsvData({ headers: base.headers, rows: newRows });
     shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    setCsvData({
+      headers: base.headers,
+      rows: newRows,
+    });
     exitSelectionMode();
-    setSnackbarMessage(t("common.rowsAddedFromSelection", { count: selectedRows.length }));
+    setSnackbarMessage(t("fxRateEntryMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
@@ -969,11 +967,10 @@ function FxRateEntryMasterScreen() {
                                   >
                                     {/* Selection checkbox cell (only in selection mode) */}
                                     {isSelectingRows && (
-                                      <StyledSelectionCheckboxCell $rowIndex={i}>
+                                      <StyledSelectionCheckboxCell>
                                         <StyledSelectionRowCheckbox
-                                          size="small"
-                                          checked={isRowSelected(i)}
-                                          onChange={() => toggleRowSelection(i)}
+                                          checked={selectedRowIndices.has(originalRowIndex)}
+                                          onChange={() => toggleRowSelection(originalRowIndex)}
                                         />
                                       </StyledSelectionCheckboxCell>
                                     )}

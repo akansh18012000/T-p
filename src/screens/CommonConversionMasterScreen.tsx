@@ -467,7 +467,7 @@ export default function CommonConversionMasterScreen() {
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
-    if (!csvData) return;
+    if (!csvData || !isNewRow(rowIndex)) return;
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
