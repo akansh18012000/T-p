@@ -11,8 +11,6 @@ import {
   Divider,
   Table,
   TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   LinearProgress,
@@ -34,6 +32,32 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
 import { parseCsv, type CsvData as CsvDataType } from "../utils/csvUtils.js";
+import {
+  StyledHeaderBox,
+  StyledHeaderTitle,
+  StyledContentBox,
+  StyledUploadIconCircle,
+  StyledCloudUploadIcon,
+  StyledDragDropSubtitle,
+  StyledBrowseFilesButton,
+  StyledSupportedFormatText,
+  StyledFileInfoBox,
+  StyledFileInfoInner,
+  StyledFileIcon,
+  StyledFileNameText,
+  StyledFileSizeText,
+  StyledUploadButton,
+  StyledViewButton,
+  StyledProgressText,
+  StyledProgressBox,
+  StyledSelectedFileBox,
+  StyledPreviewTableContainer,
+  StyledPreviewTableHeaderCell,
+  StyledPreviewTableBodyRow,
+  StyledPreviewTableDataCell,
+  StyledActionButtonsBox,
+  StyledRegisterButton,
+} from "../components/shared/StyledComponents.js";
 
 const FILE_TYPE_OPTIONS = [
   "FA_BS",
@@ -55,21 +79,6 @@ const StyledMainPaper = styled(Paper)(({ theme }) => ({
   maxWidth: 1800,
   marginLeft: "auto",
   marginRight: "auto",
-}));
-
-const StyledHeaderBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
-  borderBottom: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.background.paper,
-}));
-
-const StyledHeaderTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 600,
-  color: theme.palette.grey![800],
-}));
-
-const StyledContentBox = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(3),
 }));
 
 const StyledFormControl = styled(FormControl)(({ theme }) => ({
@@ -150,112 +159,10 @@ const StyledDragDropZone = styled(Box)<{ $dragActive: boolean }>(
   }),
 );
 
-const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    width: 80,
-    height: 80,
-    borderRadius: "50%",
-    background: $dragActive
-      ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-      : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 100%)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: "auto",
-    marginRight: "auto",
-    marginBottom: theme.spacing(2),
-  }),
-);
-
-const StyledCloudUploadIcon = styled(CloudUploadOutlinedIcon)<{
-  $dragActive: boolean;
-}>(({ $dragActive, theme }) => ({
-  fontSize: 40,
-  color: $dragActive ? theme.palette.common.white : theme.palette.primary.main,
-}));
-
 const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.grey![700],
   marginBottom: theme.spacing(0.5),
-}));
-
-const StyledDragDropSubtitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledBrowseButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  textTransform: "none",
-  fontWeight: 600,
-  paddingLeft: theme.spacing(4),
-  paddingRight: theme.spacing(4),
-  paddingTop: theme.spacing(1),
-  paddingBottom: theme.spacing(1),
-  borderRadius: "8px",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledSupportedFormatsText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-  display: "block",
-  marginTop: theme.spacing(2),
-}));
-
-const StyledFileRowBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(2),
-  flexWrap: "wrap",
-}));
-
-const StyledFileInfoBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(1.5),
-}));
-
-const StyledFileIconWithColor = styled(Box)<{ $color: string }>(
-  ({ $color }) => ({
-    "& .MuiSvgIcon-root": {
-      color: $color,
-      fontSize: 32,
-    },
-  }),
-);
-
-const StyledFileNameText = styled(Typography)(({ theme }) => ({
-  fontWeight: 500,
-  color: theme.palette.grey![700],
-}));
-
-const StyledFileSizeText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-}));
-
-const StyledUploadButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  fontWeight: 600,
-  textTransform: "none",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledViewButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  textTransform: "none",
-  fontWeight: 600,
-  "&:hover": {
-    borderColor: theme.palette.primary.dark,
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
 }));
 
 const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
@@ -268,55 +175,6 @@ const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
   },
 }));
 
-const StyledProgressText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginTop: theme.spacing(0.5),
-  display: "block",
-}));
-
-const StyledProgressWrapper = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  maxWidth: 400,
-}));
-
-const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-}));
-
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
-  border: `1px solid ${theme.palette.grey![200]}`,
-  borderRadius: "12px",
-  maxHeight: 360,
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledTableHeaderCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: theme.palette.table!.headerBg,
-  fontWeight: 600,
-  color: theme.palette.common.white,
-  border: `1px solid ${theme.palette.grey![200]}`,
-  minWidth: 120,
-}));
-
-const StyledTableBodyRow = styled(TableRow)<{ $index: number }>(
-  ({ $index, theme }) => ({
-    backgroundColor:
-      $index % 2 === 0
-        ? theme.palette.table!.rowEven
-        : theme.palette.table!.rowOdd,
-  }),
-);
-
-const StyledTableBodyCell = styled(TableCell)(({ theme }) => ({
-  border: `1px solid ${theme.palette.grey![200]}`,
-  color: theme.palette.grey![700],
-}));
-
-const StyledActionsBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  gap: theme.spacing(2),
-}));
-
 const StyledCancelButton = styled(Button)(({ theme }) => ({
   borderColor: theme.palette.grey![500],
   color: theme.palette.grey![500],
@@ -324,11 +182,6 @@ const StyledCancelButton = styled(Button)(({ theme }) => ({
     borderColor: theme.palette.grey![600],
     backgroundColor: alpha(theme.palette.grey![500], 0.04),
   },
-}));
-
-const StyledRegisterButton = styled(Button)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  "&:hover": { backgroundColor: theme.palette.primary.dark },
 }));
 
 export default function StravisCoaHierarchyUploadScreen() {
@@ -572,7 +425,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                         <StyledDragDropSubtitle variant="body2">
                           {t("upload.orClickToBrowse")}
                         </StyledDragDropSubtitle>
-                        <StyledBrowseButton
+                        <StyledBrowseFilesButton
                           variant="contained"
                           startIcon={<CloudUploadOutlinedIcon />}
                           onClick={(e) => {
@@ -581,21 +434,21 @@ export default function StravisCoaHierarchyUploadScreen() {
                           }}
                         >
                           {t("upload.browseFiles")}
-                        </StyledBrowseButton>
-                        <StyledSupportedFormatsText variant="caption">
+                        </StyledBrowseFilesButton>
+                        <StyledSupportedFormatText variant="caption">
                           {t("upload.supportedFormats")}
-                        </StyledSupportedFormatsText>
+                        </StyledSupportedFormatText>
                       </StyledDragDropZone>
 
                       {selectedFile && (
                         <StyledSelectedFileBox>
-                          <StyledFileRowBox>
-                            <StyledFileInfoBox>
-                              <StyledFileIconWithColor
+                          <StyledFileInfoBox>
+                            <StyledFileInfoInner>
+                              <StyledFileIcon
                                 $color={getFileIcon(selectedFile.name).color}
                               >
                                 <DescriptionOutlinedIcon />
-                              </StyledFileIconWithColor>
+                              </StyledFileIcon>
                               <Box>
                                 <StyledFileNameText variant="body2">
                                   {selectedFile.name}
@@ -607,7 +460,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                                   )}
                                 </StyledFileSizeText>
                               </Box>
-                            </StyledFileInfoBox>
+                            </StyledFileInfoInner>
                             <StyledUploadButton
                               variant="contained"
                               size="small"
@@ -627,9 +480,9 @@ export default function StravisCoaHierarchyUploadScreen() {
                                 {t("upload.view")}
                               </StyledViewButton>
                             )}
-                          </StyledFileRowBox>
+                          </StyledFileInfoBox>
                           {uploadStatus === "uploading" && (
-                            <StyledProgressWrapper>
+                            <StyledProgressBox>
                               <StyledLinearProgress
                                 variant="determinate"
                                 value={uploadProgress}
@@ -637,7 +490,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                               <StyledProgressText variant="caption">
                                 {uploadProgress}%
                               </StyledProgressText>
-                            </StyledProgressWrapper>
+                            </StyledProgressBox>
                           )}
                         </StyledSelectedFileBox>
                       )}
@@ -647,36 +500,36 @@ export default function StravisCoaHierarchyUploadScreen() {
                       <StyledDragDropTitle variant="subtitle1">
                         {selectedFile?.name}
                       </StyledDragDropTitle>
-                      <StyledTableContainer>
+                      <StyledPreviewTableContainer>
                         <Table stickyHeader size="small">
                           <TableHead>
                             <TableRow>
                               {uploadedCsvData.headers.map(
                                 (header, colIndex) => (
-                                  <StyledTableHeaderCell key={colIndex}>
+                                  <StyledPreviewTableHeaderCell key={colIndex}>
                                     {header}
-                                  </StyledTableHeaderCell>
+                                  </StyledPreviewTableHeaderCell>
                                 ),
                               )}
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {uploadedCsvData.rows.map((row, rowIndex) => (
-                              <StyledTableBodyRow
+                              <StyledPreviewTableBodyRow
                                 key={rowIndex}
                                 $index={rowIndex}
                               >
                                 {row.map((cell, colIndex) => (
-                                  <StyledTableBodyCell key={colIndex}>
+                                  <StyledPreviewTableDataCell key={colIndex}>
                                     {cell}
-                                  </StyledTableBodyCell>
+                                  </StyledPreviewTableDataCell>
                                 ))}
-                              </StyledTableBodyRow>
+                              </StyledPreviewTableBodyRow>
                             ))}
                           </TableBody>
                         </Table>
-                      </StyledTableContainer>
-                      <StyledActionsBox>
+                      </StyledPreviewTableContainer>
+                      <StyledActionButtonsBox>
                         <StyledCancelButton
                           variant="outlined"
                           onClick={handleUploadCancel}
@@ -690,7 +543,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                         >
                           Register
                         </StyledRegisterButton>
-                      </StyledActionsBox>
+                      </StyledActionButtonsBox>
                     </>
                   )}
                 </StyledUploadFlexBox>
