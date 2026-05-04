@@ -14,6 +14,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import InputIcon from "@mui/icons-material/Input";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 
 export interface MenuItem {
   id: string;
@@ -55,6 +56,11 @@ export const DATA_INPUT_ITEMS: MenuItem[] = [
     id: "planning-data-ingestion",
     label: "home.planningDataIngestion",
     icon: ScheduleIcon,
+  },
+  {
+    id: "stravis-coa-hierarchy-upload",
+    label: "home.stravisCoaHierarchyUpload",
+    icon: AccountTreeIcon,
   },
 ];
 
@@ -158,6 +164,7 @@ const PATH_TO_SCREEN_ID: Record<string, string> = {
   "/year-month": "year-month",
   "/fx-rate-entry": "fx-rate-daily",
   "/planning-data-ingestion": "planning-data-ingestion",
+  "/stravis-coa-hierarchy-upload": "stravis-coa-hierarchy-upload",
 };
 
 export function getScreenIdFromPathname(pathname: string): string | undefined {
@@ -227,6 +234,9 @@ export const handleMenuItemNavigation = (
       break;
     case "planning-data-ingestion":
       navigate("/planning-data-ingestion");
+      break;
+    case "stravis-coa-hierarchy-upload":
+      navigate("/stravis-coa-hierarchy-upload");
       break;
     default:
       console.log("Navigating to:", item.id);

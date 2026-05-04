@@ -51,6 +51,7 @@
     "allocationMasterMaintenance": "配分マスター保守",
     "securityMasterMaintenance": "セキュリティマスター保守",
     "planningDataIngestion": "計画データ取込",
+    "stravisCoaHierarchyUpload": "Stravis COA階層アップロード",
     "logout": "ログアウト"
   },
   "upload": {
@@ -379,6 +380,12 @@
     "noDataMessage": "取込データがありません。",
     "useStartIngestion": "データを読み込むには「取込開始」をクリックしてください。",
     "loadingMessage": "データを取込中..."
+  },
+  "stravisCoaHierarchyUpload": {
+    "title": "Stravis COA階層アップロード",
+    "fileType": "ファイル種別",
+    "selectFileType": "ファイル種別を選択",
+    "success": "ファイルが正常にアップロードされました！"
   },
   "gpcMaster": {
     "searchCondition": "検索条件",

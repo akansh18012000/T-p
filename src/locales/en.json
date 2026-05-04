@@ -51,6 +51,7 @@
     "allocationMasterMaintenance": "Allocation Master Maintenance",
     "securityMasterMaintenance": "Security Master Maintenance",
     "planningDataIngestion": "Planning Data Ingestion",
+    "stravisCoaHierarchyUpload": "Stravis COA Hierarchy Upload",
     "logout": "Logout"
   },
   "upload": {
@@ -379,6 +380,12 @@
     "noDataMessage": "No ingestion data yet.",
     "useStartIngestion": "Click Start Ingestion to load data.",
     "loadingMessage": "Ingesting data..."
+  },
+  "stravisCoaHierarchyUpload": {
+    "title": "Stravis COA Hierarchy Upload",
+    "fileType": "File type",
+    "selectFileType": "Select file type",
+    "success": "File uploaded successfully!"
   },
   "gpcMaster": {
     "searchCondition": "Search Condition",

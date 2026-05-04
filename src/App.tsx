@@ -44,6 +44,7 @@ import CommonConversionMasterScreen from "./screens/CommonConversionMasterScreen
 import YearMonthMasterScreen from "./screens/YearMonthMasterScreen.js";
 import FxRateEntryMasterScreen from "./screens/FxRateEntryMasterScreen.js";
 import PlanningDataIngestionScreen from "./screens/PlanningDataIngestionScreen.js";
+import StravisCoaHierarchyUploadScreen from "./screens/StravisCoaHierarchyUploadScreen.js";
 import UploadedCsvPreviewScreen from "./screens/UploadedCsvPreviewScreen.js";
 
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -182,6 +183,10 @@ export default function App() {
                   <Route
                     path="/planning-data-ingestion"
                     element={<PlanningDataIngestionScreen />}
+                  />
+                  <Route
+                    path="/stravis-coa-hierarchy-upload"
+                    element={<StravisCoaHierarchyUploadScreen />}
                   />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
