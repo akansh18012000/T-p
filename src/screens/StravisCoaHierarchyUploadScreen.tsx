@@ -558,7 +558,7 @@ export default function StravisCoaHierarchyUploadScreen() {
         autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
         message={snackbarMessage}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       />
     </>
   );

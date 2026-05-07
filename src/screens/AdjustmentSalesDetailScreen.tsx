@@ -32,6 +32,7 @@ import {
   InputLabel,
   Select,
   MenuItem as MuiMenuItem,
+  type AlertColor,
 } from "@mui/material";
 import {
   CloudUpload as CloudUploadIcon,
@@ -50,7 +51,10 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
 import { parseCsv, type CsvData as CsvDataType } from "../utils/csvUtils.js";
-import { StyledTablePagination } from "../components/shared/StyledComponents.js";
+import {
+  StyledTablePagination,
+  StyledSnackbarAlert,
+} from "../components/shared/StyledComponents.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -563,6 +567,14 @@ export default function AdjustmentSalesDetailScreen() {
   );
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] =
+    useState<AlertColor>("success");
+
+  const showSnackbar = (message: string, severity: AlertColor = "success") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -611,13 +623,11 @@ export default function AdjustmentSalesDetailScreen() {
       const parsed = (await parseCsv(text)) as CsvDataType;
       setUploadedCsvData(screenKey, parsed);
       setUploadStatus("completed");
-      setSnackbarMessage(t("adjustmentSalesDetail.success"));
-      setSnackbarOpen(true);
+      showSnackbar(t("adjustmentSalesDetail.success"), "success");
     } catch {
       setUploadStatus("idle");
       setUploadProgress(0);
-      setSnackbarMessage(t("adjustmentData.errorParsingCsv"));
-      setSnackbarOpen(true);
+      showSnackbar(t("adjustmentData.errorParsingCsv"), "error");
     }
   };
 
@@ -627,8 +637,7 @@ export default function AdjustmentSalesDetailScreen() {
     setUploadProgress(0);
     setUploadStatus("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
-    setSnackbarOpen(true);
+    showSnackbar("Upload cancelled.", "info");
   };
 
   const handleViewCsv = (file: File) => {
@@ -656,11 +665,9 @@ export default function AdjustmentSalesDetailScreen() {
   };
 
   const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
-    setSnackbarOpen(true);
+    showSnackbar("Registration in progress...", "info");
     await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
-    setSnackbarOpen(true);
+    showSnackbar("Registration completed successfully.", "success");
   };
 
   const handleBrowseClick = () => {
@@ -737,8 +744,7 @@ export default function AdjustmentSalesDetailScreen() {
 
       if (parsed.errors.length > 0) {
         console.error("CSV parsing errors:", parsed.errors);
-        setSnackbarMessage(t("adjustmentData.errorParsingCsv"));
-        setSnackbarOpen(true);
+        showSnackbar(t("adjustmentData.errorParsingCsv"), "error");
         return;
       }
 
@@ -759,8 +765,7 @@ export default function AdjustmentSalesDetailScreen() {
       setCsvPage(0);
     } catch (error) {
       console.error("Error loading template:", error);
-      setSnackbarMessage(t("adjustmentData.errorLoadingTemplate"));
-      setSnackbarOpen(true);
+      showSnackbar(t("adjustmentData.errorLoadingTemplate"), "error");
     }
   };
 
@@ -820,8 +825,7 @@ export default function AdjustmentSalesDetailScreen() {
 
   const handleDeleteMarkedCsvRows = () => {
     if (csvDeletionFlags.size === 0) {
-      setSnackbarMessage(t("adjustmentData.noRowsSelected"));
-      setSnackbarOpen(true);
+      showSnackbar(t("adjustmentData.noRowsSelected"), "warning");
       return;
     }
     setCsvEditor((prev) => ({
@@ -857,8 +861,7 @@ export default function AdjustmentSalesDetailScreen() {
     link.click();
     window.URL.revokeObjectURL(url);
 
-    setSnackbarMessage(t("adjustmentData.csvDownloaded"));
-    setSnackbarOpen(true);
+    showSnackbar(t("adjustmentData.csvDownloaded"), "success");
   };
 
   const handleUploadEditedCsv = () => {
@@ -880,8 +883,7 @@ export default function AdjustmentSalesDetailScreen() {
     setSelectedFile(screenKey, file);
     setUploadedCsvData(screenKey, csvEditor.data);
     setCsvEditor((prev) => ({ ...prev, isOpen: false }));
-    setSnackbarMessage(t("adjustmentData.csvAddedToQueue"));
-    setSnackbarOpen(true);
+    showSnackbar(t("adjustmentData.csvAddedToQueue"), "success");
   };
 
   const handleCloseCsvEditor = () => {
@@ -1285,9 +1287,15 @@ export default function AdjustmentSalesDetailScreen() {
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      />
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <StyledSnackbarAlert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+        >
+          {snackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
     </>
   );
 }

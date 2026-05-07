@@ -1019,9 +1019,36 @@ export const StyledUploadSectionContent = styled(Box)(({ theme }) => ({
   paddingBottom: theme.spacing(3),
 }));
 
-export const StyledSnackbarAlert = styled(Alert)({
+export const StyledSnackbarAlert = styled(Alert)(({ theme }) => ({
   width: "100%",
-});
+  minWidth: 380,
+  fontSize: "1.05rem",
+  padding: theme.spacing(1.5, 2.5),
+  borderRadius: 10,
+  boxShadow: theme.shadows[6],
+  alignItems: "center",
+  "& .MuiAlert-icon": {
+    fontSize: "1.75rem",
+    marginRight: theme.spacing(1.5),
+    padding: 0,
+  },
+  "& .MuiAlert-message": {
+    fontSize: "1.05rem",
+    fontWeight: 500,
+    padding: theme.spacing(0.5, 0),
+  },
+  "& .MuiAlert-action": {
+    paddingTop: 0,
+    marginRight: 0,
+    alignItems: "center",
+    "& .MuiIconButton-root": {
+      padding: theme.spacing(0.75),
+    },
+    "& .MuiSvgIcon-root": {
+      fontSize: "1.5rem",
+    },
+  },
+}));
 
 // ---------------------------------------------------------------------------
 // Tabs (for Adjustment screens)

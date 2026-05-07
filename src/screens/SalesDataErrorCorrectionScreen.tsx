@@ -1825,7 +1825,7 @@ export default function SalesDataErrorCorrectionScreen() {
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert
           onClose={() => setSnackbarOpen(false)}
