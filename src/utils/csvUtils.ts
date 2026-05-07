@@ -168,7 +168,7 @@ export function validateCsvColumns(
   uploadedHeaders: string[],
   templateHeaders: string[],
 ): CsvColumnValidationResult {
-  const normalize = (s: string) => s.replace(/^﻿/, '').trim();
+  const normalize = (s: string) => s.replace(/^\uFEFF/, '').trim();
   const uploadedKeys = new Set(
     uploadedHeaders
       .map((h) => normalize(h).toLowerCase())
