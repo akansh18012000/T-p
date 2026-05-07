@@ -254,7 +254,9 @@
     "downloadTemplate": "Download Template CSV",
     "vakdTemplate": "VAKD Template",
     "tcvsTemplate": "TCVS Template",
-    "templateNote": "Please ensure that your data follows the exact format specified in the templates."
+    "templateNote": "Please ensure that your data follows the exact format specified in the templates.",
+    "missingColumnsError": "Upload failed. The following required columns are missing: {{columns}}",
+    "templateLoadError": "Could not load the template to validate columns. Please try again."
   },
   "adjustmentData": {
     "viewEditTemplate": "View/Edit Template",

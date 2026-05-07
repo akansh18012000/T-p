@@ -20,7 +20,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  LinearProgress,
   IconButton,
   Dialog,
   DialogTitle,
@@ -50,7 +49,11 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { useUploadContext } from "../context/UploadContext.js";
 import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
-import { parseCsv, type CsvData as CsvDataType } from "../utils/csvUtils.js";
+import {
+  parseCsv,
+  validateCsvColumns,
+  type CsvData as CsvDataType,
+} from "../utils/csvUtils.js";
 import {
   StyledTablePagination,
   StyledSnackbarAlert,
@@ -278,27 +281,6 @@ const StyledViewButton = styled(Button)(({ theme }) => ({
     borderColor: theme.palette.primary.dark,
     backgroundColor: alpha(theme.palette.primary.main, 0.08),
   },
-}));
-
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  height: 6,
-  borderRadius: 4,
-  backgroundColor: theme.palette.grey![200],
-  "& .MuiLinearProgress-bar": {
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: 4,
-  },
-}));
-
-const StyledProgressText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginTop: theme.spacing(0.5),
-  display: "block",
-}));
-
-const StyledProgressWrapper = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  maxWidth: 400,
 }));
 
 const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
@@ -545,7 +527,6 @@ export default function AdjustmentSalesDetailScreen() {
   const [uploadType, setUploadType] = useState<
     "salesDetail" | "consolidated" | ""
   >("");
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "completed"
   >("idle");
@@ -605,14 +586,18 @@ export default function AdjustmentSalesDetailScreen() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const getTemplateFileName = () =>
+    uploadType === "salesDetail"
+      ? "Sales_Detail_Adjustment_Template.csv"
+      : uploadType === "consolidated"
+        ? "Consolidated_Sales_Adjustment_Template.csv"
+        : null;
+
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
+
+    let parsed: CsvDataType;
     try {
       const text = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -620,21 +605,92 @@ export default function AdjustmentSalesDetailScreen() {
         reader.onerror = reject;
         reader.readAsText(selectedFile, "UTF-8");
       });
-      const parsed = (await parseCsv(text)) as CsvDataType;
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
-      showSnackbar(t("adjustmentSalesDetail.success"), "success");
+      parsed = (await parseCsv(text)) as CsvDataType;
     } catch {
       setUploadStatus("idle");
-      setUploadProgress(0);
       showSnackbar(t("adjustmentData.errorParsingCsv"), "error");
+      return;
+    }
+
+    const templateFileName = getTemplateFileName();
+    if (templateFileName) {
+      try {
+        const templateResponse = await fetch(`/templates/${templateFileName}`);
+        if (!templateResponse.ok) throw new Error("Template fetch failed");
+        const templateText = await templateResponse.text();
+        const templateParsed = await parseCsv(templateText);
+
+        const validation = validateCsvColumns(
+          parsed.headers,
+          templateParsed.headers,
+        );
+        if (!validation.isValid) {
+          setUploadStatus("idle");
+          showSnackbar(
+            t("adjustmentSalesDetail.missingColumnsError", {
+              columns: validation.missingColumns.join(", "),
+            }),
+            "error",
+          );
+          return;
+        }
+      } catch {
+        setUploadStatus("idle");
+        showSnackbar(t("adjustmentSalesDetail.templateLoadError"), "error");
+        return;
+      }
+    }
+
+    // Validation passed — POST the file to the upload API
+    try {
+      const metadata = {
+        requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+        screen_id: "6130aa7d-6d63-450a-8a64-a9717f338701",
+        user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        entity_id: "",
+        ip_address: "192.168.1.100",
+        upload_type:
+          uploadType === "salesDetail" ? "Sales_Detail" : "Consolidated",
+      };
+
+      const formData = new FormData();
+      formData.append("requested_by", metadata.requested_by);
+      formData.append("session_id", metadata.session_id);
+      formData.append("screen_id", metadata.screen_id);
+      formData.append("user_id", metadata.user_id);
+      if (metadata.entity_id) formData.append("entity_id", metadata.entity_id);
+      if (metadata.ip_address)
+        formData.append("ip_address", metadata.ip_address);
+      if (metadata.upload_type)
+        formData.append("upload_type", metadata.upload_type);
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      // Reset back to the initial screen (drag-and-drop zone)
+      setSelectedFile(screenKey, null);
+      setUploadedCsvData(screenKey, null);
+      setUploadStatus("idle");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      showSnackbar(t("adjustmentSalesDetail.success"), "success");
+    } catch (error) {
+      console.error("Upload API error:", error);
+      setUploadStatus("idle");
+      showSnackbar(t("adjustmentSalesDetail.error"), "error");
     }
   };
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
     setUploadedCsvData(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
     showSnackbar("Upload cancelled.", "info");
@@ -675,11 +731,8 @@ export default function AdjustmentSalesDetailScreen() {
   };
 
   const handleDownloadTemplate = () => {
-    if (!uploadType) return;
-    const fileName =
-      uploadType === "salesDetail"
-        ? "Sales_Detail_Adjustment_Template.csv"
-        : "Consolidated_Sales_Adjustment_Template.csv";
+    const fileName = getTemplateFileName();
+    if (!fileName) return;
     const link = document.createElement("a");
     link.href = `/templates/${fileName}`;
     link.download = fileName;
@@ -1043,18 +1096,16 @@ export default function AdjustmentSalesDetailScreen() {
                                 {t("upload.view")}
                               </StyledViewButton>
                             )}
+                            <IconButton
+                              size="small"
+                              onClick={handleUploadCancel}
+                              disabled={uploadStatus === "uploading"}
+                              aria-label={t("upload.cancel")}
+                              sx={{ marginLeft: "auto" }}
+                            >
+                              <CloseIcon />
+                            </IconButton>
                           </StyledFileRowBox>
-                          {uploadStatus === "uploading" && (
-                            <StyledProgressWrapper>
-                              <StyledLinearProgress
-                                variant="determinate"
-                                value={uploadProgress}
-                              />
-                              <StyledProgressText variant="caption">
-                                {uploadProgress}%
-                              </StyledProgressText>
-                            </StyledProgressWrapper>
-                          )}
                         </StyledSelectedFileBox>
                       )}
                     </>

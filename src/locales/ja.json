@@ -254,7 +254,9 @@
     "downloadTemplate": "テンプレートCSVをダウンロード",
     "vakdTemplate": "VAKDテンプレート",
     "tcvsTemplate": "TCVSテンプレート",
-    "templateNote": "テンプレートで指定された正確な形式にデータが従っていることを確認してください。"
+    "templateNote": "テンプレートで指定された正確な形式にデータが従っていることを確認してください。",
+    "missingColumnsError": "アップロードに失敗しました。必要な列が不足しています：{{columns}}",
+    "templateLoadError": "列を検証するためのテンプレートを読み込めませんでした。もう一度お試しください。"
   },
   "adjustmentData": {
     "viewEditTemplate": "テンプレート表示/編集",
