@@ -667,6 +667,18 @@ export default function AdjustmentSalesDetailScreen() {
     fileInputRef.current?.click();
   };
 
+  const handleDownloadTemplate = () => {
+    if (!uploadType) return;
+    const fileName =
+      uploadType === "salesDetail"
+        ? "Sales_Detail_Adjustment_Template.csv"
+        : "Consolidated_Sales_Adjustment_Template.csv";
+    const link = document.createElement("a");
+    link.href = `/templates/${fileName}`;
+    link.download = fileName;
+    link.click();
+  };
+
   const theme = useTheme();
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
@@ -933,6 +945,7 @@ export default function AdjustmentSalesDetailScreen() {
                 <StyledDownloadTemplateButton
                   variant="outlined"
                   startIcon={<GetAppIcon />}
+                  onClick={handleDownloadTemplate}
                 >
                   {t("adjustmentSalesDetail.downloadTemplate")}
                 </StyledDownloadTemplateButton>
