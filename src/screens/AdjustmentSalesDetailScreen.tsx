@@ -507,10 +507,22 @@ export default function AdjustmentSalesDetailScreen() {
   const location = useLocation();
   const { t } = useTranslation();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
+  const {
+    getUploadState,
+    setSelectedFile,
+    setUploadedCsvData,
+    setUploadType,
+  } = useUploadContext();
 
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const {
+    selectedFile,
+    uploadedCsvData,
+    uploadType: persistedUploadType,
+  } = getUploadState(screenKey);
+  const uploadType = (persistedUploadType ?? "") as
+    | "salesDetail"
+    | "consolidated"
+    | "";
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -524,9 +536,6 @@ export default function AdjustmentSalesDetailScreen() {
   }, [t, setBreadcrumbItems]);
   // AI Generated Code by Deloitte + Cursor (END)
 
-  const [uploadType, setUploadType] = useState<
-    "salesDetail" | "consolidated" | ""
-  >("");
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "completed"
   >("idle");
@@ -693,7 +702,7 @@ export default function AdjustmentSalesDetailScreen() {
     setUploadedCsvData(screenKey, null);
     setUploadStatus("idle");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    showSnackbar("Upload cancelled.", "info");
+    showSnackbar(t("adjustmentSalesDetail.uploadCancelled"), "info");
   };
 
   const handleViewCsv = (file: File) => {
@@ -721,9 +730,9 @@ export default function AdjustmentSalesDetailScreen() {
   };
 
   const handleUploadRegister = async () => {
-    showSnackbar("Registration in progress...", "info");
+    showSnackbar(t("adjustmentSalesDetail.registerInProgress"), "info");
     await new Promise((r) => setTimeout(r, 800));
-    showSnackbar("Registration completed successfully.", "success");
+    showSnackbar(t("adjustmentSalesDetail.registerSuccess"), "success");
   };
 
   const handleBrowseClick = () => {
@@ -971,11 +980,7 @@ export default function AdjustmentSalesDetailScreen() {
               </StyledInputLabel>
               <Select
                 value={uploadType}
-                onChange={(e) =>
-                  setUploadType(
-                    e.target.value as "salesDetail" | "consolidated" | "",
-                  )
-                }
+                onChange={(e) => setUploadType(screenKey, e.target.value)}
                 label={t("adjustmentSalesDetail.uploadType")}
               >
                 <MuiMenuItem value="">
@@ -1148,14 +1153,14 @@ export default function AdjustmentSalesDetailScreen() {
                           variant="outlined"
                           onClick={handleUploadCancel}
                         >
-                          Cancel
+                          {t("adjustmentSalesDetail.cancel")}
                         </StyledCancelButton>
                         <StyledRegisterButton
                           variant="contained"
                           onClick={handleUploadRegister}
                           startIcon={<AppRegistrationIcon />}
                         >
-                          Register
+                          {t("adjustmentSalesDetail.register")}
                         </StyledRegisterButton>
                       </StyledActionsBox>
                     </>
@@ -1307,7 +1312,7 @@ export default function AdjustmentSalesDetailScreen() {
             onClick={handleDeleteMarkedCsvRows}
             disabled={csvDeletionFlags.size === 0}
           >
-            Delete Selected{" "}
+            {t("adjustmentData.deleteSelected")}{" "}
             {csvDeletionFlags.size > 0 ? `(${csvDeletionFlags.size})` : ""}
           </StyledDeleteRowsButton>
 

@@ -256,7 +256,12 @@
     "tcvsTemplate": "TCVS Template",
     "templateNote": "Please ensure that your data follows the exact format specified in the templates.",
     "missingColumnsError": "Upload failed. The following required columns are missing: {{columns}}",
-    "templateLoadError": "Could not load the template to validate columns. Please try again."
+    "templateLoadError": "Could not load the template to validate columns. Please try again.",
+    "uploadCancelled": "Upload cancelled.",
+    "registerInProgress": "Registration in progress...",
+    "registerSuccess": "Registration completed successfully.",
+    "cancel": "Cancel",
+    "register": "Register"
   },
   "adjustmentData": {
     "viewEditTemplate": "View/Edit Template",
@@ -264,6 +269,7 @@
     "editTemplateDescription": "Make changes to the template data below. You can edit individual cells, add new rows, or delete existing ones.",
     "unsavedChangesWarning": "You have unsaved changes. Remember to save or upload your changes before closing.",
     "addRow": "Add Row",
+    "deleteSelected": "Delete Selected",
     "downloadCsv": "Download CSV",
     "uploadChanges": "Upload Changes",
     "csvDownloaded": "CSV downloaded successfully!",

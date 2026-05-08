@@ -136,7 +136,7 @@ const StyledEmptyStateTitle = styled(Typography)(({ theme }) => ({
 
 const StyledTableContainer = styled(TableContainer)({
   maxHeight: "calc(100vh - 420px)",
-  overflowX: "hidden",
+  overflowX: "auto",
   overflowY: "auto",
   width: "100%",
   maxWidth: "100%",
@@ -144,7 +144,7 @@ const StyledTableContainer = styled(TableContainer)({
 });
 
 const StyledTable = styled(Table)({
-  tableLayout: "fixed",
+  tableLayout: "auto",
   width: "100%",
 });
 
@@ -171,6 +171,7 @@ const StyledTableHeaderCellColumn = styled(TableCell)(({ theme }) => ({
   paddingBottom: theme.spacing(1),
   paddingLeft: theme.spacing(1.5),
   paddingRight: theme.spacing(1.5),
+  minWidth: 150,
   whiteSpace: "normal",
   wordBreak: "break-word",
   overflowWrap: "break-word",
@@ -204,6 +205,7 @@ const StyledTableIndexCell = styled(TableCell)(({ theme }) => ({
 const StyledTableDataCell = styled(TableCell)(({ theme }) => ({
   border: `1px solid ${theme.palette.common.white}`,
   padding: "8px",
+  minWidth: 150,
   whiteSpace: "normal",
   wordBreak: "break-word",
   overflowWrap: "break-word",

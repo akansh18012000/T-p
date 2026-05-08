@@ -256,7 +256,12 @@
     "tcvsTemplate": "TCVSテンプレート",
     "templateNote": "テンプレートで指定された正確な形式にデータが従っていることを確認してください。",
     "missingColumnsError": "アップロードに失敗しました。必要な列が不足しています：{{columns}}",
-    "templateLoadError": "列を検証するためのテンプレートを読み込めませんでした。もう一度お試しください。"
+    "templateLoadError": "列を検証するためのテンプレートを読み込めませんでした。もう一度お試しください。",
+    "uploadCancelled": "アップロードをキャンセルしました。",
+    "registerInProgress": "登録処理中...",
+    "registerSuccess": "登録が正常に完了しました。",
+    "cancel": "キャンセル",
+    "register": "登録"
   },
   "adjustmentData": {
     "viewEditTemplate": "テンプレート表示/編集",
@@ -264,6 +269,7 @@
     "editTemplateDescription": "以下でテンプレートデータを変更できます。個々のセルを編集したり、新しい行を追加したり、既存の行を削除したりできます。",
     "unsavedChangesWarning": "保存されていない変更があります。閉じる前に変更を保存またはアップロードすることを忘れないでください。",
     "addRow": "行を追加",
+    "deleteSelected": "選択を削除",
     "downloadCsv": "CSVダウンロード",
     "uploadChanges": "変更をアップロード",
     "csvDownloaded": "CSVが正常にダウンロードされました！",

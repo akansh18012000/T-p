@@ -24,12 +24,14 @@ export interface UploadState {
   entries: UploadEntry[];
   selectedFile: File | null;
   uploadedCsvData: CsvData | null;
+  uploadType?: string;
 }
 
 const getEmptyState = (): UploadState => ({
   entries: [],
   selectedFile: null,
   uploadedCsvData: null,
+  uploadType: "",
 });
 
 interface UploadContextValue {
@@ -41,6 +43,7 @@ interface UploadContextValue {
   setEntries: (screenKey: string, entries: UploadEntry[]) => void;
   setSelectedFile: (screenKey: string, file: File | null) => void;
   setUploadedCsvData: (screenKey: string, data: CsvData | null) => void;
+  setUploadType: (screenKey: string, uploadType: string) => void;
   addEntries: (screenKey: string, newEntries: UploadEntry[]) => void;
   removeEntry: (screenKey: string, id: string) => void;
   updateEntry: (
@@ -103,6 +106,15 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const setUploadType = (screenKey: string, uploadType: string) => {
+    setStateByScreen((prev) => {
+      const next = { ...prev };
+      const current = next[screenKey] ?? getEmptyState();
+      next[screenKey] = { ...current, uploadType };
+      return next;
+    });
+  };
+
   const addEntries = (screenKey: string, newEntries: UploadEntry[]) => {
     setStateByScreen((prev) => {
       const next = { ...prev };
@@ -159,6 +171,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     setEntries,
     setSelectedFile,
     setUploadedCsvData,
+    setUploadType,
     addEntries,
     removeEntry,
     updateEntry,
