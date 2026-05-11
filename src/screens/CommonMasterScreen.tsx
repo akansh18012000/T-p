@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
@@ -88,27 +87,56 @@ import {
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 
 type GroupWithName = { id: string; name: string };
 type CodeWithName = { code: string; name: string };
 
-const GROUP_OPTIONS: GroupWithName[] = [
-  { id: "GRP-001", name: "Group Alpha" },
-  { id: "GRP-002", name: "Group Beta" },
-  { id: "GRP-003", name: "Group Gamma" },
-  { id: "GRP-004", name: "Group Delta" },
-  { id: "GRP-005", name: "Group Epsilon" },
-];
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+type DimCommonGroupApiItem = {
+  column_group_id: string;
+  column_name: string;
+};
 
-const CODE_OPTIONS: CodeWithName[] = [
-  { code: "COD-001", name: "Code Name One" },
-  { code: "COD-002", name: "Code Name Two" },
-  { code: "COD-003", name: "Code Name Three" },
-  { code: "COD-004", name: "Code Name Four" },
-  { code: "COD-005", name: "Code Name Five" },
-];
+const GROUP_ID_API_URL =
+  "/api/v1/common-master/get_dim_common_group_id_with_name";
 
-const GROUP_ID_OPTIONS: string[] = GROUP_OPTIONS.map((o) => o.id);
+type DimCommonCodeApiItem = {
+  code: string;
+  name_en: string;
+  name_jp: string;
+};
+
+type DimCommonCodeApiResponse = {
+  total: number;
+  data: DimCommonCodeApiItem[];
+};
+
+const CODE_API_URL = "/api/v1/common-master/get_dim_common_code";
+
+type CommonMasterSearchItem = {
+  column_group_id: string | null;
+  display_order: number | string | null;
+  column_name: string | null;
+  code: string | null;
+  name_en: string | null;
+  name_jp: string | null;
+  description: string | null;
+  reserve1: string | null;
+  reserve2: string | null;
+  reserve3: string | null;
+  reserve4: string | null;
+  reserve5: string | null;
+  delete_flg_pfm: number | null;
+};
+
+type CommonMasterSearchResponse = {
+  total: number;
+  data: CommonMasterSearchItem[];
+};
+
+const SEARCH_API_URL = "/api/v1/common-master/search";
+// AI Generated Code by Deloitte + Cursor (END)
 
 const DEFAULT_CSV_HEADERS = COMMON_MASTER_HEADERS;
 
@@ -121,7 +149,7 @@ const listboxProps = {
 };
 
 export default function CommonMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { closeSidebar } = useSidebar();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -143,13 +171,69 @@ export default function CommonMasterScreen() {
   const [deletionFlag, setDeletionFlag] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
 
-  // Search inputs and debounced (min 3 chars, 1s debounce)
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const [groupOptions, setGroupOptions] = useState<GroupWithName[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(GROUP_ID_API_URL);
+        if (!response.ok) return;
+        const data: DimCommonGroupApiItem[] = await response.json();
+        if (cancelled) return;
+        setGroupOptions(
+          data.map((item) => ({
+            id: item.column_group_id,
+            name: item.column_name,
+          })),
+        );
+      } catch {
+        // Leave options empty if the request fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [codeOptions, setCodeOptions] = useState<CodeWithName[]>([]);
+
+  useEffect(() => {
+    if (!groupId) {
+      setCodeOptions([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(
+          `${CODE_API_URL}?column_group_id=${encodeURIComponent(groupId)}`,
+          { method: "POST" },
+        );
+        if (!response.ok) return;
+        const result: DimCommonCodeApiResponse = await response.json();
+        if (cancelled) return;
+        const isJapanese = i18n.language.startsWith("ja");
+        setCodeOptions(
+          result.data.map((item) => ({
+            code: item.code,
+            name: isJapanese ? item.name_jp : item.name_en,
+          })),
+        );
+      } catch {
+        // Leave options empty if the request fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId, i18n.language]);
+  // AI Generated Code by Deloitte + Cursor (END)
+
+  // Search inputs — no debounce, show all options on focus and filter as user types
   const [groupIdSearchInput, setGroupIdSearchInput] = useState("");
-  const { debouncedValue: groupIdDebounced } =
-    useDebouncedSearch(groupIdSearchInput);
   const [codeSearchInput, setCodeSearchInput] = useState("");
-  const { debouncedValue: codeDebounced } =
-    useDebouncedSearch(codeSearchInput);
 
   const searchConditionsRef = useRef({
     groupId: "",
@@ -166,24 +250,28 @@ export default function CommonMasterScreen() {
     };
   }, [groupId, code, codeName, deletionFlag]);
 
-  const groupIdOptions: string[] = groupIdDebounced
-    ? GROUP_OPTIONS.filter(
-        (o) =>
-          o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()) ||
-          o.name.toLowerCase().includes(groupIdDebounced.toLowerCase()),
-      ).map((o) => o.id)
-    : [];
+  const groupIdOptions: string[] = groupIdSearchInput
+    ? groupOptions
+        .filter(
+          (o) =>
+            o.id.toLowerCase().includes(groupIdSearchInput.toLowerCase()) ||
+            o.name.toLowerCase().includes(groupIdSearchInput.toLowerCase()),
+        )
+        .map((o) => o.id)
+    : groupOptions.map((o) => o.id);
 
-  const codeOptions: string[] = codeDebounced
-    ? CODE_OPTIONS.filter(
-        (o) =>
-          o.code.toLowerCase().includes(codeDebounced.toLowerCase()) ||
-          o.name.toLowerCase().includes(codeDebounced.toLowerCase()),
-      ).map((o) => o.code)
-    : [];
+  const codeIdOptions: string[] = codeSearchInput
+    ? codeOptions
+        .filter(
+          (o) =>
+            o.code.toLowerCase().includes(codeSearchInput.toLowerCase()) ||
+            o.name.toLowerCase().includes(codeSearchInput.toLowerCase()),
+        )
+        .map((o) => o.code)
+    : codeOptions.map((o) => o.code);
 
-  const groupSelected = GROUP_OPTIONS.find((o) => o.id === groupId);
-  const codeSelected = CODE_OPTIONS.find((o) => o.code === code);
+  const groupSelected = groupOptions.find((o) => o.id === groupId);
+  const codeSelected = codeOptions.find((o) => o.code === code);
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
@@ -224,40 +312,49 @@ export default function CommonMasterScreen() {
     setSearchExecuted(true);
     try {
       const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const allRows: string[][] = [
-        ["GRP-001", "Group Alpha", "COD-001", "Code Name One", "コード名1", "Abstract 1", "1", "", "", "", "", "", "0"],
-        ["GRP-002", "Group Beta", "COD-002", "Code Name Two", "コード名2", "Abstract 2", "2", "", "", "", "", "", "0"],
-        ["GRP-003", "Group Gamma", "COD-003", "Code Name Three", "コード名3", "Abstract 3", "3", "", "", "", "", "", "0"],
-        ["GRP-001", "Group Alpha", "COD-004", "Code Name Four", "コード名4", "Abstract 4", "4", "", "", "", "", "", "1"],
-        ["GRP-002", "Group Beta", "COD-005", "Code Name Five", "コード名5", "Abstract 5", "5", "", "", "", "", "", "0"],
-      ];
-      const filteredRows = allRows.filter((row) => {
-        const rowGroupId = row[0];
-        const rowCode = row[2];
-        const rowCodeName = row[3];
-        const rowDelFlag = row[12];
-        if (conditions.groupId.trim() && rowGroupId !== conditions.groupId)
-          return false;
-        if (conditions.code.trim() && rowCode !== conditions.code) return false;
-        if (
-          conditions.codeName.trim() &&
-          !rowCodeName.toLowerCase().includes(conditions.codeName.toLowerCase())
-        )
-          return false;
-        if (conditions.deletionFlag && rowDelFlag !== "1") return false;
-        return true;
+      const payload = {
+        column_group_id: conditions.groupId.trim(),
+        user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        code: conditions.code.trim(),
+        session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+        screen_id: SCREEN_IDS.COMMON.id,
+        ip_address: "192.168.1.101",
+        delete_flg_pfm: conditions.deletionFlag ? 1 : 0,
+      };
+      const response = await fetch(SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      if (!response.ok) {
+        throw new Error(`Search API responded ${response.status}`);
+      }
+      const result: CommonMasterSearchResponse = await response.json();
+      const rows: string[][] = result.data.map((item) => [
+        item.column_group_id ?? "",
+        item.column_name ?? "",
+        item.code ?? "",
+        item.name_en ?? "",
+        item.name_jp ?? "",
+        item.description ?? "",
+        item.display_order != null ? String(item.display_order) : "",
+        item.reserve1 ?? "",
+        item.reserve2 ?? "",
+        item.reserve3 ?? "",
+        item.reserve4 ?? "",
+        item.reserve5 ?? "",
+        item.delete_flg_pfm === 1 ? "1" : "0",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows,
+        rows,
       });
       setSnackbarMessage(
-        filteredRows.length > 0
+        rows.length > 0
           ? t("commonMaster.searchCompletedWithData")
           : t("commonMaster.searchCompletedNoResults"),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
+      setSnackbarSeverity(rows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch {
       setCsvData(getEmptyCsvData());
@@ -396,7 +493,7 @@ export default function CommonMasterScreen() {
       const newRow = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
       // If Group Id changed, auto-fill Group Name
       if (colIndex === groupIdColIndex) {
-        const selectedGroup = GROUP_OPTIONS.find((o) => o.id === value);
+        const selectedGroup = groupOptions.find((o) => o.id === value);
         newRow[groupNameColIndex] = selectedGroup ? selectedGroup.name : "";
       }
       return newRow;
@@ -512,7 +609,7 @@ export default function CommonMasterScreen() {
                         <StyledInputBase
                           {...params}
                           label={t("commonMaster.groupId")}
-                          placeholder={t("commonMaster.enterCharsToSearch")}
+                          placeholder={t("commonMaster.enterGroupId")}
                         />
                       )}
                     />
@@ -527,7 +624,8 @@ export default function CommonMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={codeOptions}
+                    disabled={!groupId}
+                    options={codeIdOptions}
                     value={code || null}
                     inputValue={codeSearchInput}
                     onInputChange={(_e, v) => {
@@ -544,7 +642,7 @@ export default function CommonMasterScreen() {
                       setCode(s);
                       setCodeSearchInput(s);
                       searchConditionsRef.current.code = s;
-                      const selected = CODE_OPTIONS.find((o) => o.code === s);
+                      const selected = codeOptions.find((o) => o.code === s);
                       if (selected) {
                         setCodeName(selected.name);
                         searchConditionsRef.current.codeName = selected.name;
@@ -559,7 +657,7 @@ export default function CommonMasterScreen() {
                       <StyledInputBase
                         {...params}
                         label={t("commonMaster.code")}
-                        placeholder={t("commonMaster.enterCharsToSearch")}
+                        placeholder={t("commonMaster.enterCode")}
                       />
                     )}
                   />
@@ -568,6 +666,7 @@ export default function CommonMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    disabled={!groupId}
                     label={t("commonMaster.codeName")}
                     value={codeName}
                     onChange={(e) => {
@@ -828,7 +927,7 @@ export default function CommonMasterScreen() {
                                             }
                                             editable
                                             searchable
-                                            searchOptions={GROUP_ID_OPTIONS}
+                                            searchOptions={groupOptions.map((o) => o.id)}
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (

@@ -261,7 +261,10 @@
     "registerInProgress": "Registration in progress...",
     "registerSuccess": "Registration completed successfully.",
     "cancel": "Cancel",
-    "register": "Register"
+    "cancelUpload": "Cancel Upload",
+    "register": "Register",
+    "fileNameFormatHint": "File name must end with _YYYYMM, where YYYY is the year and MM is the month (e.g. sales_data_202405.csv).",
+    "fileNameFormatError": "The selected file name does not end with _YYYYMM. Please rename the file (e.g. sales_data_202405.csv) before uploading."
   },
   "adjustmentData": {
     "viewEditTemplate": "View/Edit Template",
@@ -590,6 +593,8 @@
     "download": "Download",
     "registration": "Registration",
     "enterCharsToSearch": "Enter 3 characters to search",
+    "enterGroupId": "Enter Group Id",
+    "enterCode": "Enter Code",
     "searchAllDataPlaceholder": "Search all data...",
     "showingRows": "Showing {{filtered}} of {{total}} rows",
     "noRows": "No rows",

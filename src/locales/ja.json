@@ -261,7 +261,10 @@
     "registerInProgress": "登録処理中...",
     "registerSuccess": "登録が正常に完了しました。",
     "cancel": "キャンセル",
-    "register": "登録"
+    "cancelUpload": "アップロードをキャンセル",
+    "register": "登録",
+    "fileNameFormatHint": "ファイル名は _YYYYMM で終わる必要があります（YYYY は年、MM は月。例: sales_data_202405.csv）。",
+    "fileNameFormatError": "選択されたファイル名が _YYYYMM で終わっていません。アップロード前にファイル名を変更してください（例: sales_data_202405.csv）。"
   },
   "adjustmentData": {
     "viewEditTemplate": "テンプレート表示/編集",
@@ -590,6 +593,8 @@
     "download": "ダウンロード",
     "registration": "登録",
     "enterCharsToSearch": "3文字以上入力して検索",
+    "enterGroupId": "グループIDを入力",
+    "enterCode": "コードを入力",
     "searchAllDataPlaceholder": "すべてのデータを検索...",
     "showingRows": "{{total}}行中{{filtered}}行を表示",
     "noRows": "行がありません",

@@ -58,6 +58,7 @@ import {
   StyledTablePagination,
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
+import { getAdjustmentUploadScreenId } from "../constants/screenIds.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -489,6 +490,10 @@ const StyledWarningAlert = styled(Alert)(({ theme }) => ({
   marginTop: theme.spacing(1),
 }));
 
+// Adjustment data files must end with `_YYYYMM` before the extension
+// (e.g. sales_data_202405.csv). Month must be 01-12.
+const FILENAME_YYYYMM_PATTERN = /_\d{4}(0[1-9]|1[0-2])\.[A-Za-z0-9]+$/;
+
 interface CSVData {
   headers: string[];
   rows: string[][];
@@ -523,6 +528,10 @@ export default function AdjustmentSalesDetailScreen() {
     | "salesDetail"
     | "consolidated"
     | "";
+
+  const isFileNameValid = selectedFile
+    ? FILENAME_YYYYMM_PATTERN.test(selectedFile.name)
+    : true;
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -655,12 +664,12 @@ export default function AdjustmentSalesDetailScreen() {
       const metadata = {
         requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
         session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
-        screen_id: "6130aa7d-6d63-450a-8a64-a9717f338701",
+        screen_id: getAdjustmentUploadScreenId(
+          uploadType === "consolidated" ? "consolidated" : "salesDetail",
+        ),
         user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
         entity_id: "",
         ip_address: "192.168.1.100",
-        upload_type:
-          uploadType === "salesDetail" ? "Sales_Detail" : "Consolidated",
       };
 
       const formData = new FormData();
@@ -671,8 +680,6 @@ export default function AdjustmentSalesDetailScreen() {
       if (metadata.entity_id) formData.append("entity_id", metadata.entity_id);
       if (metadata.ip_address)
         formData.append("ip_address", metadata.ip_address);
-      if (metadata.upload_type)
-        formData.append("upload_type", metadata.upload_type);
       formData.append("files", selectedFile);
 
       const response = await fetch("/api/v1/upload", {
@@ -1016,6 +1023,9 @@ export default function AdjustmentSalesDetailScreen() {
               {/* File Upload Section */}
               <StyledUploadSectionBox>
                 <StyledUploadFlexBox>
+                  <Alert severity="info" sx={{ marginBottom: 2 }}>
+                    {t("adjustmentSalesDetail.fileNameFormatHint")}
+                  </Alert>
                   {!uploadedCsvData ? (
                     <>
                       <StyledDragDropZone
@@ -1086,7 +1096,9 @@ export default function AdjustmentSalesDetailScreen() {
                               variant="contained"
                               size="small"
                               onClick={handleUploadClick}
-                              disabled={uploadStatus === "uploading"}
+                              disabled={
+                                uploadStatus === "uploading" || !isFileNameValid
+                              }
                             >
                               {t("upload.upload")}
                             </StyledUploadButton>
@@ -1101,16 +1113,24 @@ export default function AdjustmentSalesDetailScreen() {
                                 {t("upload.view")}
                               </StyledViewButton>
                             )}
-                            <IconButton
+                            <Button
+                              variant="outlined"
                               size="small"
+                              startIcon={<CloseIcon />}
                               onClick={handleUploadCancel}
                               disabled={uploadStatus === "uploading"}
-                              aria-label={t("upload.cancel")}
                               sx={{ marginLeft: "auto" }}
                             >
-                              <CloseIcon />
-                            </IconButton>
+                              {t("adjustmentSalesDetail.cancelUpload")}
+                            </Button>
                           </StyledFileRowBox>
+                          {!isFileNameValid && (
+                            <Alert severity="info" sx={{ marginTop: 2 }}>
+                              {t(
+                                "adjustmentSalesDetail.fileNameFormatError",
+                              )}
+                            </Alert>
+                          )}
                         </StyledSelectedFileBox>
                       )}
                     </>
