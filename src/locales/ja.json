@@ -607,7 +607,14 @@
     "registrationInProgress": "登録処理中...",
     "registrationCompleted": "登録が正常に完了しました。",
     "rowsDeleted": "行を削除しました。",
-    "codeName": "コード名"
+    "codeName": "コード名",
+    "groupIdRequired": "登録するすべての行にグループIDが必要です。",
+    "duplicateRowError": "一部の行が検索結果と同一です。登録前に内容を更新してください。",
+    "registrationFailed": "登録に失敗しました。もう一度お試しください。",
+    "createRowsSuccess": "新規行を正常に登録しました",
+    "createRowsFailed": "新規行の登録に失敗しました",
+    "updateRowsSuccess": "既存行を正常に更新しました",
+    "updateRowsFailed": "既存行の更新に失敗しました"
   },
   "commonConversionMaster": {
     "itemId": "アイテムID",
@@ -731,6 +738,7 @@
     "rowsAddedFromSelection": "{{count}}行が追加されました。",
     "deleteRow": "行を削除",
     "newRowDeleted": "新しい行が削除されました。",
-    "selectAll": "全て選択"
+    "selectAll": "全て選択",
+    "loadingResults": "読み込み中..."
   }
 }

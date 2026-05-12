@@ -14,16 +14,10 @@ export interface SearchableCellProps {
   editable?: boolean;
   /** Whether to show the search button */
   searchable?: boolean;
-  /** Async search function - receives query, returns results */
-  searchFn?: (query: string) => Promise<string[]>;
-  /** Static options array - alternative to searchFn for client-side filtering */
+  /** Static options array for the search dialog */
   searchOptions?: string[];
   /** Search dialog title override */
   searchTitle?: string;
-  /** Minimum characters to trigger search (default: 3) */
-  minChars?: number;
-  /** Debounce delay in milliseconds (default: 3000) */
-  debounceMs?: number;
   /** Additional TextField props */
   textFieldProps?: Omit<TextFieldProps, "value" | "onChange">;
 }
@@ -31,28 +25,14 @@ export interface SearchableCellProps {
 /**
  * Wrapper component for editable table cells with optional search functionality.
  * Combines StyledCellTextField with a search button and dialog.
- *
- * Usage:
- * ```tsx
- * <SearchableCell
- *   value={cell}
- *   onChange={(v) => handleCellEdit(rowIndex, colIndex, v)}
- *   editable
- *   searchable
- *   searchOptions={['Option 1', 'Option 2', 'Option 3']}
- * />
- * ```
  */
 export function SearchableCell({
   value,
   onChange,
   editable = true,
   searchable = false,
-  searchFn,
   searchOptions,
   searchTitle,
-  minChars = 3,
-  debounceMs = 3000,
   textFieldProps = {},
 }: SearchableCellProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,7 +55,6 @@ export function SearchableCell({
     onChange(e.target.value);
   };
 
-  // Non-editable display
   if (!editable) {
     return (
       <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
@@ -84,8 +63,7 @@ export function SearchableCell({
     );
   }
 
-  // Editable with search
-  if (searchable && (searchFn || searchOptions)) {
+  if (searchable && searchOptions) {
     return (
       <Box sx={{ display: "flex", alignItems: "flex-start", width: "100%" }}>
         <StyledCellTextField
@@ -103,17 +81,13 @@ export function SearchableCell({
           open={dialogOpen}
           onClose={handleCloseDialog}
           onSelect={handleSelect}
-          searchFn={searchFn}
           options={searchOptions}
           title={searchTitle}
-          minChars={minChars}
-          debounceMs={debounceMs}
         />
       </Box>
     );
   }
 
-  // Editable without search
   return (
     <StyledCellTextField
       value={value}

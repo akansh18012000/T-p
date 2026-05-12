@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
-import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -87,6 +86,7 @@ import {
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 
 type GroupWithName = { id: string; name: string };
@@ -115,6 +115,7 @@ type DimCommonCodeApiResponse = {
 const CODE_API_URL = "/api/v1/common-master/get_dim_common_code";
 
 type CommonMasterSearchItem = {
+  id: string | null;
   column_group_id: string | null;
   display_order: number | string | null;
   column_name: string | null;
@@ -135,7 +136,69 @@ type CommonMasterSearchResponse = {
   data: CommonMasterSearchItem[];
 };
 
+type CommonMasterSearchPayload = {
+  column_group_id: string;
+  user_id: string;
+  code: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+  delete_flg_pfm: number;
+};
+
 const SEARCH_API_URL = "/api/v1/common-master/search";
+
+type CommonMasterCreateRow = {
+  column_group_id: string;
+  code: string;
+  name_en: string;
+  name_jp: string;
+  description: string;
+  sort_order: string;
+  reserve1: string;
+  reserve2: string;
+  reserve3: string;
+  reserve4: string;
+  reserve5: string;
+  delete_flg_pfm: number;
+};
+
+type CommonMasterCreatePayload = {
+  rows: CommonMasterCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+};
+
+const CREATE_API_URL = "/api/v1/common-master/create";
+
+type CommonMasterUpdateRow = {
+  id: string;
+  column_group_id: string;
+  display_order: string;
+  column_name: string;
+  code: string;
+  name_en: string;
+  name_jp: string;
+  description: string;
+  reserve1: string;
+  reserve2: string;
+  reserve3: string;
+  reserve4: string;
+  reserve5: string;
+  delete_flg_pfm: number;
+};
+
+type CommonMasterUpdatePayload = {
+  rows: CommonMasterUpdateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+};
+
+const UPDATE_API_URL = "/api/v1/common-master/update";
 // AI Generated Code by Deloitte + Cursor (END)
 
 const DEFAULT_CSV_HEADERS = COMMON_MASTER_HEADERS;
@@ -279,6 +342,7 @@ export default function CommonMasterScreen() {
   const groupIdColIndex = 0;
   const groupNameColIndex = 1;
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -297,29 +361,38 @@ export default function CommonMasterScreen() {
     selectedCount,
   } = useRowSelectionMode();
 
-  // Track newly added rows for delete icon
-  const {
-    isNewRow,
-    markRowsAsNew,
-    shiftIndicesForInsertion,
-    shiftIndicesForDeletion,
-    clearNewRowTracking,
-    newRowCount,
-  } = useNewRowTracking();
+  // Parallel array to csvData.rows: server-assigned id per row.
+  // A row is considered "new" (added locally, not yet persisted) iff its id is empty.
+  const [rowIds, setRowIds] = useState<string[]>([]);
+  const isNewRow = (rowIndex: number) => !rowIds[rowIndex];
+  const newRowCount = rowIds.reduce((n, id) => (id ? n : n + 1), 0);
 
-  const handleSearch = async () => {
+  const lastSearchPayloadRef = useRef<CommonMasterSearchPayload | null>(null);
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  // Snapshot of search results keyed by server id — used to detect edits and to
+  // run duplicate-row checks against the original (un-mutated) result set.
+  const originalRowsByIdRef = useRef<Map<string, string[]>>(new Map());
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [updateSnackbarOpen, setUpdateSnackbarOpen] = useState(false);
+  const [updateSnackbarMessage, setUpdateSnackbarMessage] = useState("");
+  const [updateSnackbarSeverity, setUpdateSnackbarSeverity] = useState<
+    "success" | "error" | "info"
+  >("success");
+  // AI Generated Code by Deloitte + Cursor (END)
+
+  const executeSearch = async (
+    payload: CommonMasterSearchPayload,
+    options?: { silent?: boolean },
+  ) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
+    setIsSearching(true);
+    setCsvData(null);
+    setRowIds([]);
+    originalRowsByIdRef.current = new Map();
+    lastSearchPayloadRef.current = payload;
     try {
-      const conditions = searchConditionsRef.current;
-      const payload = {
-        column_group_id: conditions.groupId.trim(),
-        user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
-        code: conditions.code.trim(),
-        session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
-        screen_id: SCREEN_IDS.COMMON.id,
-        ip_address: "192.168.1.101",
-        delete_flg_pfm: conditions.deletionFlag ? 1 : 0,
-      };
       const response = await fetch(SEARCH_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -344,23 +417,51 @@ export default function CommonMasterScreen() {
         item.reserve5 ?? "",
         item.delete_flg_pfm === 1 ? "1" : "0",
       ]);
+      const ids: string[] = result.data.map((item) => item.id ?? "");
+      const snapshot = new Map<string, string[]>();
+      ids.forEach((id, i) => {
+        if (id) snapshot.set(id, [...rows[i]]);
+      });
+      originalRowsByIdRef.current = snapshot;
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows,
       });
-      setSnackbarMessage(
-        rows.length > 0
-          ? t("commonMaster.searchCompletedWithData")
-          : t("commonMaster.searchCompletedNoResults"),
-      );
-      setSnackbarSeverity(rows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
+      setRowIds(ids);
+      if (!silent) {
+        setSnackbarMessage(
+          rows.length > 0
+            ? t("commonMaster.searchCompletedWithData")
+            : t("commonMaster.searchCompletedNoResults"),
+        );
+        setSnackbarSeverity(rows.length > 0 ? "success" : "info");
+        setSnackbarOpen(true);
+      }
     } catch {
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("commonMaster.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      setRowIds([]);
+      if (!silent) {
+        setSnackbarMessage(t("commonMaster.searchCompletedNoResults"));
+        setSnackbarSeverity("info");
+        setSnackbarOpen(true);
+      }
+    } finally {
+      setIsSearching(false);
     }
+  };
+
+  const handleSearch = () => {
+    const conditions = searchConditionsRef.current;
+    const payload: CommonMasterSearchPayload = {
+      column_group_id: conditions.groupId.trim(),
+      user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+      code: conditions.code.trim(),
+      session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+      screen_id: SCREEN_IDS.COMMON.id,
+      ip_address: "192.168.1.101",
+      delete_flg_pfm: conditions.deletionFlag ? 1 : 0,
+    };
+    return executeSearch(payload);
   };
 
   const handleDownloadCsv = () => {
@@ -386,9 +487,8 @@ export default function CommonMasterScreen() {
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
     const emptyRow = base.headers.map(() => "");
-    
+
     if (insertAtPagePosition && base.rows.length > 0) {
-      // Insert at current page position
       const insertIndex = pageOffset;
       const newRows = [
         ...base.rows.slice(0, insertIndex),
@@ -396,16 +496,17 @@ export default function CommonMasterScreen() {
         ...base.rows.slice(insertIndex),
       ];
       setCsvData({ headers: base.headers, rows: newRows });
-      // Shift existing new row indices and mark this row as new
-      shiftIndicesForInsertion(insertIndex, 1);
-      markRowsAsNew([insertIndex]);
+      setRowIds((prev) => [
+        ...prev.slice(0, insertIndex),
+        "",
+        ...prev.slice(insertIndex),
+      ]);
     } else {
-      // Append at end (original behavior)
       setCsvData({
         headers: base.headers,
         rows: [...base.rows, emptyRow],
       });
-      markRowsAsNew([base.rows.length]);
+      setRowIds((prev) => [...prev, ""]);
     }
     setSnackbarMessage(t("commonMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -442,12 +543,16 @@ export default function CommonMasterScreen() {
       ...selectedRows,
       ...base.rows.slice(insertIndex),
     ];
-    shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    const newIds = selectedRows.map(() => "");
     setCsvData({
       headers: base.headers,
       rows: newRows,
     });
+    setRowIds((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...newIds,
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("commonMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -456,30 +561,184 @@ export default function CommonMasterScreen() {
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!csvData || !isNewRow(rowIndex)) return;
-    
+
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
-    shiftIndicesForDeletion(rowIndex);
+    setRowIds((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const handleRefresh = () => {
-    clearNewRowTracking();
-    handleSearch();
+    if (lastSearchPayloadRef.current) {
+      executeSearch(lastSearchPayloadRef.current);
+    } else {
+      handleSearch();
+    }
   };
 
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("commonMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("commonMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    const newRowIndices = rowIds
+      .map((id, idx) => (id ? -1 : idx))
+      .filter((idx) => idx >= 0);
+
+    const editedRowIndices = rowIds
+      .map((id, idx) => {
+        if (!id) return -1;
+        const original = originalRowsByIdRef.current.get(id);
+        if (!original) return -1;
+        const current = csvData.rows[idx];
+        const unchanged = current.every((cell, i) => cell === original[i]);
+        return unchanged ? -1 : idx;
+      })
+      .filter((idx) => idx >= 0);
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) return;
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+    if (
+      targetIndices.some(
+        (idx) => !csvData.rows[idx][groupIdColIndex].trim(),
+      )
+    ) {
+      setSnackbarMessage(t("commonMaster.groupIdRequired"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const snapshotEntries = Array.from(
+      originalRowsByIdRef.current.entries(),
+    );
+    const newHasDuplicate = newRowIndices.some((idx) => {
+      const row = csvData.rows[idx];
+      return snapshotEntries.some(([, snapRow]) =>
+        row.every((cell, i) => cell === snapRow[i]),
+      );
+    });
+    const editedHasDuplicate = editedRowIndices.some((idx) => {
+      const row = csvData.rows[idx];
+      const myId = rowIds[idx];
+      return snapshotEntries.some(
+        ([snapId, snapRow]) =>
+          snapId !== myId && row.every((cell, i) => cell === snapRow[i]),
+      );
+    });
+    if (newHasDuplicate || editedHasDuplicate) {
+      setSnackbarMessage(t("commonMaster.duplicateRowError"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const auth = {
+      user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+      session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+      screen_id: SCREEN_IDS.COMMON.id,
+      ip_address: "192.168.1.101",
+    };
+
+    const callCreate = async () => {
+      const rows: CommonMasterCreateRow[] = newRowIndices.map((idx) => {
+        const r = csvData.rows[idx];
+        return {
+          column_group_id: r[0],
+          code: r[2],
+          name_en: r[3],
+          name_jp: r[4],
+          description: r[5],
+          sort_order: r[6],
+          reserve1: r[7],
+          reserve2: r[8],
+          reserve3: r[9],
+          reserve4: r[10],
+          reserve5: r[11],
+          delete_flg_pfm: r[12] === "1" ? 1 : 0,
+        };
+      });
+      const payload: CommonMasterCreatePayload = { rows, ...auth };
+      const response = await fetch(CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`Create API responded ${response.status}`);
+      }
+    };
+
+    const callUpdate = async () => {
+      const rows: CommonMasterUpdateRow[] = editedRowIndices.map((idx) => {
+        const r = csvData.rows[idx];
+        return {
+          id: rowIds[idx],
+          column_group_id: r[0],
+          display_order: r[6],
+          column_name: r[1],
+          code: r[2],
+          name_en: r[3],
+          name_jp: r[4],
+          description: r[5],
+          reserve1: r[7],
+          reserve2: r[8],
+          reserve3: r[9],
+          reserve4: r[10],
+          reserve5: r[11],
+          delete_flg_pfm: r[12] === "1" ? 1 : 0,
+        };
+      });
+      const payload: CommonMasterUpdatePayload = { rows, ...auth };
+      const response = await fetch(UPDATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`Update API responded ${response.status}`);
+      }
+    };
+
+    setIsRegistering(true);
+    const [createResult, updateResult] = await Promise.allSettled([
+      newRowIndices.length > 0 ? callCreate() : Promise.resolve(),
+      editedRowIndices.length > 0 ? callUpdate() : Promise.resolve(),
+    ]);
+    if (lastSearchPayloadRef.current) {
+      await executeSearch(lastSearchPayloadRef.current, { silent: true });
+    }
+    setIsRegistering(false);
+
+    if (newRowIndices.length > 0) {
+      const ok = createResult.status === "fulfilled";
+      setSnackbarMessage(
+        t(
+          ok
+            ? "commonMaster.createRowsSuccess"
+            : "commonMaster.createRowsFailed",
+        ),
+      );
+      setSnackbarSeverity(ok ? "success" : "error");
+      setSnackbarOpen(true);
+    }
+
+    if (editedRowIndices.length > 0) {
+      const ok = updateResult.status === "fulfilled";
+      setUpdateSnackbarMessage(
+        t(
+          ok
+            ? "commonMaster.updateRowsSuccess"
+            : "commonMaster.updateRowsFailed",
+        ),
+      );
+      setUpdateSnackbarSeverity(ok ? "success" : "error");
+      setUpdateSnackbarOpen(true);
+    }
   };
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const handleCellEdit = (
     rowIndex: number,
@@ -806,7 +1065,9 @@ export default function CommonMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {isSearching ? (
+                      <ResultsLoader />
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("commonMaster.noRows")}
@@ -1019,6 +1280,32 @@ export default function CommonMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
+      <Snackbar
+        open={updateSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setUpdateSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{
+          top: { xs: "80px !important", sm: "88px !important" },
+        }}
+      >
+        <StyledSnackbarAlert
+          onClose={() => setUpdateSnackbarOpen(false)}
+          severity={updateSnackbarSeverity}
+        >
+          {updateSnackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("commonMaster.registrationInProgress")}
+        />
+      )}
+      {/* AI Generated Code by Deloitte + Cursor (END) */}
     </>
   );
 }
