@@ -173,8 +173,12 @@ export default function CommonMasterScreen() {
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [groupOptions, setGroupOptions] = useState<GroupWithName[]>([]);
+  const groupOptionsFetchedRef = useRef(false);
 
   useEffect(() => {
+    // Guard against React StrictMode's double-invoke in development.
+    if (groupOptionsFetchedRef.current) return;
+    groupOptionsFetchedRef.current = true;
     let cancelled = false;
     (async () => {
       try {

@@ -139,6 +139,13 @@ export const StyledInputBase = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-root": {
     backgroundColor: theme.palette.background.paper,
   },
+  "& .MuiInputBase-root.Mui-disabled": {
+    backgroundColor: theme.palette.disabled!.bg,
+    cursor: "not-allowed",
+  },
+  "& .MuiInputBase-root.Mui-disabled .MuiInputBase-input": {
+    cursor: "not-allowed",
+  },
 }));
 
 export const StyledAutocompleteInput = styled(TextField)(({ theme }) => ({
