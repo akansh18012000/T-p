@@ -594,13 +594,27 @@ export default function CommonMasterScreen() {
                       onInputChange={(_e, v) => {
                         setGroupIdSearchInput(v);
                         searchConditionsRef.current.groupId = v;
-                        if (!v) setGroupId("");
+                        if (!v) {
+                          setGroupId("");
+                          setCode("");
+                          setCodeSearchInput("");
+                          setCodeName("");
+                          searchConditionsRef.current.code = "";
+                          searchConditionsRef.current.codeName = "";
+                        }
                       }}
                       onChange={(_e, v) => {
                         const s = v ?? "";
                         setGroupId(s);
                         setGroupIdSearchInput(s);
                         searchConditionsRef.current.groupId = s;
+                        if (!s) {
+                          setCode("");
+                          setCodeSearchInput("");
+                          setCodeName("");
+                          searchConditionsRef.current.code = "";
+                          searchConditionsRef.current.codeName = "";
+                        }
                       }}
                       freeSolo
                       ListboxProps={listboxProps}
