@@ -179,13 +179,11 @@ export default function CommonMasterScreen() {
     // Guard against React StrictMode's double-invoke in development.
     if (groupOptionsFetchedRef.current) return;
     groupOptionsFetchedRef.current = true;
-    let cancelled = false;
     (async () => {
       try {
         const response = await fetch(GROUP_ID_API_URL);
         if (!response.ok) return;
         const data: DimCommonGroupApiItem[] = await response.json();
-        if (cancelled) return;
         setGroupOptions(
           data.map((item) => ({
             id: item.column_group_id,
@@ -196,9 +194,6 @@ export default function CommonMasterScreen() {
         // Leave options empty if the request fails.
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const [codeOptions, setCodeOptions] = useState<CodeWithName[]>([]);
