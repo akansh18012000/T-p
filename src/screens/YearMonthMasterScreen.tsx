@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
-import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { styled } from "@mui/material/styles";
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+import { SCREEN_IDS } from "../constants/screenIds.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+// AI Generated Code by Deloitte + Cursor (END)
 import {
   TableBody,
   TableHead,
@@ -77,48 +80,88 @@ const TABLE_HEADERS = YEAR_MONTH_MASTER_HEADERS;
 const LAST_UPDATED_DATE_COL_INDEX = 4;
 const LAST_UPDATED_BY_COL_INDEX = 5;
 
-const MOCK_INITIAL_ROWS: string[][] = [
-  [
-    "Sales",
-    "Monthly Sales Close",
-    "2026",
-    "2026-01-15",
-    "2026-01-10 14:30",
-    "John Doe",
-  ],
-  [
-    "Inventory",
-    "Stock Reconciliation",
-    "2026",
-    "2026-01-20",
-    "2026-01-12 09:15",
-    "John Doe",
-  ],
-  [
-    "Finance",
-    "Year-End Close",
-    "2025",
-    "2025-12-31",
-    "2025-12-28 16:00",
-    "John Doe",
-  ],
-  [
-    "Sales",
-    "Quarterly Review",
-    "2026",
-    "2026-03-31",
-    "2026-03-25 11:45",
-    "John Doe",
-  ],
-  [
-    "HR",
-    "Payroll Processing",
-    "2026",
-    "2026-02-05",
-    "2026-02-01 08:00",
-    "John Doe",
-  ],
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+const FETCH_API_URL = "/api/v1/process-month/fetch";
+
+type ProcessMonthFetchPayload = {
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+};
+
+type ProcessMonthFetchItem = {
+  id: string;
+  proc_type: string | null;
+  proc_type_name: string | null;
+  proc_year: string | null;
+  proc_period: string | null;
+  last_updated_date: string | null;
+  last_updated_by: string | null;
+};
+
+type ProcessMonthFetchResponse = {
+  total: number;
+  data: ProcessMonthFetchItem[];
+};
+
+function mapFetchItemToRow(item: ProcessMonthFetchItem): string[] {
+  return [
+    item.proc_type ?? "",
+    item.proc_type_name ?? "",
+    item.proc_year ?? "",
+    item.proc_period ?? "",
+    item.last_updated_date ?? "",
+    item.last_updated_by ?? "",
+  ];
+}
+
+const PROC_TYPE_COL_INDEX = 0;
+const PROC_TYPE_NAME_COL_INDEX = 1;
+const PROC_YEAR_COL_INDEX = 2;
+const PROC_PERIOD_COL_INDEX = 3;
+const EDITABLE_COL_INDICES = [
+  PROC_TYPE_COL_INDEX,
+  PROC_TYPE_NAME_COL_INDEX,
+  PROC_YEAR_COL_INDEX,
+  PROC_PERIOD_COL_INDEX,
 ];
+
+type ProcessMonthCreateRow = {
+  proc_type: string;
+  proc_type_name: string;
+  proc_year: string;
+  proc_period: string;
+};
+
+type ProcessMonthCreatePayload = {
+  rows: ProcessMonthCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+};
+
+const CREATE_API_URL = "/api/v1/process-month/create";
+
+type ProcessMonthUpdateRow = {
+  id: string;
+  proc_type: string;
+  proc_type_name: string;
+  proc_year: string;
+  proc_period: string;
+};
+
+type ProcessMonthUpdatePayload = {
+  rows: ProcessMonthUpdateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+};
+
+const UPDATE_API_URL = "/api/v1/process-month/update";
+// AI Generated Code by Deloitte + Cursor (END)
 
 function getEmptyRows(): string[][] {
   return [];
@@ -142,13 +185,84 @@ function YearMonthMasterScreen() {
   }, [t, setBreadcrumbItems]);
   // AI Generated Code by Deloitte + Cursor (END)
 
-  const [rows, setRows] = useState<string[][]>(() => [...MOCK_INITIAL_ROWS]);
+  const [rows, setRows] = useState<string[][]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [updateSnackbarOpen, setUpdateSnackbarOpen] = useState(false);
+  const [updateSnackbarMessage, setUpdateSnackbarMessage] = useState("");
+  const [updateSnackbarSeverity, setUpdateSnackbarSeverity] = useState<
+    "success" | "error" | "info"
+  >("success");
+  // Parallel array to `rows`: server-assigned id per row. A row is "new"
+  // (added locally, not yet persisted) iff its id is empty.
+  const [rowIds, setRowIds] = useState<string[]>([]);
+  // Snapshot of fetched rows keyed by server id — baseline for duplicate
+  // checks against existing data on the server.
+  const originalRowsByIdRef = useRef<Map<string, string[]>>(new Map());
+  const fetchedRef = useRef(false);
+
+  const isNewRow = (rowIndex: number) => !rowIds[rowIndex];
+  const newRowCount = rowIds.reduce((n, id) => (id ? n : n + 1), 0);
+
+  const refreshProcessMonthData = async (): Promise<void> => {
+    const payload: ProcessMonthFetchPayload = {
+      user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+      session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+      screen_id: SCREEN_IDS.PROCESS_MONTH.id,
+      ip_address: "192.168.1.101",
+    };
+    const response = await fetch(FETCH_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`Fetch API responded ${response.status}`);
+    }
+    const result: ProcessMonthFetchResponse = await response.json();
+    const fetchedRows = result.data.map(mapFetchItemToRow);
+    const fetchedIds = result.data.map((item) => item.id ?? "");
+    const snapshot = new Map<string, string[]>();
+    fetchedIds.forEach((id, i) => {
+      if (id) snapshot.set(id, [...fetchedRows[i]]);
+    });
+    originalRowsByIdRef.current = snapshot;
+    setRows(fetchedRows);
+    setRowIds(fetchedIds);
+  };
+
+  useEffect(() => {
+    // Guard against React StrictMode's double-invoke in development so the
+    // fetch fires exactly once per page load. The ref persists across the
+    // StrictMode mount → unmount → mount cycle, so the second pass early-
+    // returns without scheduling a duplicate request.
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    (async () => {
+      setIsLoading(true);
+      try {
+        await refreshProcessMonthData();
+      } catch (err) {
+        console.error("Failed to fetch process-month data:", err);
+        setSnackbarMessage(t("yearMonthMaster.fetchError"));
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+    // Intentionally empty deps: this fetch must run exactly once on mount.
+    // `t` and `refreshProcessMonthData` close over stable setters/refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   // Row selection mode hooks
   const {
@@ -160,20 +274,21 @@ function YearMonthMasterScreen() {
     handleSelectAllChange,
     selectedCount,
   } = useRowSelectionMode();
-  const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
   const handleAddEmptyRow = () => {
     const newRow = createNewRow();
     // Insert new row at appropriate position based on current page
     const insertIndex = Math.min(pageOffset, rows.length);
-    const newRows = [
+    setRows([
       ...rows.slice(0, insertIndex),
       newRow,
       ...rows.slice(insertIndex),
-    ];
-    shiftIndicesForInsertion(insertIndex, 1);
-    markRowsAsNew([insertIndex]);
-    setRows(newRows);
+    ]);
+    setRowIds([
+      ...rowIds.slice(0, insertIndex),
+      "",
+      ...rowIds.slice(insertIndex),
+    ]);
     setSnackbarMessage(t("yearMonthMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -197,16 +312,25 @@ function YearMonthMasterScreen() {
     if (selectedCount === 0) return;
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...rows[idx]]);
+      .map((idx) =>
+        rows[idx].map((cell, colIndex) =>
+          colIndex === LAST_UPDATED_DATE_COL_INDEX ||
+          colIndex === LAST_UPDATED_BY_COL_INDEX
+            ? ""
+            : cell,
+        ),
+      );
     const insertIndex = Math.min(pageOffset, rows.length);
-    const newRows = [
+    setRows([
       ...rows.slice(0, insertIndex),
       ...selectedRows,
       ...rows.slice(insertIndex),
-    ];
-    shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
-    setRows(newRows);
+    ]);
+    setRowIds([
+      ...rowIds.slice(0, insertIndex),
+      ...selectedRows.map(() => ""),
+      ...rowIds.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("yearMonthMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -215,31 +339,165 @@ function YearMonthMasterScreen() {
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!isNewRow(rowIndex)) return;
-    const newRows = rows.filter((_, idx) => idx !== rowIndex);
-    shiftIndicesForDeletion(rowIndex);
-    setRows(newRows);
+    setRows(rows.filter((_, idx) => idx !== rowIndex));
+    setRowIds(rowIds.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
   const handleRefresh = () => {
-    clearNewRowTracking();
     setRows(getEmptyRows());
+    setRowIds([]);
+    originalRowsByIdRef.current = new Map();
     setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
   };
 
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
   const handleRegistration = async () => {
-    setSnackbarMessage(t("yearMonthMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("yearMonthMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const newRowIndices = rowIds
+      .map((id, idx) => (id ? -1 : idx))
+      .filter((idx) => idx >= 0);
+
+    const editedRowIndices = rowIds
+      .map((id, idx) => {
+        if (!id) return -1;
+        const original = originalRowsByIdRef.current.get(id);
+        if (!original) return -1;
+        const current = rows[idx];
+        const unchanged = current.every((cell, i) => cell === original[i]);
+        return unchanged ? -1 : idx;
+      })
+      .filter((idx) => idx >= 0);
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) return;
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+    const missingRequired = targetIndices.some((idx) => {
+      const r = rows[idx];
+      return EDITABLE_COL_INDICES.some((c) => !r[c].trim());
+    });
+    if (missingRequired) {
+      setSnackbarMessage(t("yearMonthMaster.requiredFieldsError"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const snapshotEntries = Array.from(originalRowsByIdRef.current.entries());
+    const newHasDuplicate = newRowIndices.some((idx) => {
+      const row = rows[idx];
+      return snapshotEntries.some(([, snapRow]) =>
+        EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
+      );
+    });
+    const editedHasDuplicate = editedRowIndices.some((idx) => {
+      const row = rows[idx];
+      const myId = rowIds[idx];
+      return snapshotEntries.some(
+        ([snapId, snapRow]) =>
+          snapId !== myId &&
+          EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
+      );
+    });
+    if (newHasDuplicate || editedHasDuplicate) {
+      setSnackbarMessage(t("yearMonthMaster.duplicateRowError"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const auth = {
+      user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+      session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+      screen_id: SCREEN_IDS.PROCESS_MONTH.id,
+      ip_address: "192.168.1.101",
+    };
+
+    const callCreate = async () => {
+      const createRows: ProcessMonthCreateRow[] = newRowIndices.map((idx) => {
+        const r = rows[idx];
+        return {
+          proc_type: r[PROC_TYPE_COL_INDEX],
+          proc_type_name: r[PROC_TYPE_NAME_COL_INDEX],
+          proc_year: r[PROC_YEAR_COL_INDEX],
+          proc_period: r[PROC_PERIOD_COL_INDEX],
+        };
+      });
+      const payload: ProcessMonthCreatePayload = { rows: createRows, ...auth };
+      const response = await fetch(CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`Create API responded ${response.status}`);
+      }
+    };
+
+    const callUpdate = async () => {
+      const updateRows: ProcessMonthUpdateRow[] = editedRowIndices.map((idx) => {
+        const r = rows[idx];
+        return {
+          id: rowIds[idx],
+          proc_type: r[PROC_TYPE_COL_INDEX],
+          proc_type_name: r[PROC_TYPE_NAME_COL_INDEX],
+          proc_year: r[PROC_YEAR_COL_INDEX],
+          proc_period: r[PROC_PERIOD_COL_INDEX],
+        };
+      });
+      const payload: ProcessMonthUpdatePayload = { rows: updateRows, ...auth };
+      const response = await fetch(UPDATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`Update API responded ${response.status}`);
+      }
+    };
+
+    setIsRegistering(true);
+    const [createResult, updateResult] = await Promise.allSettled([
+      newRowIndices.length > 0 ? callCreate() : Promise.resolve(),
+      editedRowIndices.length > 0 ? callUpdate() : Promise.resolve(),
+    ]);
+    try {
+      await refreshProcessMonthData();
+    } catch (err) {
+      console.error("Failed to refresh data after registration:", err);
+    }
+    setIsRegistering(false);
+
+    if (newRowIndices.length > 0) {
+      const ok = createResult.status === "fulfilled";
+      setSnackbarMessage(
+        t(
+          ok
+            ? "yearMonthMaster.createRowsSuccess"
+            : "yearMonthMaster.createRowsFailed",
+        ),
+      );
+      setSnackbarSeverity(ok ? "success" : "error");
+      setSnackbarOpen(true);
+    }
+
+    if (editedRowIndices.length > 0) {
+      const ok = updateResult.status === "fulfilled";
+      setUpdateSnackbarMessage(
+        t(
+          ok
+            ? "yearMonthMaster.updateRowsSuccess"
+            : "yearMonthMaster.updateRowsFailed",
+        ),
+      );
+      setUpdateSnackbarSeverity(ok ? "success" : "error");
+      setUpdateSnackbarOpen(true);
+    }
   };
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const handleCellEdit = (
     rowIndex: number,
@@ -487,6 +745,33 @@ function YearMonthMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
+      <Snackbar
+        open={updateSnackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setUpdateSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{
+          top: { xs: "80px !important", sm: "88px !important" },
+        }}
+      >
+        <StyledSnackbarAlert
+          onClose={() => setUpdateSnackbarOpen(false)}
+          severity={updateSnackbarSeverity}
+        >
+          {updateSnackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
+
+      {isLoading && <ResultsLoader fullScreen />}
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("yearMonthMaster.registrationInProgress")}
+        />
+      )}
+      {/* AI Generated Code by Deloitte + Cursor (END) */}
     </>
   );
 }

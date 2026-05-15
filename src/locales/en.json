@@ -681,7 +681,14 @@
     "rowAdded": "Row added.",
     "tableRefreshed": "Table refreshed.",
     "registrationInProgress": "Registration in progress...",
-    "registrationCompleted": "Registration completed successfully."
+    "registrationCompleted": "Registration completed successfully.",
+    "fetchError": "Failed to load data.",
+    "createRowsSuccess": "New rows created successfully.",
+    "createRowsFailed": "Failed to create new rows.",
+    "updateRowsSuccess": "Existing rows updated successfully.",
+    "updateRowsFailed": "Failed to update existing rows.",
+    "requiredFieldsError": "All fields are required for the rows being registered.",
+    "duplicateRowError": "Some rows are identical to existing data. Please update them before registration."
   },
   "fxRateEntryMaster": {
     "searchCondition": "Search Condition",

@@ -681,7 +681,14 @@
     "rowAdded": "行を追加しました。",
     "tableRefreshed": "テーブルを更新しました。",
     "registrationInProgress": "登録処理中...",
-    "registrationCompleted": "登録が正常に完了しました。"
+    "registrationCompleted": "登録が正常に完了しました。",
+    "fetchError": "データの取得に失敗しました。",
+    "createRowsSuccess": "新規行を正常に登録しました。",
+    "createRowsFailed": "新規行の登録に失敗しました。",
+    "updateRowsSuccess": "既存行を正常に更新しました。",
+    "updateRowsFailed": "既存行の更新に失敗しました。",
+    "requiredFieldsError": "登録対象の行ではすべての項目が必須です。",
+    "duplicateRowError": "一部の行が既存データと同一です。登録前に内容を更新してください。"
   },
   "fxRateEntryMaster": {
     "searchCondition": "検索条件",
