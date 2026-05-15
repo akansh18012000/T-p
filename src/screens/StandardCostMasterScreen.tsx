@@ -569,7 +569,7 @@ export default function StandardCostMasterScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.standardCostMaintenance") },
     ]);
     return () => setBreadcrumbItems([]);

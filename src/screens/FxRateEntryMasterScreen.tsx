@@ -308,7 +308,7 @@ function FxRateEntryMasterScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.fxRateEntryDaily") },
     ]);
     return () => setBreadcrumbItems([]);

@@ -199,7 +199,7 @@ export default function StravisCoaHierarchyUploadScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.stravisCoaHierarchyUpload") },
     ]);
     return () => setBreadcrumbItems([]);

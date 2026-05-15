@@ -1,6 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -11,10 +9,8 @@ import {
   Avatar,
   Select,
   MenuItem,
-  Button,
   IconButton,
 } from "@mui/material";
-import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -61,15 +57,6 @@ const StyledLanguageSelect = styled(Select)(({ theme }) => ({
   },
 }));
 
-const StyledLogoutButton = styled(Button)(({ theme }) => ({
-  color: theme.palette.error.red500!,
-  borderColor: theme.palette.error.red200!,
-  "&:hover": {
-    backgroundColor: theme.palette.error.red500Light!,
-    borderColor: theme.palette.error.red500!,
-  },
-}));
-
 const StyledMenuIconButton = styled(IconButton)(({ theme }) => ({
   marginRight: theme.spacing(2),
 }));
@@ -80,9 +67,6 @@ interface AppHeaderProps {
   showMenuButton?: boolean;
   showUserInfo?: boolean;
   showLanguageSelector?: boolean;
-  showLogout?: boolean;
-  onLogout?: () => void;
-  logoutRedirectPath?: string;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -91,35 +75,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   showMenuButton = true,
   showUserInfo = true,
   showLanguageSelector = true,
-  showLogout = true,
-  onLogout,
-  logoutRedirectPath = "/home",
 }) => {
-  const navigate = useNavigate();
-  const { instance } = useMsal();
   const { t, i18n } = useTranslation();
 
   const userDisplayName = "User";
 
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout();
-    } else {
-      instance.logoutRedirect();
-    }
-  };
-
   const handleLanguageChange = (language: string) => {
     i18n.changeLanguage(language);
     localStorage.setItem("language", language);
-  };
-
-  const handleLogoutClick = () => {
-    if (logoutRedirectPath) {
-      navigate(logoutRedirectPath);
-    } else {
-      handleLogout();
-    }
   };
 
   return (
@@ -158,16 +121,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               <MenuItem value="en">EN</MenuItem>
               <MenuItem value="ja">JP</MenuItem>
             </StyledLanguageSelect>
-          )}
-
-          {showLogout && (
-            <StyledLogoutButton
-              variant="outlined"
-              startIcon={<LogoutIcon />}
-              onClick={handleLogoutClick}
-            >
-              {t("home.logout")}
-            </StyledLogoutButton>
           )}
         </StyledControlsBox>
       </Toolbar>

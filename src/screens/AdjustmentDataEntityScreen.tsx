@@ -647,7 +647,7 @@ export default function AdjustmentDataEntityScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.adjustmentDataEntity") },
     ]);
     return () => setBreadcrumbItems([]);

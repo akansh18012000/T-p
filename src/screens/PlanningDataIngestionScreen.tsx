@@ -220,7 +220,7 @@ export default function PlanningDataIngestionScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("planningDataIngestion.title") },
     ]);
     return () => setBreadcrumbItems([]);

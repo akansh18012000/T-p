@@ -387,7 +387,7 @@ export default function SalesDataErrorCorrectionScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("errorCorrection.title") },
     ]);
     return () => setBreadcrumbItems([]);

@@ -230,7 +230,7 @@ export default function UploadedCsvPreviewScreen() {
   const state = location.state as LocationState | null;
   const csvData = state?.csvData;
   const fileName = state?.fileName ?? "";
-  const returnPath = state?.returnPath ?? "/home";
+  const returnPath = state?.returnPath ?? "/";
   const returnLabel = state?.returnLabel ?? t("home.home");
   const sourceScreen = state?.sourceScreen;
 
@@ -241,7 +241,7 @@ export default function UploadedCsvPreviewScreen() {
       return;
     }
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: returnLabel, onClick: () => navigate(returnPath) },
       { label: fileName },
     ]);
@@ -282,7 +282,7 @@ export default function UploadedCsvPreviewScreen() {
       <StyledNoDataBox>
         <StyledBackButton
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/")}
         >
           {t("upload.home")}
         </StyledBackButton>

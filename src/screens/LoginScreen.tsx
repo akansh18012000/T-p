@@ -107,7 +107,7 @@ export default function LoginScreen() {
       });
 
       if (loginResponse.account) {
-        navigate("/home");
+        navigate("/");
       }
     } catch (err) {
       setError(t("login.error"));

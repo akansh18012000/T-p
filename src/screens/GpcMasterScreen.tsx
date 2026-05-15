@@ -181,7 +181,7 @@ export default function GpcMasterScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.gpcMasterMaintenance") },
     ]);
     return () => setBreadcrumbItems([]);

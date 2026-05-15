@@ -224,7 +224,7 @@ export default function CsvViewerScreen({}: CsvViewerScreenProps) {
       return;
     }
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.salesDataUpload"), onClick: () => navigate(-1) },
       { label: fileName },
     ]);

@@ -694,7 +694,7 @@ export default function SalesDataUploadScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("upload.home"), path: "/home" },
+      { label: t("upload.home"), path: "/" },
       { label: t("home.salesDataUpload") },
     ]);
     return () => setBreadcrumbItems([]);
@@ -1030,7 +1030,7 @@ export default function SalesDataUploadScreen() {
                         <StyledCancelButton
                           variant="outlined"
                           size="small"
-                          onClick={() => navigate("/home")}
+                          onClick={() => navigate("/")}
                           disabled={uploading}
                         >
                           {t("upload.cancel")}

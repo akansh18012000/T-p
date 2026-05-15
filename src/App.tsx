@@ -25,7 +25,6 @@ import {
   type MenuItem,
 } from "./config/menuConfig.js";
 import { useSidebar } from "./context/SidebarContext.js";
-import LoginScreen from "./screens/LoginScreen.js";
 import HomeScreen from "./screens/HomeScreen.js";
 import SalesDataUploadScreen from "./screens/SalesDataUploadScreen.js";
 import CsvViewerScreen from "./screens/CsvViewerScreen.js";
@@ -51,8 +50,8 @@ const msalInstance = new PublicClientApplication(msalConfig);
 
 const theme = createTheme(terumoTheme);
 
-/** Routes WITH layout but NO sidebar: /home, /csv-viewer/*, /uploaded-csv-preview */
-const NO_SIDEBAR_PATHS = ["/home", "/csv-viewer", "/uploaded-csv-preview"];
+/** Routes WITH layout but NO sidebar: /, /csv-viewer/*, /uploaded-csv-preview */
+const NO_SIDEBAR_PREFIX_PATHS = ["/csv-viewer", "/uploaded-csv-preview"];
 
 function ConditionalLayout() {
   const location = useLocation();
@@ -67,8 +66,9 @@ function ConditionalLayout() {
     currentScreenId,
   } = useSidebar();
 
-  const showSidebar = !NO_SIDEBAR_PATHS.some((p) => pathname.startsWith(p));
-  const logoutRedirectPath = pathname === "/home" ? "/" : "/home";
+  const showSidebar =
+    pathname !== "/" &&
+    !NO_SIDEBAR_PREFIX_PATHS.some((p) => pathname.startsWith(p));
   const menuSections = createMenuSections(
     t,
     dataInputExpanded,
@@ -90,7 +90,6 @@ function ConditionalLayout() {
   return (
     <AppLayout
       showSidebar={showSidebar}
-      logoutRedirectPath={logoutRedirectPath}
       sections={menuSections}
       onSectionToggle={handleSectionToggle}
       onMenuItemClick={handleMenuItemClick}
@@ -110,11 +109,9 @@ export default function App() {
             <SidebarProvider>
               <BreadcrumbProvider>
               <Routes>
-                {/* Routes WITHOUT layout: Login only */}
-                <Route path="/" element={<LoginScreen />} />
                 {/* Routes WITH layout (sidebar or no sidebar based on path) */}
                 <Route element={<ConditionalLayout />}>
-                  <Route path="/home" element={<HomeScreen />} />
+                  <Route path="/" element={<HomeScreen />} />
                   <Route
                     path="/csv-upload/:itemId"
                     element={<SalesDataUploadScreen />}

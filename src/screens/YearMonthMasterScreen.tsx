@@ -135,7 +135,7 @@ function YearMonthMasterScreen() {
 
   useEffect(() => {
     setBreadcrumbItems([
-      { label: t("home.home"), path: "/home" },
+      { label: t("home.home"), path: "/" },
       { label: t("home.yearMonthMasterMaintenance") },
     ]);
     return () => setBreadcrumbItems([]);

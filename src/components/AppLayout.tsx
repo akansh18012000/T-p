@@ -44,7 +44,6 @@ interface AppLayoutProps {
     icon: React.ComponentType<any>;
   }) => void;
   showSidebar?: boolean;
-  logoutRedirectPath?: string;
   sidebarProps?: Partial<{
     width: number;
     collapsedWidth: number;
@@ -66,14 +65,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onSectionToggle,
   onMenuItemClick,
   showSidebar = true,
-  logoutRedirectPath,
   sidebarProps = {},
 }) => {
   const { pathname } = useLocation();
   const { sidebarOpen, openSidebar, closeSidebar } = useSidebar();
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { items: breadcrumbItems } = useBreadcrumbItems();
-  const isHomePage = pathname === "/home";
+  const isHomePage = pathname === "/";
   const showBreadcrumbs = !isHomePage && breadcrumbItems.length > 0;
   // AI Generated Code by Deloitte + Cursor (END)
 
@@ -98,7 +96,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             : () => {}
         }
         showMenuButton={showSidebar}
-        logoutRedirectPath={logoutRedirectPath}
       />
       {showSidebar && (
         <AppSidebar
