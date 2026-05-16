@@ -163,10 +163,6 @@ type ProcessMonthUpdatePayload = {
 const UPDATE_API_URL = "/api/v1/process-month/update";
 // AI Generated Code by Deloitte + Cursor (END)
 
-function getEmptyRows(): string[][] {
-  return [];
-}
-
 function createNewRow(): string[] {
   return TABLE_HEADERS.map(() => "");
 }
@@ -346,13 +342,21 @@ function YearMonthMasterScreen() {
     setSnackbarOpen(true);
   };
 
-  const handleRefresh = () => {
-    setRows(getEmptyRows());
-    setRowIds([]);
-    originalRowsByIdRef.current = new Map();
-    setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    try {
+      await refreshProcessMonthData();
+      setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+    } catch (err) {
+      console.error("Failed to refresh process-month data:", err);
+      setSnackbarMessage(t("yearMonthMaster.fetchError"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -617,7 +621,9 @@ function YearMonthMasterScreen() {
                 )}
               </StyledSearchInputWrapper>
             </StyledSearchBarBox>
-            {rows.length === 0 ? (
+            {isLoading ? (
+              <ResultsLoader />
+            ) : rows.length === 0 ? (
               <StyledEmptyStateBox>
                 <StyledEmptyStateTitle variant="h6">
                   {t("yearMonthMaster.noRows")}
@@ -764,7 +770,6 @@ function YearMonthMasterScreen() {
         </StyledSnackbarAlert>
       </Snackbar>
 
-      {isLoading && <ResultsLoader fullScreen />}
       {isRegistering && (
         <ResultsLoader
           fullScreen
