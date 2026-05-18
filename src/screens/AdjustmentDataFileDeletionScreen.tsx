@@ -31,6 +31,7 @@ import {
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import {
   StyledMainPaper,
@@ -69,6 +70,7 @@ import {
   StyledTableCellTypography,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import {
   useTablePagination,
@@ -200,14 +202,23 @@ const CORRECTION_TYPE_OPTIONS = [
     labelKey: "adjustmentDataFileDeletion.achievementDetails",
   },
   {
-    value: "basePl",
-    labelKey: "adjustmentDataFileDeletion.basePl",
-  },
-  {
     value: "consolidatedPl",
     labelKey: "adjustmentDataFileDeletion.consolidatedPl",
   },
 ];
+
+function getCorrectionTypeScreenName(correctionType: string): string {
+  return correctionType === "consolidatedPl"
+    ? SCREEN_IDS.ADJUSTMENT_DATA_CONSOLIDATED_UPLOAD.screenName
+    : SCREEN_IDS.ADJUSTMENT_DATA_SALES_DETAIL_UPLOAD.screenName;
+}
+
+function formatYearMonthForPayload(d: Date | null): string {
+  if (!d) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}${m}`;
+}
 // AI Generated Code by Deloitte + Cursor (END)
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -219,6 +230,44 @@ interface ResultRow {
   userId: string;
   dateTime: string;
   selected: boolean;
+}
+
+/** POST /api/v1/adjustment-data-deletion/search — top-level JSON shape */
+interface AdjustmentDataDeletionSearchEnvelope {
+  total: number;
+  data: AdjustmentDataDeletionSearchRow[];
+}
+
+interface AdjustmentDataDeletionSearchRow {
+  file_name: string;
+  user_id: string;
+  date_and_time: string;
+  year_and_month: string | null;
+}
+
+const ADJUSTMENT_DATA_DELETION_SEARCH_API_URL =
+  "/api/v1/adjustment-data-deletion/search";
+
+const ADJUSTMENT_DATA_DELETION_CREATE_API_URL =
+  "/api/v1/adjustment-data-deletion/create";
+
+function getCorrectionTypeForDeletion(correctionType: string): string {
+  return correctionType === "consolidatedPl" ? "consolidated" : "sales";
+}
+
+function mapApiRowToResultRow(
+  raw: AdjustmentDataDeletionSearchRow,
+  index: number,
+): ResultRow {
+  return {
+    id: index + 1,
+    correctionType: "",
+    yearMonth: raw.year_and_month ?? "",
+    fileName: raw.file_name ?? "",
+    userId: raw.user_id ?? "",
+    dateTime: raw.date_and_time ?? "",
+    selected: false,
+  };
 }
 // AI Generated Code by Deloitte + Cursor (END)
 
@@ -240,7 +289,7 @@ function AdjustmentDataFileDeletionScreen() {
 
   // Search condition state
   // AI Generated Code by Deloitte + Cursor (BEGIN)
-  const [correctionType, setCorrectionType] = useState("basePl");
+  const [correctionType, setCorrectionType] = useState("achievementDetails");
   // AI Generated Code by Deloitte + Cursor (END)
   const [yearMonth, setYearMonth] = useState<Date | null>(null);
   const [fileName, setFileName] = useState("");
@@ -248,7 +297,7 @@ function AdjustmentDataFileDeletionScreen() {
 
   const searchConditionsRef = useRef({
     // AI Generated Code by Deloitte + Cursor (BEGIN)
-    correctionType: "basePl",
+    correctionType: "achievementDetails",
     // AI Generated Code by Deloitte + Cursor (END)
     yearMonth: null as Date | null,
     fileName: "",
@@ -264,6 +313,11 @@ function AdjustmentDataFileDeletionScreen() {
   // Result data state
   const [resultRows, setResultRows] = useState<ResultRow[]>([]);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const [yearMonthPickerOpen, setYearMonthPickerOpen] = useState(false);
+  // AI Generated Code by Deloitte + Cursor (END)
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -273,92 +327,48 @@ function AdjustmentDataFileDeletionScreen() {
 
   const handleSearch = async () => {
     setSearchExecuted(true);
+    setLoading(true);
     try {
-      const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const yearMonthStr = conditions.yearMonth
-        ? `${conditions.yearMonth.getFullYear()}-${String(conditions.yearMonth.getMonth() + 1).padStart(2, "0")}`
-        : "";
       // AI Generated Code by Deloitte + Cursor (BEGIN)
-      const allRows: ResultRow[] = [
-        {
-          id: 1,
-          correctionType: "achievementDetails",
-          yearMonth: "2026-01",
-          fileName: "sales_detail_jan_2026.csv",
-          userId: "USR001",
-          dateTime: "2026-01-05 10:30",
-          selected: false,
-        },
-        {
-          id: 2,
-          correctionType: "achievementDetails",
-          yearMonth: "2026-01",
-          fileName: "sales_detail_jan_2026_v2.csv",
-          userId: "USR002",
-          dateTime: "2026-01-06 14:20",
-          selected: false,
-        },
-        {
-          id: 3,
-          correctionType: "basePl",
-          yearMonth: "2026-01",
-          fileName: "entity_data_jan_2026.csv",
-          userId: "USR001",
-          dateTime: "2026-01-07 09:15",
-          selected: false,
-        },
-        {
-          id: 4,
-          correctionType: "consolidatedPl",
-          yearMonth: "2026-02",
-          fileName: "consolidated_feb_2026.csv",
-          userId: "USR003",
-          dateTime: "2026-02-01 11:00",
-          selected: false,
-        },
-        {
-          id: 5,
-          correctionType: "basePl",
-          yearMonth: "2026-02",
-          fileName: "entity_feb_2026.csv",
-          userId: "USR002",
-          dateTime: "2026-02-02 16:45",
-          selected: false,
-        },
-      ];
-      const filteredRows = allRows.filter((row) => {
-        if (
-          conditions.correctionType.trim() &&
-          row.correctionType !== conditions.correctionType
-        )
-          return false;
-        if (yearMonthStr && row.yearMonth !== yearMonthStr) return false;
-        if (
-          conditions.fileName.trim() &&
-          !row.fileName
-            .toLowerCase()
-            .includes(conditions.fileName.toLowerCase())
-        )
-          return false;
-        return true;
+      const res = await fetch(ADJUSTMENT_DATA_DELETION_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          screen_id: SCREEN_IDS.SALES_DELETION.id,
+          correction_type: getCorrectionTypeScreenName(correctionType),
+          year_month: formatYearMonthForPayload(yearMonth),
+          file_name: fileName,
+          user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+          ip_address: "192.168.1.101",
+        }),
       });
-      // AI Generated Code by Deloitte + Cursor (END)
-      setResultRows(filteredRows.map((r) => ({ ...r, selected: false })));
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as AdjustmentDataDeletionSearchEnvelope;
+      const rows = Array.isArray(json.data) ? json.data : [];
+      const mapped = rows.map((raw, i) => mapApiRowToResultRow(raw, i));
+      setResultRows(mapped);
       setSnackbarMessage(
-        filteredRows.length > 0
+        mapped.length > 0
           ? t("adjustmentDataFileDeletion.searchCompletedWithData")
           : t("adjustmentDataFileDeletion.searchCompletedNoResults"),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
+      setSnackbarSeverity(mapped.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
-    } catch {
+      // AI Generated Code by Deloitte + Cursor (END)
+    } catch (e) {
+      console.error(e);
       setResultRows([]);
       setSnackbarMessage(
         t("adjustmentDataFileDeletion.searchCompletedNoResults"),
       );
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -376,9 +386,9 @@ function AdjustmentDataFileDeletionScreen() {
     setResultRows((prev) => prev.map((r) => ({ ...r, selected: checked })));
   };
 
-  const handleDeleteSelected = () => {
-    const selectedIds = resultRows.filter((r) => r.selected).map((r) => r.id);
-    if (selectedIds.length === 0) {
+  const handleDeleteSelected = async () => {
+    const selectedRows = resultRows.filter((r) => r.selected);
+    if (selectedRows.length === 0) {
       setSnackbarMessage(
         t("adjustmentDataFileDeletion.noRowsSelectedForDeletion"),
       );
@@ -386,14 +396,49 @@ function AdjustmentDataFileDeletionScreen() {
       setSnackbarOpen(true);
       return;
     }
-    setResultRows((prev) => prev.filter((r) => !r.selected));
-    setSnackbarMessage(
-      t("adjustmentDataFileDeletion.filesDeletedSuccess", {
-        count: selectedIds.length,
-      }),
-    );
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    const correctionTypeForApi = getCorrectionTypeForDeletion(correctionType);
+    const records = selectedRows.map((r) => ({
+      correction_type: correctionTypeForApi,
+      file_name: r.fileName,
+      user_id: r.userId,
+      date_and_time: r.dateTime,
+      year_and_month: r.yearMonth,
+    }));
+
+    setDeleting(true);
+    try {
+      const res = await fetch(ADJUSTMENT_DATA_DELETION_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          records,
+          current_user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+          screen_id: SCREEN_IDS.SALES_DELETION.id,
+          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+          ip_address: "192.168.1.101",
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      setResultRows((prev) => prev.filter((r) => !r.selected));
+      setSnackbarMessage(
+        t("adjustmentDataFileDeletion.filesDeletedSuccess", {
+          count: selectedRows.length,
+        }),
+      );
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("adjustmentDataFileDeletion.filesDeletionFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -487,11 +532,37 @@ function AdjustmentDataFileDeletionScreen() {
                       }}
                       views={["year", "month"]}
                       format="yyyy/MM"
+                      // AI Generated Code by Deloitte + Cursor (BEGIN)
+                      open={yearMonthPickerOpen}
+                      onOpen={() => setYearMonthPickerOpen(true)}
+                      onClose={() => setYearMonthPickerOpen(false)}
+                      // AI Generated Code by Deloitte + Cursor (END)
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        // AI Generated Code by Deloitte + Cursor (BEGIN)
+                        field: { clearable: true },
+                        // AI Generated Code by Deloitte + Cursor (END)
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          // AI Generated Code by Deloitte + Cursor (BEGIN)
+                          onClick: () => setYearMonthPickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
+                          // AI Generated Code by Deloitte + Cursor (END)
                         },
                       }}
                     />
@@ -509,6 +580,13 @@ function AdjustmentDataFileDeletionScreen() {
                       setFileName(val);
                       searchConditionsRef.current.fileName = val;
                     }}
+                    // AI Generated Code by Deloitte + Cursor (BEGIN)
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        backgroundColor: "background.paper",
+                      },
+                    }}
+                    // AI Generated Code by Deloitte + Cursor (END)
                   />
                 </Grid>
                 <Grid size={12} sx={{ marginTop: 1 }}>
@@ -589,7 +667,9 @@ function AdjustmentDataFileDeletionScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {resultRows.length === 0 ? (
+                    {loading ? (
+                      <ResultsLoader />
+                    ) : resultRows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("adjustmentDataFileDeletion.noFilesFound")}
@@ -698,7 +778,7 @@ function AdjustmentDataFileDeletionScreen() {
                             variant="contained"
                             startIcon={<DeleteIcon />}
                             onClick={handleDeleteSelected}
-                            disabled={selectedCount === 0}
+                            disabled={selectedCount === 0 || deleting}
                           >
                             {t("adjustmentDataFileDeletion.delete")}{" "}
                             {selectedCount > 0 ? `(${selectedCount})` : ""}
@@ -727,6 +807,13 @@ function AdjustmentDataFileDeletionScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {deleting && (
+        <ResultsLoader
+          fullScreen
+          label={t("adjustmentDataFileDeletion.deletingFiles")}
+        />
+      )}
     </>
   );
 }
