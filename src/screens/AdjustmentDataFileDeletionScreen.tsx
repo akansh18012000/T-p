@@ -77,6 +77,7 @@ import {
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
+import { formatDateTimeForDisplay } from "../utils/commonUtils.js";
 
 // Screen-specific table components (delete column, white borders)
 // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -253,11 +254,6 @@ const ADJUSTMENT_DATA_DELETION_CREATE_API_URL =
 
 function getCorrectionTypeForDeletion(correctionType: string): string {
   return correctionType === "consolidatedPl" ? "consolidated" : "sales";
-}
-
-function formatDateTimeForDisplay(value: string): string {
-  if (!value) return "";
-  return value.split(".")[0];
 }
 
 function mapApiRowToResultRow(

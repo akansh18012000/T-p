@@ -24,6 +24,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { formatDateTimeForDisplay } from "../utils/commonUtils.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import {
@@ -111,7 +112,7 @@ function mapFetchItemToRow(item: ProcessMonthFetchItem): string[] {
     item.proc_type_name ?? "",
     item.proc_year ?? "",
     item.proc_period ?? "",
-    item.last_updated_date ?? "",
+    formatDateTimeForDisplay(item.last_updated_date),
     item.last_updated_by ?? "",
   ];
 }
