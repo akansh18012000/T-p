@@ -255,6 +255,11 @@ function getCorrectionTypeForDeletion(correctionType: string): string {
   return correctionType === "consolidatedPl" ? "consolidated" : "sales";
 }
 
+function formatDateTimeForDisplay(value: string): string {
+  if (!value) return "";
+  return value.split(".")[0];
+}
+
 function mapApiRowToResultRow(
   raw: AdjustmentDataDeletionSearchRow,
   index: number,
@@ -423,7 +428,6 @@ function AdjustmentDataFileDeletionScreen() {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
-      setResultRows((prev) => prev.filter((r) => !r.selected));
       setSnackbarMessage(
         t("adjustmentDataFileDeletion.filesDeletedSuccess", {
           count: selectedRows.length,
@@ -431,6 +435,7 @@ function AdjustmentDataFileDeletionScreen() {
       );
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
+      handleSearch();
     } catch (e) {
       console.error(e);
       setSnackbarMessage(t("adjustmentDataFileDeletion.filesDeletionFailed"));
@@ -729,23 +734,29 @@ function AdjustmentDataFileDeletionScreen() {
                                     </StyledTableCellTypography>
                                   </StyledTableBodyIndexCell>
                                   {ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS.map(
-                                    (col) => (
-                                      <StyledTableDataCell key={col.key}>
-                                        <StyledTableCellTypography variant="body2">
-                                          {
-                                            row[
-                                              col.key as keyof Pick<
-                                                ResultRow,
-                                                | "yearMonth"
-                                                | "fileName"
-                                                | "userId"
-                                                | "dateTime"
-                                              >
-                                            ]
-                                          }
-                                        </StyledTableCellTypography>
-                                      </StyledTableDataCell>
-                                    ),
+                                    (col) => {
+                                      const rawValue =
+                                        row[
+                                          col.key as keyof Pick<
+                                            ResultRow,
+                                            | "yearMonth"
+                                            | "fileName"
+                                            | "userId"
+                                            | "dateTime"
+                                          >
+                                        ];
+                                      const cellValue =
+                                        col.key === "dateTime"
+                                          ? formatDateTimeForDisplay(rawValue)
+                                          : rawValue;
+                                      return (
+                                        <StyledTableDataCell key={col.key}>
+                                          <StyledTableCellTypography variant="body2">
+                                            {cellValue}
+                                          </StyledTableCellTypography>
+                                        </StyledTableDataCell>
+                                      );
+                                    },
                                   )}
                                   {/* AI Generated Code by Deloitte + Cursor (END) */}
                                   <StyledTableCheckboxCell>
