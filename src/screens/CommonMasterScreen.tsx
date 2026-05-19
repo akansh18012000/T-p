@@ -951,8 +951,18 @@ export default function CommonMasterScreen() {
                     loading={codeOptionsLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
-                      <StyledAutocompleteInput
+                      <StyledInputBase
                         {...params}
+                        sx={
+                          codeOptionsLoading
+                            ? {
+                                "& .MuiInputBase-root.Mui-disabled": {
+                                  backgroundColor: (theme) =>
+                                    theme.palette.background.paper,
+                                },
+                              }
+                            : undefined
+                        }
                         label={t("commonMaster.code")}
                         placeholder={t("commonMaster.enterCode")}
                         InputProps={{
