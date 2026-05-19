@@ -47,6 +47,7 @@ import {
   StyledExpandMoreIcon,
   StyledSectionContent,
   StyledInputBase,
+  StyledAutocompleteInput,
   StyledPrimaryCaption,
   StyledSearchButtonsBox,
   StyledFormControlLabel,
@@ -890,7 +891,7 @@ export default function CommonMasterScreen() {
                       loading={groupOptionsLoading}
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
-                        <StyledInputBase
+                        <StyledAutocompleteInput
                           {...params}
                           label={t("commonMaster.groupId")}
                           placeholder={t("commonMaster.enterGroupId")}
@@ -950,7 +951,7 @@ export default function CommonMasterScreen() {
                     loading={codeOptionsLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
-                      <StyledInputBase
+                      <StyledAutocompleteInput
                         {...params}
                         label={t("commonMaster.code")}
                         placeholder={t("commonMaster.enterCode")}
