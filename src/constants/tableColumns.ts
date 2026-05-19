@@ -522,7 +522,6 @@ export interface KitItemClassificationMasterColumnConfig {
 export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMasterColumnConfig[] = [
   { key: "kitMfrPartNumber", label: "Kit Mfr Part Number", editable: false },
   { key: "kitManufacturer", label: "Kit Manufacturer", editable: false },
-  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
   { key: "componentMfrPartNumber", label: "Component Mfr Part Number", editable: false },
   { key: "componentsManufacturer", label: "Components Manufacturer", editable: false },
   { key: "componentLocationCode", label: "Component Location Code", editable: false },
@@ -537,12 +536,11 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = 
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
   { index: 1, labelKey: "kitItemClassification.kitMfrPartNumber" },
   { index: 2, labelKey: "kitItemClassification.kitManufacturer" },
-  { index: 3, labelKey: "kitItemClassification.manufacturerName" },
-  { index: 4, labelKey: "kitItemClassification.componentMfrPartNumber" },
-  { index: 5, labelKey: "kitItemClassification.componentsManufacturer" },
-  { index: 6, labelKey: "kitItemClassification.componentLocationCode" },
-  { index: 7, labelKey: "kitItemClassification.quantity" },
-  { index: 8, labelKey: "kitItemClassification.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 3, labelKey: "kitItemClassification.componentMfrPartNumber" },
+  { index: 4, labelKey: "kitItemClassification.componentsManufacturer" },
+  { index: 5, labelKey: "kitItemClassification.componentLocationCode" },
+  { index: 6, labelKey: "kitItemClassification.quantity" },
+  { index: 7, labelKey: "kitItemClassification.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------

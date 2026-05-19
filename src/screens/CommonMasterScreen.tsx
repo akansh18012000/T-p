@@ -12,6 +12,7 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -236,12 +237,14 @@ export default function CommonMasterScreen() {
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [groupOptions, setGroupOptions] = useState<GroupWithName[]>([]);
+  const [groupOptionsLoading, setGroupOptionsLoading] = useState(false);
   const groupOptionsFetchedRef = useRef(false);
 
   useEffect(() => {
     // Guard against React StrictMode's double-invoke in development.
     if (groupOptionsFetchedRef.current) return;
     groupOptionsFetchedRef.current = true;
+    setGroupOptionsLoading(true);
     (async () => {
       try {
         const response = await fetch(GROUP_ID_API_URL);
@@ -255,18 +258,23 @@ export default function CommonMasterScreen() {
         );
       } catch {
         // Leave options empty if the request fails.
+      } finally {
+        setGroupOptionsLoading(false);
       }
     })();
   }, []);
 
   const [codeOptions, setCodeOptions] = useState<CodeWithName[]>([]);
+  const [codeOptionsLoading, setCodeOptionsLoading] = useState(false);
 
   useEffect(() => {
     if (!groupId) {
       setCodeOptions([]);
+      setCodeOptionsLoading(false);
       return;
     }
     let cancelled = false;
+    setCodeOptionsLoading(true);
     (async () => {
       try {
         const response = await fetch(
@@ -285,6 +293,8 @@ export default function CommonMasterScreen() {
         );
       } catch {
         // Leave options empty if the request fails.
+      } finally {
+        if (!cancelled) setCodeOptionsLoading(false);
       }
     })();
     return () => {
@@ -876,12 +886,25 @@ export default function CommonMasterScreen() {
                         }
                       }}
                       freeSolo
+                      disabled={groupOptionsLoading}
+                      loading={groupOptionsLoading}
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
                         <StyledInputBase
                           {...params}
                           label={t("commonMaster.groupId")}
                           placeholder={t("commonMaster.enterGroupId")}
+                          InputProps={{
+                            ...params.InputProps,
+                            endAdornment: (
+                              <>
+                                {groupOptionsLoading ? (
+                                  <CircularProgress size={18} />
+                                ) : null}
+                                {params.InputProps.endAdornment}
+                              </>
+                            ),
+                          }}
                         />
                       )}
                     />
@@ -896,7 +919,7 @@ export default function CommonMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    disabled={!groupId}
+                    disabled={!groupId || codeOptionsLoading}
                     options={codeIdOptions}
                     value={code || null}
                     inputValue={codeSearchInput}
@@ -924,12 +947,24 @@ export default function CommonMasterScreen() {
                       }
                     }}
                     freeSolo
+                    loading={codeOptionsLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledInputBase
                         {...params}
                         label={t("commonMaster.code")}
                         placeholder={t("commonMaster.enterCode")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {codeOptionsLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />

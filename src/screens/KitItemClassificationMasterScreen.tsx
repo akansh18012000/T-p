@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
@@ -19,6 +18,7 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -109,6 +109,7 @@ import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS, KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS, KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -123,21 +124,81 @@ import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 
-const KIT_MANUFACTURER_PART_NUMBERS = [
-  "KIT-PART-1001",
-  "KIT-PART-2002",
-  "KIT-PART-1003",
-  "KIT-PART-3001",
-  "KIT-PART-4001",
-];
-const KIT_MANUFACTURERS = [
-  "MFR-001",
-  "MFR-002",
-  "MFR-003",
-  "Acme Corp",
-  "Beta Inc",
-];
+// AI Generated Code by Deloitte + Cursor (BEGIN)
+const KIT_MANUFACTURER_PART_NUMBERS_API_URL =
+  "/api/v1/kit-item-combined/get_kit_manufacture_part_numbers";
+const KIT_MANUFACTURERS_API_URL =
+  "/api/v1/kit-item-combined/get_kit_manufacturers";
+const KIT_ITEM_COMBINED_SEARCH_API_URL =
+  "/api/v1/kit-item-combined/search";
+const KIT_ITEM_COMBINED_CREATE_API_URL =
+  "/api/v1/kit-item-combined/create";
+
+interface KitManufacturerPartNumberApiRow {
+  kit_manufacture_part_number: string;
+}
+
+interface KitManufacturerPartNumberApiEnvelope {
+  total: number;
+  data: KitManufacturerPartNumberApiRow[];
+}
+
+interface KitManufacturerApiRow {
+  kit_manufacturer: string;
+}
+
+interface KitManufacturerApiEnvelope {
+  total: number;
+  data: KitManufacturerApiRow[];
+}
+
+interface KitItemCombinedSearchRow {
+  kit_manufacture_part_number: string | null;
+  kit_manufacturer: string | null;
+  cmpnt_mfr_part_number: string | null;
+  cmpnt_mfr: string | null;
+  cmpnt_mfr_details: string | null;
+  qty: string | null;
+  kit_item_code: string | null;
+  child_item_code: string | null;
+  delete_flg: string | null;
+}
+
+interface KitItemCombinedSearchEnvelope {
+  total: number;
+  data: KitItemCombinedSearchRow[];
+}
+
+interface KitItemCombinedCreateRow {
+  kit_manufacture_part_number: string;
+  kit_manufacturer: string;
+  cmpnt_mfr_part_number: string;
+  cmpnt_mfr: string;
+  cmpnt_mfr_details: string;
+  qty: string;
+  kit_item_code: string;
+  child_item_code: string;
+  delete_flg: string;
+}
+
+interface KitItemCombinedCreatePayload {
+  rows: KitItemCombinedCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+interface ExistingRowMeta {
+  kit_item_code: string;
+  child_item_code: string;
+  original: string[];
+}
+
+const REQUIRED_COL_INDICES = [0, 1, 2, 3, 5] as const;
+// AI Generated Code by Deloitte + Cursor (END)
 
 const DEFAULT_CSV_HEADERS = KIT_ITEM_CLASSIFICATION_MASTER_HEADERS;
 
@@ -174,17 +235,77 @@ export default function KitItemClassificationMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Search box input and debounced values (min 3 chars, 1s debounce)
+  // Search box input values
   const [
     kitManufacturerPartNumberSearchInput,
     setKitManufacturerPartNumberSearchInput,
   ] = useState("");
-  const { debouncedValue: kitManufacturerPartNumberDebounced } =
-    useDebouncedSearch(kitManufacturerPartNumberSearchInput);
   const [kitManufacturerSearchInput, setKitManufacturerSearchInput] =
     useState("");
-  const { debouncedValue: kitManufacturerDebounced } =
-    useDebouncedSearch(kitManufacturerSearchInput);
+
+  // AI Generated Code by Deloitte + Cursor (BEGIN)
+  const [
+    kitManufacturerPartNumberOptions,
+    setKitManufacturerPartNumberOptions,
+  ] = useState<string[]>([]);
+  const [kitManufacturerOptions, setKitManufacturerOptions] = useState<
+    string[]
+  >([]);
+  const [
+    kitManufacturerPartNumbersLoading,
+    setKitManufacturerPartNumbersLoading,
+  ] = useState(false);
+  const [kitManufacturersLoading, setKitManufacturersLoading] = useState(false);
+  const initialDataFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialDataFetchedRef.current) return;
+    initialDataFetchedRef.current = true;
+    setKitManufacturerPartNumbersLoading(true);
+    setKitManufacturersLoading(true);
+
+    const fetchPartNumbers = async () => {
+      try {
+        const res = await fetch(KIT_MANUFACTURER_PART_NUMBERS_API_URL);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json =
+          (await res.json()) as KitManufacturerPartNumberApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        setKitManufacturerPartNumberOptions(
+          rows.map((r) => r.kit_manufacture_part_number).filter(Boolean),
+        );
+      } catch (e) {
+        console.error(e);
+        setKitManufacturerPartNumberOptions([]);
+      } finally {
+        setKitManufacturerPartNumbersLoading(false);
+      }
+    };
+
+    const fetchManufacturers = async () => {
+      try {
+        const res = await fetch(KIT_MANUFACTURERS_API_URL);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as KitManufacturerApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        setKitManufacturerOptions(
+          rows.map((r) => r.kit_manufacturer).filter(Boolean),
+        );
+      } catch (e) {
+        console.error(e);
+        setKitManufacturerOptions([]);
+      } finally {
+        setKitManufacturersLoading(false);
+      }
+    };
+
+    void Promise.allSettled([fetchPartNumbers(), fetchManufacturers()]);
+  }, []);
+  // AI Generated Code by Deloitte + Cursor (END)
 
   const searchConditionsRef = useRef({
     kitManufacturerPartNumber: "",
@@ -197,20 +318,6 @@ export default function KitItemClassificationMasterScreen() {
     };
   }, [kitManufacturerPartNumber, kitManufacturer]);
 
-  const kitManufacturerPartNumberOptions = kitManufacturerPartNumberDebounced
-    ? KIT_MANUFACTURER_PART_NUMBERS.filter((p) =>
-        p
-          .toLowerCase()
-          .includes(kitManufacturerPartNumberDebounced.toLowerCase()),
-      )
-    : [];
-
-  const kitManufacturerOptions = kitManufacturerDebounced
-    ? KIT_MANUFACTURERS.filter((m) =>
-        m.toLowerCase().includes(kitManufacturerDebounced.toLowerCase()),
-      )
-    : [];
-
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<
@@ -222,12 +329,19 @@ export default function KitItemClassificationMasterScreen() {
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+
+  const [rowMetadata, setRowMetadata] = useState<Array<ExistingRowMeta | null>>(
+    [],
+  );
+  const searchSnapshotRef = useRef<string[][]>([]);
 
   // Row selection mode state (for adding existing rows)
   const {
@@ -250,52 +364,72 @@ export default function KitItemClassificationMasterScreen() {
     newRowCount,
   } = useNewRowTracking();
 
-  const handleSearch = async () => {
+  const handleSearch = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
+    setIsSearching(true);
     try {
       const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const allRows: string[][] = [
-        ["KIT-PART-1001", "MFR-001", "Acme Corp", "COMP-001", "MFR-001", "LOC-001", "5", "0"],
-        ["KIT-PART-2002", "MFR-002", "Beta Inc", "COMP-002", "MFR-002", "LOC-002", "10", "0"],
-        ["KIT-PART-1003", "MFR-001", "Acme Corp", "COMP-003", "MFR-003", "LOC-003", "3", "0"],
-        ["KIT-PART-3001", "MFR-003", "Gamma Ltd", "COMP-004", "MFR-001", "LOC-004", "8", "0"],
-        ["KIT-PART-4001", "MFR-002", "Beta Inc", "COMP-005", "MFR-002", "LOC-005", "2", "0"],
-      ];
-      const filteredRows = allRows.filter((row) => {
-        const [rowPartNum, rowMfr] = row.slice(0, 2);
-        if (
-          conditions.kitManufacturerPartNumber.trim() &&
-          !rowPartNum
-            .toLowerCase()
-            .includes(conditions.kitManufacturerPartNumber.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.kitManufacturer.trim() &&
-          rowMfr !== conditions.kitManufacturer
-        )
-          return false;
-        return true;
+      const res = await fetch(KIT_ITEM_COMBINED_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kit_manufacture_part_number: conditions.kitManufacturerPartNumber,
+          kit_manufacturer: conditions.kitManufacturer,
+          user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+          screen_id: SCREEN_IDS.KIT_ITEM.id,
+          ip_address: "192.168.1.101",
+        }),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as KitItemCombinedSearchEnvelope;
+      const apiRows = Array.isArray(json.data) ? json.data : [];
+      const mappedRows: string[][] = apiRows.map((r) => [
+        r.kit_manufacture_part_number ?? "",
+        r.kit_manufacturer ?? "",
+        r.cmpnt_mfr_part_number ?? "",
+        r.cmpnt_mfr ?? "",
+        r.cmpnt_mfr_details ?? "",
+        r.qty ?? "",
+        r.delete_flg ?? "0",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows.map((row) =>
-          row.length >= 8 ? row : [...row.slice(0, 7), "0"],
-        ),
+        rows: mappedRows,
       });
-      setSnackbarMessage(
-        filteredRows.length > 0
-          ? t("kitItemClassification.searchCompletedWithData")
-          : t("kitItemClassification.searchCompletedNoResults"),
+      setRowMetadata(
+        apiRows.map((r, i) => ({
+          kit_item_code: r.kit_item_code ?? "",
+          child_item_code: r.child_item_code ?? "",
+          original: [...mappedRows[i]],
+        })),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
-    } catch {
+      searchSnapshotRef.current = mappedRows.map((row) => [...row]);
+      clearNewRowTracking();
+      if (!silent) {
+        setSnackbarMessage(
+          mappedRows.length > 0
+            ? t("kitItemClassification.searchCompletedWithData")
+            : t("kitItemClassification.searchCompletedNoResults"),
+        );
+        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
+        setSnackbarOpen(true);
+      }
+    } catch (e) {
+      console.error(e);
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("kitItemClassification.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
+      if (!silent) {
+        setSnackbarMessage(t("kitItemClassification.searchFailed"));
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      }
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -322,7 +456,7 @@ export default function KitItemClassificationMasterScreen() {
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
     const emptyRow = base.headers.map(() => "");
-    
+
     if (insertAtPagePosition && base.rows.length > 0) {
       const insertIndex = pageOffset;
       const newRows = [
@@ -331,6 +465,11 @@ export default function KitItemClassificationMasterScreen() {
         ...base.rows.slice(insertIndex),
       ];
       setCsvData({ headers: base.headers, rows: newRows });
+      setRowMetadata((prev) => [
+        ...prev.slice(0, insertIndex),
+        null,
+        ...prev.slice(insertIndex),
+      ]);
       shiftIndicesForInsertion(insertIndex, 1);
       markRowsAsNew([insertIndex]);
     } else {
@@ -338,6 +477,7 @@ export default function KitItemClassificationMasterScreen() {
         headers: base.headers,
         rows: [...base.rows, emptyRow],
       });
+      setRowMetadata((prev) => [...prev, null]);
       markRowsAsNew([base.rows.length]);
     }
     setSnackbarMessage(t("kitItemClassification.rowAdded"));
@@ -381,6 +521,11 @@ export default function KitItemClassificationMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("kitItemClassification.rowAdded"));
     setSnackbarSeverity("success");
@@ -389,9 +534,10 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!csvData || !isNewRow(rowIndex)) return;
-    
+
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     shiftIndicesForDeletion(rowIndex);
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
@@ -405,13 +551,113 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("kitItemClassification.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("kitItemClassification.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= csvData.rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = csvData.rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("kitItemClassification.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+    const hasMissingRequired = targetIndices.some((idx) => {
+      const row = csvData.rows[idx];
+      return REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
+    });
+    if (hasMissingRequired) {
+      setSnackbarMessage(t("kitItemClassification.requiredFieldsMissing"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const newDuplicate = newRowIndices.some((idx) => {
+      const row = csvData.rows[idx];
+      return searchSnapshotRef.current.some((snap) =>
+        row.every((cell, i) => cell === snap[i]),
+      );
+    });
+    if (newDuplicate) {
+      setSnackbarMessage(t("kitItemClassification.duplicateRowError"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const buildRow = (
+      idx: number,
+      meta: ExistingRowMeta | null,
+    ): KitItemCombinedCreateRow => {
+      const r = csvData.rows[idx];
+      return {
+        kit_manufacture_part_number: r[0],
+        kit_manufacturer: r[1],
+        cmpnt_mfr_part_number: r[2],
+        cmpnt_mfr: r[3],
+        cmpnt_mfr_details: r[4] ?? "",
+        qty: r[5],
+        kit_item_code: meta?.kit_item_code ?? "",
+        child_item_code: meta?.child_item_code ?? "",
+        delete_flg: r[6] || "0",
+      };
+    };
+
+    const payload: KitItemCombinedCreatePayload = {
+      rows: [
+        ...newRowIndices.map((idx) => buildRow(idx, null)),
+        ...editedRowIndices.map((idx) => buildRow(idx, rowMetadata[idx])),
+      ],
+      user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+      session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+      screen_id: SCREEN_IDS.KIT_ITEM.id,
+      ip_address: "192.168.1.101",
+    };
+
+    setIsRegistering(true);
+    try {
+      const res = await fetch(KIT_ITEM_COMBINED_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      await handleSearch({ silent: true });
+
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "kitItemClassification.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "kitItemClassification.createdNewRows";
+      } else {
+        messageKey = "kitItemClassification.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("kitItemClassification.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -596,12 +842,27 @@ export default function KitItemClassificationMasterScreen() {
                       setKitManufacturerPartNumberSearchInput(v);
                     }}
                     freeSolo
+                    disabled={kitManufacturerPartNumbersLoading}
+                    loading={kitManufacturerPartNumbersLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("kitItemClassification.kitManufacturerPartNumber")}
                         placeholder={t("kitItemClassification.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {kitManufacturerPartNumbersLoading ? (
+                                <CircularProgress
+                                  size={18}
+                                />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -622,12 +883,25 @@ export default function KitItemClassificationMasterScreen() {
                       setKitManufacturerSearchInput(v);
                     }}
                     freeSolo
+                    disabled={kitManufacturersLoading}
+                    loading={kitManufacturersLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("kitItemClassification.kitManufacturer")}
                         placeholder={t("kitItemClassification.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {kitManufacturersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -740,7 +1014,9 @@ export default function KitItemClassificationMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {isSearching ? (
+                      <ResultsLoader />
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("kitItemClassification.noRows")}
@@ -838,7 +1114,9 @@ export default function KitItemClassificationMasterScreen() {
                                     {row.map((cell, colIndex) => {
                                       const colConfig = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[colIndex];
                                       const isCheckbox = colConfig?.isCheckbox;
-                                      const isEditable = colConfig?.editable !== false;
+                                      const isEditable =
+                                        isNewRow(originalRowIndex) ||
+                                        colConfig?.editable !== false;
 
                                       return (
                                         <StyledTableDataCell
@@ -1102,6 +1380,13 @@ export default function KitItemClassificationMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("kitItemClassification.registrationInProgress")}
+        />
+      )}
     </>
   );
 }
