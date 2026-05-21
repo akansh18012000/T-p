@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
@@ -18,6 +17,7 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -152,6 +152,80 @@ const MANUFACTURER_NAME_MAP: Record<string, string> = {
   "Beta Inc": "Beta Inc",
 };
 
+const GPC_MASTER_MANUFACTURERS_API_URL =
+  "/api/v1/item-master/get_manufacturers";
+const GPC_MASTER_MANUFACTURE_PART_NUMBERS_API_URL =
+  "/api/v1/item-master/get_manufacture_part_numbers";
+const GPC_MASTER_GPC_CODES_API_URL = "/api/v1/item-master/get_gpc_codes";
+const GPC_MASTER_SEARCH_API_URL = "/api/v1/item-master/search";
+
+// Static session/auth payload values used by the search API.
+// TODO: source these from auth/session context once available.
+const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
+const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
+const SEARCH_SCREEN_ID = "18f33db0-df38-4c32-88d9-93ca963f2159";
+const SEARCH_IP_ADDRESS = "192.168.1.101";
+
+interface ManufacturerApiRow {
+  manufacturer: string;
+  manufacturer_name: string;
+}
+
+interface ManufacturerApiEnvelope {
+  total: number;
+  data: ManufacturerApiRow[];
+}
+
+interface ManufacturePartNumberApiRow {
+  manufacture_part_number: string;
+}
+
+interface ManufacturePartNumberApiEnvelope {
+  total: number;
+  data: ManufacturePartNumberApiRow[];
+}
+
+interface GpcCodeApiRow {
+  gpc_code: string;
+  gpc_name: string;
+}
+
+interface GpcCodeApiEnvelope {
+  total: number;
+  data: GpcCodeApiRow[];
+}
+
+interface SearchPayload {
+  manufacturer: string;
+  manufacture_part_number: string;
+  gpc_code: string;
+  fiscal_year: string;
+  manufacturer_name: string;
+  gpc_name: string;
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+interface SearchApiRow {
+  manufacturer: string;
+  manufacture_part_number: string;
+  manufacturer_name: string;
+  gpc_code: string;
+  gpc_name: string;
+  fiscal_year: string;
+  bu_lv3_code: string;
+  bu_lv3_name: string;
+  overwrite_ban_flg: string;
+  delete_flg: string;
+}
+
+interface SearchApiEnvelope {
+  total: number;
+  data: SearchApiRow[];
+}
+
 const GPC_NAME_MAP: Record<string, string> = {
   "GPC-001": "Category A",
   "GPC-002": "Category B",
@@ -195,22 +269,129 @@ export default function GpcMasterScreen() {
   const [gpcCode, setGpcCode] = useState("");
   const [gpcName, setGpcName] = useState("");
   const [validYear, setValidYear] = useState<Date | null>(null);
+  const [validYearPickerOpen, setValidYearPickerOpen] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
   // Search box input and debounced values (min 3 chars, 1s debounce)
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
-  const { debouncedValue: manufacturerDebounced } =
-    useDebouncedSearch(manufacturerSearchInput);
   const [
     manufacturerPartNumberSearchInput,
     setManufacturerPartNumberSearchInput,
   ] = useState("");
-  const { debouncedValue: manufacturerPartNumberDebounced } =
-    useDebouncedSearch(manufacturerPartNumberSearchInput);
   const [gpcCodeSearchInput, setGpcCodeSearchInput] = useState("");
-  const { debouncedValue: gpcCodeDebounced } =
-    useDebouncedSearch(gpcCodeSearchInput);
+
+  const [manufacturerOptions, setManufacturerOptions] = useState<string[]>([]);
+  const [manufacturerNameMap, setManufacturerNameMap] = useState<
+    Record<string, string>
+  >({});
+  const [manufacturersLoading, setManufacturersLoading] = useState(false);
+  const [manufacturerPartNumberOptions, setManufacturerPartNumberOptions] =
+    useState<string[]>([]);
+  const [manufacturerPartNumbersLoading, setManufacturerPartNumbersLoading] =
+    useState(false);
+  const [gpcCodeOptions, setGpcCodeOptions] = useState<string[]>([]);
+  const [gpcCodeNameMap, setGpcCodeNameMap] = useState<
+    Record<string, string>
+  >({});
+  const [gpcCodesLoading, setGpcCodesLoading] = useState(false);
+  const initialDataFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialDataFetchedRef.current) return;
+    initialDataFetchedRef.current = true;
+    setManufacturersLoading(true);
+    setManufacturerPartNumbersLoading(true);
+    setGpcCodesLoading(true);
+
+    const fetchManufacturers = async () => {
+      try {
+        const res = await fetch(GPC_MASTER_MANUFACTURERS_API_URL);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as ManufacturerApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        const unique: string[] = [];
+        const nameMap: Record<string, string> = {};
+        for (const r of rows) {
+          if (!r.manufacturer) continue;
+          if (!(r.manufacturer in nameMap)) {
+            unique.push(r.manufacturer);
+            nameMap[r.manufacturer] = r.manufacturer_name || "";
+          }
+        }
+        setManufacturerOptions(unique);
+        setManufacturerNameMap(nameMap);
+      } catch (e) {
+        console.error(e);
+        setManufacturerOptions([]);
+        setManufacturerNameMap({});
+      } finally {
+        setManufacturersLoading(false);
+      }
+    };
+
+    const fetchManufacturePartNumbers = async () => {
+      try {
+        const res = await fetch(GPC_MASTER_MANUFACTURE_PART_NUMBERS_API_URL);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as ManufacturePartNumberApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        const unique: string[] = [];
+        const seen = new Set<string>();
+        for (const r of rows) {
+          if (!r.manufacture_part_number) continue;
+          if (!seen.has(r.manufacture_part_number)) {
+            seen.add(r.manufacture_part_number);
+            unique.push(r.manufacture_part_number);
+          }
+        }
+        setManufacturerPartNumberOptions(unique);
+      } catch (e) {
+        console.error(e);
+        setManufacturerPartNumberOptions([]);
+      } finally {
+        setManufacturerPartNumbersLoading(false);
+      }
+    };
+
+    const fetchGpcCodes = async () => {
+      try {
+        const res = await fetch(GPC_MASTER_GPC_CODES_API_URL);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as GpcCodeApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        const unique: string[] = [];
+        const nameMap: Record<string, string> = {};
+        for (const r of rows) {
+          if (!r.gpc_code) continue;
+          if (!(r.gpc_code in nameMap)) {
+            unique.push(r.gpc_code);
+            nameMap[r.gpc_code] = r.gpc_name || "";
+          }
+        }
+        setGpcCodeOptions(unique);
+        setGpcCodeNameMap(nameMap);
+      } catch (e) {
+        console.error(e);
+        setGpcCodeOptions([]);
+        setGpcCodeNameMap({});
+      } finally {
+        setGpcCodesLoading(false);
+      }
+    };
+
+    void Promise.allSettled([
+      fetchManufacturers(),
+      fetchManufacturePartNumbers(),
+      fetchGpcCodes(),
+    ]);
+  }, []);
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
@@ -239,26 +420,6 @@ export default function GpcMasterScreen() {
     validYear,
   ]);
 
-  const manufacturerOptions = manufacturerDebounced
-    ? MANUFACTURERS.filter((m) =>
-        m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
-      )
-    : [];
-
-  const manufacturerPartNumberOptions = manufacturerPartNumberDebounced
-    ? MANUFACTURER_PART_NUMBERS.filter((p) =>
-        p
-          .toLowerCase()
-          .includes(manufacturerPartNumberDebounced.toLowerCase()),
-      )
-    : [];
-
-  const gpcCodeOptions = gpcCodeDebounced
-    ? GPC_CODES.filter((c) =>
-        c.toLowerCase().includes(gpcCodeDebounced.toLowerCase()),
-      )
-    : [];
-
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<
@@ -270,6 +431,8 @@ export default function GpcMasterScreen() {
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -298,134 +461,75 @@ export default function GpcMasterScreen() {
     newRowCount,
   } = useNewRowTracking();
 
-  const handleSearch = async () => {
+  const buildSearchPayload = (
+    conditions: typeof searchConditionsRef.current,
+  ): SearchPayload => ({
+    manufacturer: conditions.manufacturer.trim(),
+    manufacture_part_number: conditions.manufacturerPartNumber.trim(),
+    gpc_code: conditions.gpcCode.trim(),
+    fiscal_year: conditions.validYear
+      ? String(conditions.validYear.getFullYear())
+      : "",
+    manufacturer_name: conditions.manufacturerName.trim(),
+    gpc_name: conditions.gpcName.trim(),
+    user_id: SEARCH_USER_ID,
+    session_id: SEARCH_SESSION_ID,
+    screen_id: SEARCH_SCREEN_ID,
+    ip_address: SEARCH_IP_ADDRESS,
+  });
+
+  const executeSearch = async (payload: SearchPayload) => {
     setSearchExecuted(true);
+    setSearchLoading(true);
     try {
-      const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const allRows: string[][] = [
-        [
-          "MFR-001",
-          "Acme Corp",
-          "PART-1001",
-          "GPC-001",
-          "Category A",
-          "2026",
-          "BU3-001",
-          "Business Unit Alpha",
-          "0",
-          "0",
-        ],
-        [
-          "MFR-002",
-          "Beta Inc",
-          "PART-2002",
-          "GPC-002",
-          "Category B",
-          "2026",
-          "BU3-002",
-          "Business Unit Beta",
-          "0",
-          "0",
-        ],
-        [
-          "MFR-001",
-          "Acme Corp",
-          "PART-1003",
-          "GPC-003",
-          "Category C",
-          "2027",
-          "BU3-001",
-          "Business Unit Alpha",
-          "1",
-          "0",
-        ],
-        [
-          "MFR-003",
-          "Gamma Ltd",
-          "PART-3001",
-          "GPC-004",
-          "Category D",
-          "2026",
-          "BU3-003",
-          "Business Unit Gamma",
-          "0",
-          "0",
-        ],
-        [
-          "MFR-002",
-          "Beta Inc",
-          "PART-2004",
-          "GPC-001",
-          "Category A",
-          "2027",
-          "BU3-002",
-          "Business Unit Beta",
-          "0",
-          "0",
-        ],
-      ];
-      const validYearStr = conditions.validYear
-        ? String(conditions.validYear.getFullYear())
-        : "";
-      const filteredRows = allRows.filter((row) => {
-        const [
-          rowMfr,
-          rowMfrName,
-          rowPartNum,
-          rowGpcCode,
-          rowGpcName,
-          rowYear,
-        ] = row.slice(0, 6);
-        // BU3 Code at index 6, BU3 Name at index 7, Overwrite Prevention Flag at index 8, Deletion Flag at index 9
-        if (
-          conditions.manufacturer.trim() &&
-          rowMfr !== conditions.manufacturer
-        )
-          return false;
-        if (
-          conditions.manufacturerName.trim() &&
-          !rowMfrName
-            .toLowerCase()
-            .includes(conditions.manufacturerName.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.manufacturerPartNumber.trim() &&
-          !rowPartNum
-            .toLowerCase()
-            .includes(conditions.manufacturerPartNumber.toLowerCase())
-        )
-          return false;
-        if (conditions.gpcCode.trim() && rowGpcCode !== conditions.gpcCode)
-          return false;
-        if (
-          conditions.gpcName.trim() &&
-          !rowGpcName.toLowerCase().includes(conditions.gpcName.toLowerCase())
-        )
-          return false;
-        if (validYearStr && rowYear !== validYearStr) return false;
-        return true;
+      const res = await fetch(GPC_MASTER_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as SearchApiEnvelope;
+      const rows = Array.isArray(json.data) ? json.data : [];
+      const mappedRows = rows.map((r) => [
+        r.manufacturer ?? "",
+        r.manufacturer_name ?? "",
+        r.manufacture_part_number ?? "",
+        r.gpc_code ?? "",
+        r.gpc_name ?? "",
+        r.fiscal_year ?? "",
+        r.bu_lv3_code ?? "",
+        r.bu_lv3_name ?? "",
+        r.overwrite_ban_flg ?? "0",
+        r.delete_flg ?? "0",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows.map((row) =>
-          row.length >= 10 ? row : [...row.slice(0, 8), "0", "0"],
-        ),
+        rows: mappedRows,
       });
       setSnackbarMessage(
-        filteredRows.length > 0
+        mappedRows.length > 0
           ? t("gpcMaster.searchCompletedWithData")
           : t("gpcMaster.searchCompletedNoResults"),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
+      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setCsvData(getEmptyCsvData());
       setSnackbarMessage(t("gpcMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
+    } finally {
+      setSearchLoading(false);
     }
+  };
+
+  const handleSearch = async () => {
+    const payload = buildSearchPayload(searchConditionsRef.current);
+    lastSearchPayloadRef.current = payload;
+    await executeSearch(payload);
   };
 
   const handleDownloadCsv = () => {
@@ -522,7 +626,10 @@ export default function GpcMasterScreen() {
 
   const handleRefresh = () => {
     clearNewRowTracking();
-    handleSearch();
+    const payload =
+      lastSearchPayloadRef.current ??
+      buildSearchPayload(searchConditionsRef.current);
+    void executeSearch(payload);
   };
 
   const handleRegistration = async () => {
@@ -734,14 +841,28 @@ export default function GpcMasterScreen() {
                       const v = newValue ?? "";
                       setManufacturer(v);
                       setManufacturerSearchInput(v);
+                      setManufacturerName(manufacturerNameMap[v] || "");
                     }}
                     freeSolo
+                    disabled={manufacturersLoading}
+                    loading={manufacturersLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("gpcMaster.manufacturer")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -771,12 +892,25 @@ export default function GpcMasterScreen() {
                       setManufacturerPartNumberSearchInput(v);
                     }}
                     freeSolo
+                    disabled={manufacturerPartNumbersLoading}
+                    loading={manufacturerPartNumbersLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("gpcMaster.manufacturerPartNumber")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturerPartNumbersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -795,14 +929,28 @@ export default function GpcMasterScreen() {
                       const v = newValue ?? "";
                       setGpcCode(v);
                       setGpcCodeSearchInput(v);
+                      setGpcName(gpcCodeNameMap[v] || "");
                     }}
                     freeSolo
+                    disabled={gpcCodesLoading}
+                    loading={gpcCodesLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("gpcMaster.gpcCode")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {gpcCodesLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -824,11 +972,31 @@ export default function GpcMasterScreen() {
                       value={validYear}
                       onChange={(newValue) => setValidYear(newValue)}
                       views={["year"]}
+                      open={validYearPickerOpen}
+                      onOpen={() => setValidYearPickerOpen(true)}
+                      onClose={() => setValidYearPickerOpen(false)}
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          onClick: () => setValidYearPickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />
@@ -941,7 +1109,11 @@ export default function GpcMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {searchLoading ? (
+                      <StyledEmptyStateBox>
+                        <CircularProgress />
+                      </StyledEmptyStateBox>
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("gpcMaster.noRows")}

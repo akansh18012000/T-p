@@ -399,10 +399,12 @@ export default function SalesDataErrorCorrectionScreen() {
   const [systemId, setSystemId] = useState("");
   // Default month/year aligned with API sample payload (sales_month: 202410) for local testing
   const [salesDate, setSalesDate] = useState<Date | null>(new Date(2024, 9, 1)); // Oct 2024 → 202410
+  const [salesDatePickerOpen, setSalesDatePickerOpen] = useState(false);
   const [corporateCode, setCorporateCode] = useState("");
   const [salesRecordingDate, setSalesRecordingDate] = useState<Date | null>(
     null,
   );
+  const [salesRecordingDatePickerOpen, setSalesRecordingDatePickerOpen] = useState(false);
   const [salesBaseCode, setSalesBaseCode] = useState("");
   const [localOrganizationCode, setLocalOrganizationCode] = useState("");
   const [localItemCode, setLocalItemCode] = useState("");
@@ -1446,14 +1448,34 @@ export default function SalesDataErrorCorrectionScreen() {
                       onChange={(newValue) => setSalesDate(newValue)}
                       views={["year", "month"]}
                       format="yyyy/MM"
+                      open={salesDatePickerOpen}
+                      onOpen={() => setSalesDatePickerOpen(true)}
+                      onClose={() => setSalesDatePickerOpen(false)}
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
                           error: !!fieldErrors.salesDate,
                           helperText: fieldErrors.salesDate,
                           required: true,
+                          onClick: () => setSalesDatePickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />
@@ -1481,11 +1503,31 @@ export default function SalesDataErrorCorrectionScreen() {
                       onChange={(newValue) => setSalesRecordingDate(newValue)}
                       views={["year", "month"]}
                       format="yyyy/MM"
+                      open={salesRecordingDatePickerOpen}
+                      onOpen={() => setSalesRecordingDatePickerOpen(true)}
+                      onClose={() => setSalesRecordingDatePickerOpen(false)}
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          onClick: () => setSalesRecordingDatePickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />

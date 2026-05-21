@@ -118,14 +118,37 @@ import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import { formatYearMonthForPayload } from "../utils/commonUtils.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 
-/** Currency type options with value (for data storage) and labelKey (for i18n) */
+/** Currency type options keyed by backend code (11–14) with i18n labels */
 const CURRENCY_TYPE_OPTIONS = [
-  { value: "Current Exchange Rate", labelKey: "fxRateEntryMaster.currentExchangeRate" },
-  { value: "Current year planned rate", labelKey: "fxRateEntryMaster.currentYearPlannedRate" },
-  { value: "End of month rates", labelKey: "fxRateEntryMaster.endOfMonthRates" },
-  { value: "Planning rates", labelKey: "fxRateEntryMaster.planningRates" },
+  { value: "11", labelKey: "fxRateEntryMaster.actualExchangeRate" },
+  { value: "12", labelKey: "fxRateEntryMaster.plannedRate" },
+  { value: "13", labelKey: "fxRateEntryMaster.currentYearPlannedRate" },
+  { value: "14", labelKey: "fxRateEntryMaster.endOfMonthRate" },
 ];
+
+const FX_RATE_SEARCH_API_URL = "/api/v1/monthly-avg-rt-combined/search";
+const FX_RATE_CREATE_API_URL = "/api/v1/monthly-avg-rt-combined/create";
+
+interface FxRateSearchEnvelope {
+  total: number;
+  data: FxRateSearchRow[];
+}
+
+interface FxRateSearchRow {
+  proc_year: string;
+  proc_month: number | string;
+  proc_period: string;
+  from_currency: string;
+  to_currency: string;
+  currency_type: string;
+  rate: string | null;
+  overwrite_flag: string;
+  delete_flg: string;
+}
 
 const CURRENCY_CODES = [
   "AED",
@@ -317,6 +340,7 @@ function FxRateEntryMasterScreen() {
 
   // Search condition state
   const [processingDate, setProcessingDate] = useState<Date | null>(null);
+  const [processingDatePickerOpen, setProcessingDatePickerOpen] = useState(false);
   const [currencyType, setCurrencyType] = useState("");
   const [fromCurrency, setFromCurrency] = useState("");
   const [toCurrency, setToCurrency] = useState("");
@@ -358,6 +382,9 @@ function FxRateEntryMasterScreen() {
   const overwriteFlagColIndex = 5;
   const deletionFlagColIndex = 6;
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const originalRowsRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -388,57 +415,60 @@ function FxRateEntryMasterScreen() {
 
   const handleSearch = async () => {
     setSearchExecuted(true);
+    setSearchLoading(true);
     try {
       const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const procDateStr = conditions.processingDate
-        ? `${conditions.processingDate.getFullYear()}-${String(conditions.processingDate.getMonth() + 1).padStart(2, "0")}`
-        : "";
-      // Columns: Processing Date, From Currency, To Currency, Currency Type, Currency Exchange Rate, Overwrite Prevention Flag, Deletion Flag
-      const allRows: string[][] = [
-        ["2026-01", "USD", "EUR", "Current Exchange Rate", "0.92", "N", "N"],
-        ["2026-01", "USD", "JPY", "Current Exchange Rate", "149.50", "N", "N"],
-        ["2026-01", "EUR", "GBP", "Current year planned rate", "0.85", "N", "N"],
-        ["2026-02", "GBP", "USD", "End of month rates", "1.27", "Y", "N"],
-        ["2026-02", "CHF", "USD", "Planning rates", "1.13", "N", "Y"],
-        ["2026-01", "CAD", "USD", "Current Exchange Rate", "0.74", "N", "N"],
-        ["2026-02", "AUD", "USD", "Current year planned rate", "0.65", "N", "N"],
-        ["2026-03", "CNY", "USD", "End of month rates", "0.14", "N", "N"],
-      ];
-      const filteredRows = allRows.filter((row) => {
-        const [rowDate, rowFrom, rowTo, rowType, , , rowDel] = row;
-        if (procDateStr && rowDate !== procDateStr) return false;
-        if (
-          conditions.currencyType.trim() &&
-          rowType !== conditions.currencyType
-        )
-          return false;
-        if (
-          conditions.fromCurrency.trim() &&
-          rowFrom !== conditions.fromCurrency
-        )
-          return false;
-        if (conditions.toCurrency.trim() && rowTo !== conditions.toCurrency)
-          return false;
-        if (conditions.deletionFlag && rowDel !== "Y") return false;
-        return true;
+      const res = await fetch(FX_RATE_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proc_period: formatYearMonthForPayload(conditions.processingDate),
+          from_currency: conditions.fromCurrency,
+          to_currency: conditions.toCurrency,
+          currency_type: conditions.currencyType,
+          delete_flg: conditions.deletionFlag ? "1" : "",
+          user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+          screen_id: SCREEN_IDS.CURRENCY_RATE.id,
+          ip_address: "192.168.1.101",
+        }),
       });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as FxRateSearchEnvelope;
+      const rows = Array.isArray(json.data) ? json.data : [];
+      const mappedRows: string[][] = rows.map((r) => [
+        r.proc_period ?? "",
+        r.from_currency ?? "",
+        r.to_currency ?? "",
+        r.currency_type ?? "",
+        r.rate ?? "",
+        r.overwrite_flag ?? "",
+        r.delete_flg ?? "",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows,
+        rows: mappedRows,
       });
+      originalRowsRef.current = mappedRows.map((r) => [...r]);
+      clearNewRowTracking();
       setSnackbarMessage(
-        filteredRows.length > 0
+        mappedRows.length > 0
           ? t("fxRateEntryMaster.searchCompletedWithData")
           : t("fxRateEntryMaster.searchCompletedNoResults"),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
+      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setCsvData(getEmptyCsvData());
       setSnackbarMessage(t("fxRateEntryMaster.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -467,7 +497,9 @@ function FxRateEntryMasterScreen() {
 
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
-    const emptyRow = base.headers.map(() => "");
+    const emptyRow = base.headers.map((_, idx) =>
+      idx === overwriteFlagColIndex || idx === deletionFlagColIndex ? "0" : "",
+    );
     
     if (insertAtPagePosition && base.rows.length > 0) {
       // Insert at current page position
@@ -552,13 +584,95 @@ function FxRateEntryMasterScreen() {
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("fxRateEntryMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("fxRateEntryMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    const createdRows: string[][] = [];
+    const updatedRows: string[][] = [];
+    let originalIdx = 0;
+    for (let i = 0; i < csvData.rows.length; i++) {
+      const row = csvData.rows[i];
+      if (isNewRow(i)) {
+        createdRows.push(row);
+      } else {
+        const original = originalRowsRef.current[originalIdx];
+        if (original && JSON.stringify(row) !== JSON.stringify(original)) {
+          updatedRows.push(row);
+        }
+        originalIdx++;
+      }
+    }
+
+    const rowsToSubmit = [...createdRows, ...updatedRows];
+    if (rowsToSubmit.length === 0) {
+      setSnackbarMessage(t("fxRateEntryMaster.noRowsToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const hasEmptyField = rowsToSubmit.some((row) =>
+      row.some((cell) => cell === undefined || cell === null || String(cell).trim() === ""),
+    );
+    if (hasEmptyField) {
+      setSnackbarMessage(t("fxRateEntryMaster.validationEmptyFields"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const payloadRows = rowsToSubmit.map((row) => ({
+      proc_period: row[0],
+      from_currency: row[1],
+      to_currency: row[2],
+      currency_type: row[3],
+      rate: Number(row[4]),
+      overwrite_flag: row[5],
+      delete_flg: row[6],
+    }));
+
+    setRegistering(true);
+    try {
+      const res = await fetch(FX_RATE_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rows: payloadRows,
+          user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+          screen_id: SCREEN_IDS.CURRENCY_RATE.id,
+          ip_address: "192.168.1.101",
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      if (createdRows.length > 0 && updatedRows.length > 0) {
+        setSnackbarMessage(
+          t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
+            created: createdRows.length,
+            updated: updatedRows.length,
+          }),
+        );
+      } else if (createdRows.length > 0) {
+        setSnackbarMessage(
+          t("fxRateEntryMaster.createdRowsSuccess", { count: createdRows.length }),
+        );
+      } else {
+        setSnackbarMessage(
+          t("fxRateEntryMaster.updatedRowsSuccess", { count: updatedRows.length }),
+        );
+      }
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      await handleSearch();
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("fxRateEntryMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -718,11 +832,31 @@ function FxRateEntryMasterScreen() {
                         searchConditionsRef.current.processingDate = newValue;
                       }}
                       views={["year", "month"]}
+                      open={processingDatePickerOpen}
+                      onOpen={() => setProcessingDatePickerOpen(true)}
+                      onClose={() => setProcessingDatePickerOpen(false)}
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          onClick: () => setProcessingDatePickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />
@@ -906,7 +1040,9 @@ function FxRateEntryMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {searchLoading ? (
+                      <ResultsLoader />
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("fxRateEntryMaster.noRows")}
@@ -980,16 +1116,12 @@ function FxRateEntryMasterScreen() {
                                         {colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex ? (
                                           <StyledCheckbox
                                             size="small"
-                                            checked={
-                                              cell === "Y" ||
-                                              cell === "y" ||
-                                              cell === "1"
-                                            }
+                                            checked={cell === "1"}
                                             onChange={(e) =>
                                               handleCellEdit(
                                                 originalRowIndex,
                                                 colIndex,
-                                                e.target.checked ? "Y" : "N",
+                                                e.target.checked ? "1" : "0",
                                               )
                                             }
                                           />
@@ -1007,6 +1139,11 @@ function FxRateEntryMasterScreen() {
                                             variant="standard"
                                             fullWidth
                                           >
+                                            {cell && !CURRENCY_CODES.includes(cell) && (
+                                              <MenuItem key={cell} value={cell}>
+                                                {cell}
+                                              </MenuItem>
+                                            )}
                                             {CURRENCY_CODES.map((code) => (
                                               <MenuItem key={code} value={code}>
                                                 {code}
@@ -1027,6 +1164,11 @@ function FxRateEntryMasterScreen() {
                                             variant="standard"
                                             fullWidth
                                           >
+                                            {cell && !CURRENCY_TYPE_OPTIONS.some((o) => o.value === cell) && (
+                                              <MenuItem key={cell} value={cell}>
+                                                {cell}
+                                              </MenuItem>
+                                            )}
                                             {CURRENCY_TYPE_OPTIONS.map((opt) => (
                                               <MenuItem key={opt.value} value={opt.value}>
                                                 {t(opt.labelKey)}
@@ -1270,6 +1412,13 @@ function FxRateEntryMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {registering && (
+        <ResultsLoader
+          fullScreen
+          label={t("fxRateEntryMaster.registrationInProgress")}
+        />
+      )}
     </>
   );
 }

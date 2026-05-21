@@ -190,7 +190,9 @@ export default function GlobalDadMasterScreen() {
   const [transferDestBU3, setTransferDestBU3] = useState("");
   const [patternId, setPatternId] = useState("");
   const [effectiveStartDate, setEffectiveStartDate] = useState<Date | null>(null);
+  const [effectiveStartDatePickerOpen, setEffectiveStartDatePickerOpen] = useState(false);
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
+  const [expirationDatePickerOpen, setExpirationDatePickerOpen] = useState(false);
   const [deletionFlag, setDeletionFlag] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
 
@@ -617,12 +619,29 @@ export default function GlobalDadMasterScreen() {
     textField: StyledInputBase,
   };
 
-  const datePickerSlotProps = {
+  const buildDatePickerSlotProps = (openSetter: (open: boolean) => void) => ({
+    field: { clearable: true as const },
     textField: {
       fullWidth: true as const,
       size: "small" as const,
+      onClick: () => openSetter(true),
+      inputProps: {
+        readOnly: true,
+        style: {
+          cursor: "pointer",
+          userSelect: "none" as const,
+          caretColor: "transparent",
+        },
+      },
+      sx: {
+        cursor: "pointer",
+        "& .MuiOutlinedInput-root": { cursor: "pointer" },
+        "& input::selection": {
+          backgroundColor: "transparent",
+        },
+      },
     },
-  };
+  });
 
   return (
     <>
@@ -826,8 +845,11 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.effectiveStartDate = v;
                       }}
                       views={["year", "month"]}
+                      open={effectiveStartDatePickerOpen}
+                      onOpen={() => setEffectiveStartDatePickerOpen(true)}
+                      onClose={() => setEffectiveStartDatePickerOpen(false)}
                       slots={datePickerSlots}
-                      slotProps={datePickerSlotProps}
+                      slotProps={buildDatePickerSlotProps(setEffectiveStartDatePickerOpen)}
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -842,8 +864,11 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.expirationDate = v;
                       }}
                       views={["year", "month"]}
+                      open={expirationDatePickerOpen}
+                      onOpen={() => setExpirationDatePickerOpen(true)}
+                      onClose={() => setExpirationDatePickerOpen(false)}
                       slots={datePickerSlots}
-                      slotProps={datePickerSlotProps}
+                      slotProps={buildDatePickerSlotProps(setExpirationDatePickerOpen)}
                     />
                   </LocalizationProvider>
                 </Grid>

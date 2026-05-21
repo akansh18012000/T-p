@@ -585,6 +585,7 @@ export default function StandardCostMasterScreen() {
   const [corporateCode, setCorporateCode] = useState("");
   const [corporateName, setCorporateName] = useState("");
   const [validFrom, setValidFrom] = useState<Date | null>(null);
+  const [validFromPickerOpen, setValidFromPickerOpen] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
@@ -1235,11 +1236,31 @@ export default function StandardCostMasterScreen() {
                       value={validFrom}
                       onChange={(newValue) => setValidFrom(newValue)}
                       views={["year", "month"]}
+                      open={validFromPickerOpen}
+                      onOpen={() => setValidFromPickerOpen(true)}
+                      onClose={() => setValidFromPickerOpen(false)}
                       slots={{ textField: StyledInputBase }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          onClick: () => setValidFromPickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />

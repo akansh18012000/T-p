@@ -77,7 +77,7 @@ import {
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
-import { formatDateTimeForDisplay } from "../utils/commonUtils.js";
+import { formatDateTimeForDisplay, formatYearMonthForPayload } from "../utils/commonUtils.js";
 
 // Screen-specific table components (delete column, white borders)
 // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -212,13 +212,6 @@ function getCorrectionTypeScreenName(correctionType: string): string {
   return correctionType === "consolidatedPl"
     ? SCREEN_IDS.ADJUSTMENT_DATA_CONSOLIDATED_UPLOAD.screenName
     : SCREEN_IDS.ADJUSTMENT_DATA_SALES_DETAIL_UPLOAD.screenName;
-}
-
-function formatYearMonthForPayload(d: Date | null): string {
-  if (!d) return "";
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}${m}`;
 }
 // AI Generated Code by Deloitte + Cursor (END)
 

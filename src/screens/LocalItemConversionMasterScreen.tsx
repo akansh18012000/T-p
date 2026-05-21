@@ -271,6 +271,7 @@ function LocalItemConversionMasterScreen() {
   // Search condition state
   const [systemId, setSystemId] = useState("");
   const [yearMonth, setYearMonth] = useState<Date | null>(null);
+  const [yearMonthPickerOpen, setYearMonthPickerOpen] = useState(false);
   const [localItemCode, setLocalItemCode] = useState("");
   const [manufacturerCode, setManufacturerCode] = useState("");
   const [manufacturerName, setManufacturerName] = useState("");
@@ -1036,13 +1037,33 @@ function LocalItemConversionMasterScreen() {
                         searchConditionsRef.current.yearMonth = newValue;
                       }}
                       views={["year", "month"]}
+                      open={yearMonthPickerOpen}
+                      onOpen={() => setYearMonthPickerOpen(true)}
+                      onClose={() => setYearMonthPickerOpen(false)}
                       slots={{
                         textField: StyledInputBase,
                       }}
                       slotProps={{
+                        field: { clearable: true },
                         textField: {
                           fullWidth: true,
                           size: "small",
+                          onClick: () => setYearMonthPickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />
