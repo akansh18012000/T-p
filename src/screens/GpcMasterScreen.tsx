@@ -120,38 +120,6 @@ import { useUploadContext } from "../context/UploadContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 
-const MANUFACTURERS = [
-  "MFR-001",
-  "MFR-002",
-  "MFR-003",
-  "Acme Corp",
-  "Beta Inc",
-];
-const MANUFACTURER_PART_NUMBERS = [
-  "PART-1001",
-  "PART-2002",
-  "PART-1003",
-  "PART-3001",
-  "PART-4001",
-];
-const GPC_CODES = ["GPC-001", "GPC-002", "GPC-003", "GPC-004", "GPC-005"];
-
-// Search options mapping by column key
-const SEARCH_OPTIONS: Record<string, string[]> = {
-  manufacturer: MANUFACTURERS,
-  mfrPartNumber: MANUFACTURER_PART_NUMBERS,
-  gpcCode: GPC_CODES,
-};
-
-// Mapping from code to name for associated columns
-const MANUFACTURER_NAME_MAP: Record<string, string> = {
-  "MFR-001": "Acme Corp",
-  "MFR-002": "Beta Inc",
-  "MFR-003": "Gamma Ltd",
-  "Acme Corp": "Acme Corp",
-  "Beta Inc": "Beta Inc",
-};
-
 const GPC_MASTER_MANUFACTURERS_API_URL =
   "/api/v1/item-master/get_manufacturers";
 const GPC_MASTER_MANUFACTURE_PART_NUMBERS_API_URL =
@@ -225,14 +193,6 @@ interface SearchApiEnvelope {
   total: number;
   data: SearchApiRow[];
 }
-
-const GPC_NAME_MAP: Record<string, string> = {
-  "GPC-001": "Category A",
-  "GPC-002": "Category B",
-  "GPC-003": "Category C",
-  "GPC-004": "Category D",
-  "GPC-005": "Category E",
-};
 
 const DEFAULT_CSV_HEADERS = GPC_MASTER_HEADERS;
 
@@ -664,9 +624,9 @@ export default function GpcMasterScreen() {
       if (assocColIndex !== -1) {
         let assocValue = "";
         if (colConfig.key === "manufacturer") {
-          assocValue = MANUFACTURER_NAME_MAP[value] || "";
+          assocValue = manufacturerNameMap[value] || "";
         } else if (colConfig.key === "gpcCode") {
-          assocValue = GPC_NAME_MAP[value] || "";
+          assocValue = gpcCodeNameMap[value] || "";
         }
         newRows = newRows.map((row, rIdx) =>
           rIdx === rowIndex
@@ -1213,7 +1173,14 @@ export default function GpcMasterScreen() {
                                       const isCheckbox = colConfig?.isCheckbox;
                                       const isEditable = colConfig?.editable !== false;
                                       const isSearchable = colConfig?.searchable && isEditable;
-                                      const searchOptions = colConfig?.key ? SEARCH_OPTIONS[colConfig.key] : undefined;
+                                      const searchOptions =
+                                        colConfig?.key === "manufacturer"
+                                          ? manufacturerOptions
+                                          : colConfig?.key === "mfrPartNumber"
+                                            ? manufacturerPartNumberOptions
+                                            : colConfig?.key === "gpcCode"
+                                              ? gpcCodeOptions
+                                              : undefined;
 
                                       return (
                                         <StyledTableDataCell
