@@ -625,22 +625,38 @@ export default function CommonMasterScreen() {
     const snapshotEntries = Array.from(
       originalRowsByIdRef.current.entries(),
     );
-    const newHasDuplicate = newRowIndices.some((idx) => {
-      const row = csvData.rows[idx];
-      return snapshotEntries.some(([, snapRow]) =>
-        row.every((cell, i) => cell === snapRow[i]),
-      );
+    const codeColIndex = 2;
+    const getKey = (row: string[]) =>
+      [row[groupIdColIndex], row[codeColIndex]]
+        .map((v) => String(v ?? "").trim())
+        .join("|");
+    const duplicateRowNumbers: number[] = [];
+    newRowIndices.forEach((idx) => {
+      const key = getKey(csvData.rows[idx]);
+      if (snapshotEntries.some(([, snapRow]) => getKey(snapRow) === key)) {
+        duplicateRowNumbers.push(idx + 1);
+      }
     });
-    const editedHasDuplicate = editedRowIndices.some((idx) => {
-      const row = csvData.rows[idx];
+    editedRowIndices.forEach((idx) => {
+      const key = getKey(csvData.rows[idx]);
       const myId = rowIds[idx];
-      return snapshotEntries.some(
-        ([snapId, snapRow]) =>
-          snapId !== myId && row.every((cell, i) => cell === snapRow[i]),
-      );
+      if (
+        snapshotEntries.some(
+          ([snapId, snapRow]) => snapId !== myId && getKey(snapRow) === key,
+        )
+      ) {
+        duplicateRowNumbers.push(idx + 1);
+      }
     });
-    if (newHasDuplicate || editedHasDuplicate) {
-      setSnackbarMessage(t("commonMaster.duplicateRowError"));
+    if (duplicateRowNumbers.length > 0) {
+      duplicateRowNumbers.sort((a, b) => a - b);
+      const rowsText = new Intl.ListFormat(i18n.language, {
+        style: "long",
+        type: "conjunction",
+      }).format(duplicateRowNumbers.map(String));
+      setSnackbarMessage(
+        t("commonMaster.duplicateRowError", { rows: rowsText }),
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

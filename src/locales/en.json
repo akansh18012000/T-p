@@ -512,7 +512,7 @@
     "registrationCompleted": "Registration completed successfully.",
     "registrationFailed": "Registration failed. Please try again.",
     "requiredFieldsMissing": "Please fill in all required fields (Kit Mfr Part Number, Kit Manufacturer, Component Mfr Part Number, Components Manufacturer, Quantity).",
-    "duplicateRowError": "A new row matches an existing row. Please remove or modify the duplicate.",
+    "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration.",
     "noChangesToRegister": "No new or updated rows to register.",
     "createdNewRows": "Created new rows",
     "updatedExistingRows": "Updated existing rows",
@@ -618,7 +618,7 @@
     "rowsDeleted": "Row(s) deleted.",
     "codeName": "Code Name",
     "groupIdRequired": "Group Id is required for all rows being registered.",
-    "duplicateRowError": "Some rows are identical to existing search results. Please update them before registration.",
+    "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration.",
     "registrationFailed": "Registration failed. Please try again.",
     "createRowsSuccess": "Create new rows successfully",
     "createRowsFailed": "Failed to Create New rows",
@@ -697,7 +697,7 @@
     "updateRowsSuccess": "Existing rows updated successfully.",
     "updateRowsFailed": "Failed to update existing rows.",
     "requiredFieldsError": "All fields are required for the rows being registered.",
-    "duplicateRowError": "Some rows are identical to existing data. Please update them before registration."
+    "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration."
   },
   "fxRateEntryMaster": {
     "searchCondition": "Search Condition",
@@ -732,6 +732,7 @@
     "registrationCompleted": "Registration completed successfully.",
     "noRowsToRegister": "No new or updated rows to register.",
     "validationEmptyFields": "All fields must be filled before registration.",
+    "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration.",
     "registrationFailed": "Registration failed.",
     "createdRowsSuccess": "Successfully created {{count}} row(s).",
     "updatedRowsSuccess": "Successfully updated {{count}} row(s).",

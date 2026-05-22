@@ -207,7 +207,7 @@ function getEmptyCsvData(): CsvData {
 }
 
 export default function KitItemClassificationMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { closeSidebar } = useSidebar();
@@ -584,14 +584,36 @@ export default function KitItemClassificationMasterScreen() {
       return;
     }
 
-    const newDuplicate = newRowIndices.some((idx) => {
+    const duplicateRowNumbers: number[] = [];
+    newRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
-      return searchSnapshotRef.current.some((snap) =>
-        row.every((cell, i) => cell === snap[i]),
-      );
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRowNumbers.push(idx + 1);
+      }
     });
-    if (newDuplicate) {
-      setSnackbarMessage(t("kitItemClassification.duplicateRowError"));
+    editedRowIndices.forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRowNumbers.push(idx + 1);
+      }
+    });
+    if (duplicateRowNumbers.length > 0) {
+      duplicateRowNumbers.sort((a, b) => a - b);
+      const rowsText = new Intl.ListFormat(i18n.language, {
+        style: "long",
+        type: "conjunction",
+      }).format(duplicateRowNumbers.map(String));
+      setSnackbarMessage(
+        t("kitItemClassification.duplicateRowError", { rows: rowsText }),
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

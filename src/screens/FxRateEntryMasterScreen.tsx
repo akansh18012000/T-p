@@ -317,7 +317,7 @@ function getEmptyCsvData(): CsvData {
 }
 
 function FxRateEntryMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { closeSidebar } = useSidebar();
@@ -586,16 +586,22 @@ function FxRateEntryMasterScreen() {
     if (!csvData) return;
 
     const createdRows: string[][] = [];
+    const createdRowIndices: number[] = [];
     const updatedRows: string[][] = [];
+    const updatedRowIndices: number[] = [];
+    const updatedRowOriginalIndices: number[] = [];
     let originalIdx = 0;
     for (let i = 0; i < csvData.rows.length; i++) {
       const row = csvData.rows[i];
       if (isNewRow(i)) {
         createdRows.push(row);
+        createdRowIndices.push(i);
       } else {
         const original = originalRowsRef.current[originalIdx];
         if (original && JSON.stringify(row) !== JSON.stringify(original)) {
           updatedRows.push(row);
+          updatedRowIndices.push(i);
+          updatedRowOriginalIndices.push(originalIdx);
         }
         originalIdx++;
       }
@@ -614,6 +620,40 @@ function FxRateEntryMasterScreen() {
     );
     if (hasEmptyField) {
       setSnackbarMessage(t("fxRateEntryMaster.validationEmptyFields"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const getKey = (row: string[]) =>
+      [row[0], row[1], row[2], row[3]].map((v) => String(v ?? "").trim()).join("|");
+    const duplicateRowNumbers: number[] = [];
+    createdRows.forEach((row, idx) => {
+      const key = getKey(row);
+      if (originalRowsRef.current.some((orig) => getKey(orig) === key)) {
+        duplicateRowNumbers.push(createdRowIndices[idx] + 1);
+      }
+    });
+    updatedRows.forEach((row, idx) => {
+      const key = getKey(row);
+      const ownOriginalIdx = updatedRowOriginalIndices[idx];
+      if (
+        originalRowsRef.current.some(
+          (orig, oIdx) => oIdx !== ownOriginalIdx && getKey(orig) === key,
+        )
+      ) {
+        duplicateRowNumbers.push(updatedRowIndices[idx] + 1);
+      }
+    });
+    if (duplicateRowNumbers.length > 0) {
+      duplicateRowNumbers.sort((a, b) => a - b);
+      const rowsText = new Intl.ListFormat(i18n.language, {
+        style: "long",
+        type: "conjunction",
+      }).format(duplicateRowNumbers.map(String));
+      setSnackbarMessage(
+        t("fxRateEntryMaster.duplicateRowError", { rows: rowsText }),
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

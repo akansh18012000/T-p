@@ -512,7 +512,7 @@
     "registrationCompleted": "登録が正常に完了しました。",
     "registrationFailed": "登録に失敗しました。もう一度お試しください。",
     "requiredFieldsMissing": "必須項目を入力してください（キットメーカー品番、キットメーカー、構成品メーカー品番、構成品メーカー、数量）。",
-    "duplicateRowError": "新規行が既存行と一致しています。重複を削除または変更してください。",
+    "duplicateRowError": "{{rows}}行目に重複データがあります。登録前に更新してください。",
     "noChangesToRegister": "登録対象の新規行または更新行がありません。",
     "createdNewRows": "新規行を作成しました",
     "updatedExistingRows": "既存行を更新しました",
@@ -618,7 +618,7 @@
     "rowsDeleted": "行を削除しました。",
     "codeName": "コード名",
     "groupIdRequired": "登録するすべての行にグループIDが必要です。",
-    "duplicateRowError": "一部の行が検索結果と同一です。登録前に内容を更新してください。",
+    "duplicateRowError": "{{rows}}行目に重複データがあります。登録前に更新してください。",
     "registrationFailed": "登録に失敗しました。もう一度お試しください。",
     "createRowsSuccess": "新規行を正常に登録しました",
     "createRowsFailed": "新規行の登録に失敗しました",
@@ -697,7 +697,7 @@
     "updateRowsSuccess": "既存行を正常に更新しました。",
     "updateRowsFailed": "既存行の更新に失敗しました。",
     "requiredFieldsError": "登録対象の行ではすべての項目が必須です。",
-    "duplicateRowError": "一部の行が既存データと同一です。登録前に内容を更新してください。"
+    "duplicateRowError": "{{rows}}行目に重複データがあります。登録前に更新してください。"
   },
   "fxRateEntryMaster": {
     "searchCondition": "検索条件",
@@ -732,6 +732,7 @@
     "registrationCompleted": "登録が正常に完了しました。",
     "noRowsToRegister": "登録対象の新規行または更新行がありません。",
     "validationEmptyFields": "登録前にすべての項目を入力してください。",
+    "duplicateRowError": "{{rows}}行目に重複データがあります。登録前に更新してください。",
     "registrationFailed": "登録に失敗しました。",
     "createdRowsSuccess": "{{count}}件の行を作成しました。",
     "updatedRowsSuccess": "{{count}}件の行を更新しました。",

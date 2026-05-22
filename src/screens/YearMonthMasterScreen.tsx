@@ -169,7 +169,7 @@ function createNewRow(): string[] {
 }
 
 function YearMonthMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -392,23 +392,39 @@ function YearMonthMasterScreen() {
     }
 
     const snapshotEntries = Array.from(originalRowsByIdRef.current.entries());
-    const newHasDuplicate = newRowIndices.some((idx) => {
+    const duplicateRowNumbers: number[] = [];
+    newRowIndices.forEach((idx) => {
       const row = rows[idx];
-      return snapshotEntries.some(([, snapRow]) =>
-        EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
-      );
+      if (
+        snapshotEntries.some(([, snapRow]) =>
+          EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
+        )
+      ) {
+        duplicateRowNumbers.push(idx + 1);
+      }
     });
-    const editedHasDuplicate = editedRowIndices.some((idx) => {
+    editedRowIndices.forEach((idx) => {
       const row = rows[idx];
       const myId = rowIds[idx];
-      return snapshotEntries.some(
-        ([snapId, snapRow]) =>
-          snapId !== myId &&
-          EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
-      );
+      if (
+        snapshotEntries.some(
+          ([snapId, snapRow]) =>
+            snapId !== myId &&
+            EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
+        )
+      ) {
+        duplicateRowNumbers.push(idx + 1);
+      }
     });
-    if (newHasDuplicate || editedHasDuplicate) {
-      setSnackbarMessage(t("yearMonthMaster.duplicateRowError"));
+    if (duplicateRowNumbers.length > 0) {
+      duplicateRowNumbers.sort((a, b) => a - b);
+      const rowsText = new Intl.ListFormat(i18n.language, {
+        style: "long",
+        type: "conjunction",
+      }).format(duplicateRowNumbers.map(String));
+      setSnackbarMessage(
+        t("yearMonthMaster.duplicateRowError", { rows: rowsText }),
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;
