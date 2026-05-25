@@ -8,8 +8,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
+  Button,
   Grid,
-  Table,
   TableBody,
   TableHead,
   TableRow,
@@ -81,16 +81,6 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
-  StyledProgressBox,
-  StyledLinearProgressBar,
-  StyledProgressText,
-  StyledUploadedTitle,
-  StyledPreviewTableContainer,
-  StyledPreviewTableHeaderCell,
-  StyledPreviewTableBodyRow,
-  StyledPreviewTableDataCell,
-  StyledActionButtonsBox,
-  StyledCancelButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -103,20 +93,21 @@ import {
   Clear as ClearIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { FX_RATE_ENTRY_MASTER_HEADERS, FX_RATE_ENTRY_MASTER_COLUMNS } from "../constants/tableColumns.js";
+import { FX_RATE_ENTRY_MASTER_HEADERS, FX_RATE_ENTRY_MASTER_HEADERS_JA, FX_RATE_ENTRY_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { formatYearMonthForPayload } from "../utils/commonUtils.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -322,9 +313,8 @@ function FxRateEntryMasterScreen() {
   const location = useLocation();
   const { closeSidebar } = useSidebar();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const { getUploadState, setSelectedFile } = useUploadContext();
+  const { selectedFile } = getUploadState(screenKey);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -365,8 +355,7 @@ function FxRateEntryMasterScreen() {
     };
   }, [processingDate, currencyType, fromCurrency, toCurrency, deletionFlag]);
 
-  // Upload file state (selectedFile and uploadedCsvData from context)
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload file state (selectedFile from context)
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "completed"
   >("idle");
@@ -761,28 +750,76 @@ function FxRateEntryMasterScreen() {
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(selectedFile, "UTF-8");
-    });
+
+    let parsed: CsvData;
     try {
-      const parsed = await parseCsv(text);
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = reject;
+        reader.readAsText(selectedFile, "UTF-8");
+      });
+      parsed = await parseCsv(text);
+    } catch {
+      setUploadStatus("idle");
+      setSnackbarMessage(t("fxRateEntryMaster.parseCsvFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const enValidation = validateCsvColumns(
+      parsed.headers,
+      FX_RATE_ENTRY_MASTER_HEADERS,
+    );
+    const jaValidation = validateCsvColumns(
+      parsed.headers,
+      FX_RATE_ENTRY_MASTER_HEADERS_JA,
+    );
+    if (!enValidation.isValid && !jaValidation.isValid) {
+      setUploadStatus("idle");
+      const missing =
+        enValidation.missingColumns.length <=
+        jaValidation.missingColumns.length
+          ? enValidation.missingColumns
+          : jaValidation.missingColumns;
+      setSnackbarMessage(
+        t("fxRateEntryMaster.missingColumnsError", {
+          columns: missing.join(", "),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("requested_by", "9363e503-3d7c-4200-9702-e2445866c4c2");
+      formData.append("session_id", "d2e58f5d-8422-4611-8640-89db58ebe2e1");
+      formData.append("screen_id", SCREEN_IDS.CURRENCY_RATE.id);
+      formData.append("user_id", "9363e503-3d7c-4200-9702-e2445866c4c2");
+      formData.append("ip_address", "192.168.1.100");
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setSelectedFile(screenKey, null);
+      setUploadStatus("idle");
+      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
       setSnackbarMessage(t("fxRateEntryMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("fxRateEntryMaster.parseCsvFailed"));
+      setSnackbarMessage(t("fxRateEntryMaster.uploadError"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -790,22 +827,10 @@ function FxRateEntryMasterScreen() {
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
-    setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
     setSnackbarMessage(t("fxRateEntryMaster.uploadCancelled"));
     setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-  };
-
-  const handleUploadRegister = async () => {
-    setSnackbarMessage(t("fxRateEntryMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("fxRateEntryMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
@@ -1287,152 +1312,99 @@ function FxRateEntryMasterScreen() {
 
           {uploadSectionExpanded && (
             <StyledUploadSectionContent>
-              {!uploadedCsvData ? (
-                <>
-                  <StyledDragDropZone
-                    $dragActive={dragActive}
-                    onDragEnter={handleUploadDrag}
-                    onDragLeave={handleUploadDrag}
-                    onDragOver={handleUploadDrag}
-                    onDrop={handleUploadDrop}
-                    onClick={handleUploadBrowseClick}
-                  >
-                    <input
-                      ref={uploadFileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={handleUploadFileSelect}
-                      style={{ display: "none" }}
-                    />
-                    <StyledUploadIconCircle $dragActive={dragActive}>
-                      <StyledCloudUploadIcon $dragActive={dragActive} />
-                    </StyledUploadIconCircle>
-                    <StyledDragDropTitle variant="h6">
-                      {dragActive
-                        ? t("fxRateEntryMaster.dropFileHere")
-                        : t("fxRateEntryMaster.dragDropFile")}
-                    </StyledDragDropTitle>
-                    <StyledDragDropSubtitle variant="body2">
-                      {t("fxRateEntryMaster.orClickToBrowse")}
-                    </StyledDragDropSubtitle>
-                    <StyledBrowseFilesButton
-                      variant="contained"
-                      startIcon={<CloudUploadOutlinedIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUploadBrowseClick();
-                      }}
-                    >
-                      {t("fxRateEntryMaster.browseFiles")}
-                    </StyledBrowseFilesButton>
-                    <StyledSupportedFormatText variant="caption">
-                      {t("fxRateEntryMaster.supportedFormatCsv")}
-                    </StyledSupportedFormatText>
-                  </StyledDragDropZone>
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleUploadDrag}
+                onDragLeave={handleUploadDrag}
+                onDragOver={handleUploadDrag}
+                onDrop={handleUploadDrop}
+                onClick={handleUploadBrowseClick}
+              >
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadFileSelect}
+                  style={{ display: "none" }}
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("fxRateEntryMaster.dropFileHere")
+                    : t("fxRateEntryMaster.dragDropFile")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("fxRateEntryMaster.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUploadBrowseClick();
+                  }}
+                >
+                  {t("fxRateEntryMaster.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("fxRateEntryMaster.supportedFormatCsv")}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
 
-                  {selectedFile && (
-                    <StyledSelectedFileBox>
-                      <StyledFileInfoBox>
-                        <StyledFileInfoInner>
-                          <StyledDescriptionIcon />
-                          <Box>
-                            <StyledFileNameText variant="body2">
-                              {selectedFile.name}
-                            </StyledFileNameText>
-                            <StyledFileSizeText variant="caption">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </StyledFileSizeText>
-                          </Box>
-                        </StyledFileInfoInner>
-                        <StyledUploadButton
-                          variant="contained"
-                          size="small"
-                          onClick={handleUploadClick}
-                          disabled={uploadStatus === "uploading"}
-                        >
-                          {t("upload.upload")}
-                        </StyledUploadButton>
-                        <StyledViewButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() =>
-                            selectedFile &&
-                            navigateToCsvView(
-                              selectedFile,
-                              navigate,
-                              location.pathname,
-                              t("home.fxRateEntryDaily"),
-                            )
-                          }
-                          disabled={
-                            !selectedFile || uploadStatus === "uploading"
-                          }
-                        >
-                          {t("upload.view")}
-                        </StyledViewButton>
-                      </StyledFileInfoBox>
-                      {uploadStatus === "uploading" && (
-                        <StyledProgressBox>
-                          <StyledLinearProgressBar
-                            variant="determinate"
-                            value={uploadProgress}
-                          />
-                          <StyledProgressText variant="caption">
-                            {uploadProgress}%
-                          </StyledProgressText>
-                        </StyledProgressBox>
-                      )}
-                    </StyledSelectedFileBox>
-                  )}
-                </>
-              ) : (
-                <>
-                  <StyledUploadedTitle variant="subtitle1">
-                    {selectedFile?.name}
-                  </StyledUploadedTitle>
-                  <StyledPreviewTableContainer>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {uploadedCsvData.headers.map((header, colIndex) => (
-                            <StyledPreviewTableHeaderCell key={colIndex}>
-                              {header}
-                            </StyledPreviewTableHeaderCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {uploadedCsvData.rows.map((row, rowIndex) => (
-                          <StyledPreviewTableBodyRow
-                            key={rowIndex}
-                            $index={rowIndex}
-                          >
-                            {row.map((cell, colIndex) => (
-                              <StyledPreviewTableDataCell key={colIndex}>
-                                {cell}
-                              </StyledPreviewTableDataCell>
-                            ))}
-                          </StyledPreviewTableBodyRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </StyledPreviewTableContainer>
-                  <StyledActionButtonsBox>
-                    <StyledCancelButton
-                      variant="outlined"
-                      onClick={handleUploadCancel}
-                    >
-                      {t("fxRateEntryMaster.cancel")}
-                    </StyledCancelButton>
-                    <StyledPrimaryContainedButton
+              {selectedFile && (
+                <StyledSelectedFileBox>
+                  <StyledFileInfoBox>
+                    <StyledFileInfoInner>
+                      <StyledDescriptionIcon />
+                      <Box>
+                        <StyledFileNameText variant="body2">
+                          {selectedFile.name}
+                        </StyledFileNameText>
+                        <StyledFileSizeText variant="caption">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </StyledFileSizeText>
+                      </Box>
+                    </StyledFileInfoInner>
+                    <StyledUploadButton
                       variant="contained"
-                      onClick={handleUploadRegister}
-                      startIcon={<AppRegistrationIcon />}
+                      size="small"
+                      onClick={handleUploadClick}
+                      disabled={uploadStatus === "uploading"}
                     >
-                      {t("fxRateEntryMaster.register")}
-                    </StyledPrimaryContainedButton>
-                  </StyledActionButtonsBox>
-                </>
+                      {t("upload.upload")}
+                    </StyledUploadButton>
+                    <StyledViewButton
+                      variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        selectedFile &&
+                        navigateToCsvView(
+                          selectedFile,
+                          navigate,
+                          location.pathname,
+                          t("home.fxRateEntryDaily"),
+                        )
+                      }
+                      disabled={
+                        !selectedFile || uploadStatus === "uploading"
+                      }
+                    >
+                      {t("upload.view")}
+                    </StyledViewButton>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
+                      onClick={handleUploadCancel}
+                      disabled={uploadStatus === "uploading"}
+                      sx={{ marginLeft: "auto" }}
+                    >
+                      {t("fxRateEntryMaster.cancelUpload")}
+                    </Button>
+                  </StyledFileInfoBox>
+                </StyledSelectedFileBox>
               )}
             </StyledUploadSectionContent>
           )}

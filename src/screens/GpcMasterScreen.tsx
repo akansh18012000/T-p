@@ -1117,12 +1117,10 @@ export default function GpcMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {GPC_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
-                                    key={colIndex}
-                                    $deletionFlag={
-                                      GPC_MASTER_COLUMNS[colIndex]?.isCheckbox === true
-                                    }
+                                    key={col.key}
+                                    $deletionFlag={col.isCheckbox === true}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -1132,7 +1130,7 @@ export default function GpcMasterScreen() {
                                     )}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}

@@ -414,6 +414,7 @@ export const YEAR_MONTH_MASTER_COLUMNS: I18nColumnConfig[] = [
 export interface GlobalDadMasterColumnConfig {
   key: string;
   label: string;
+  labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
   /** If true, shows search button for the cell */
@@ -423,20 +424,35 @@ export interface GlobalDadMasterColumnConfig {
 }
 
 export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
-  { key: "systemId", label: "System ID", editable: false },
-  { key: "salesLocationCode", label: "Sales Location Code", editable: false },
-  { key: "localCustomerCode", label: "Local Customer Code", editable: false },
-  { key: "localCustomerName", label: "Local Customer Name", editable: false },
-  { key: "productClassification", label: "Product Classification", editable: false },
-  { key: "productClassificationName", label: "Product Classification Name", editable: false },
-  { key: "transferDestBU3", label: "Transfer Destination BU3", editable: true, searchable: true },
-  { key: "effectiveStartDate", label: "Effective Start Date", editable: true },
-  { key: "expirationDate", label: "Expiration Date", editable: true },
-  { key: "patternId", label: "Pattern Id", editable: false },
-  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
+  { key: "systemId", label: "System ID", labelKey: "globalDadMaster.systemId", editable: false },
+  { key: "salesLocationCode", label: "Sales Location Code", labelKey: "globalDadMaster.salesLocationCode", editable: false },
+  { key: "localCustomerCode", label: "Local Customer Code", labelKey: "globalDadMaster.localCustomerCode", editable: false },
+  { key: "localCustomerName", label: "Local Customer Name", labelKey: "globalDadMaster.localCustomerName", editable: false },
+  { key: "productClassification", label: "Product Classification", labelKey: "globalDadMaster.productClassification", editable: false },
+  { key: "productClassificationName", label: "Product Classification Name", labelKey: "globalDadMaster.productClassificationName", editable: false },
+  { key: "transferDestBU3", label: "Transfer Destination BU3", labelKey: "globalDadMaster.transferDestBU3", editable: true, searchable: true },
+  { key: "effectiveStartDate", label: "Effective Start Date", labelKey: "globalDadMaster.effectiveStartDate", editable: true },
+  { key: "expirationDate", label: "Expiration Date", labelKey: "globalDadMaster.expirationDate", editable: true },
+  { key: "patternId", label: "Pattern Id", labelKey: "globalDadMaster.patternId", editable: false },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "globalDadMaster.deletionFlag", editable: true, isCheckbox: true },
 ];
 
 export const GLOBAL_DAD_MASTER_HEADERS: string[] = GLOBAL_DAD_MASTER_COLUMNS.map((col) => col.label);
+
+/** Japanese CSV column headers; order must match GLOBAL_DAD_MASTER_HEADERS */
+export const GLOBAL_DAD_MASTER_HEADERS_JA: string[] = [
+  "システムID",
+  "販売拠点コード",
+  "ローカル顧客コード",
+  "ローカル顧客名",
+  "製品分類",
+  "製品分類名",
+  "振替先BU3",
+  "有効開始日",
+  "有効終了日",
+  "パターンID",
+  "削除フラグ",
+];
 
 export const GLOBAL_DAD_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
@@ -461,6 +477,7 @@ export const GLOBAL_DAD_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 export interface StandardCostMasterColumnConfig {
   key: string;
   label: string;
+  labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
   /** If true, shows search button for the cell */
@@ -472,22 +489,38 @@ export interface StandardCostMasterColumnConfig {
 }
 
 export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
-  { key: "mfrPartNumber", label: "Mfr Part Number", editable: true, searchable: true },
-  { key: "manufacturer", label: "Manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
-  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
-  { key: "locationCode", label: "Location Code", editable: true, searchable: true, associatedColumn: "locationName" },
-  { key: "locationName", label: "Location Name", editable: false },
-  { key: "corporateCode", label: "Corporate Code", editable: true, searchable: true, associatedColumn: "corporateName" },
-  { key: "corporateName", label: "Corporate Name", editable: false },
-  { key: "effectiveStartDate", label: "Effective Start Date (Year/Month)", editable: true },
-  { key: "currency", label: "Currency", editable: true },
-  { key: "standardCost", label: "Standard Cost", editable: true },
-  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", editable: true, isCheckbox: true },
-  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
+  { key: "mfrPartNumber", label: "Mfr Part Number", labelKey: "standardCostMaster.mfrPartNumber", editable: true, searchable: true },
+  { key: "manufacturer", label: "Manufacturer", labelKey: "standardCostMaster.manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
+  { key: "manufacturerName", label: "Manufacturer Name", labelKey: "standardCostMaster.manufacturerName", editable: false },
+  { key: "locationCode", label: "Location Code", labelKey: "standardCostMaster.locationCode", editable: true, searchable: true, associatedColumn: "locationName" },
+  { key: "locationName", label: "Location Name", labelKey: "standardCostMaster.locationName", editable: false },
+  { key: "corporateCode", label: "Corporate Code", labelKey: "standardCostMaster.corporateCode", editable: true, searchable: true, associatedColumn: "corporateName" },
+  { key: "corporateName", label: "Corporate Name", labelKey: "standardCostMaster.corporateName", editable: false },
+  { key: "effectiveStartDate", label: "Effective Start Date (Year/Month)", labelKey: "standardCostMaster.effectiveStartDate", editable: true },
+  { key: "currency", label: "Currency", labelKey: "standardCostMaster.currency", editable: true },
+  { key: "standardCost", label: "Standard Cost", labelKey: "standardCostMaster.standardCost", editable: true },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "standardCostMaster.overwritePreventionFlag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "standardCostMaster.deletionFlag", editable: true, isCheckbox: true },
 ];
 
 /** Header labels array for backward compatibility */
 export const STANDARD_COST_MASTER_HEADERS: string[] = STANDARD_COST_MASTER_COLUMNS.map((col) => col.label);
+
+/** Japanese CSV column headers; order must match STANDARD_COST_MASTER_HEADERS */
+export const STANDARD_COST_MASTER_HEADERS_JA: string[] = [
+  "メーカー品番",
+  "メーカー",
+  "メーカー名",
+  "ロケーションコード",
+  "ロケーション名",
+  "法人コード",
+  "法人名",
+  "有効開始日（年/月）",
+  "通貨",
+  "標準原価",
+  "上書き防止フラグ",
+  "削除フラグ",
+];
 
 export const STANDARD_COST_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
@@ -513,6 +546,7 @@ export const STANDARD_COST_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 export interface KitItemClassificationMasterColumnConfig {
   key: string;
   label: string;
+  labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
   /** If true, renders as checkbox */
@@ -520,17 +554,28 @@ export interface KitItemClassificationMasterColumnConfig {
 }
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMasterColumnConfig[] = [
-  { key: "kitMfrPartNumber", label: "Kit Mfr Part Number", editable: false },
-  { key: "kitManufacturer", label: "Kit Manufacturer", editable: false },
-  { key: "componentMfrPartNumber", label: "Component Mfr Part Number", editable: false },
-  { key: "componentsManufacturer", label: "Components Manufacturer", editable: false },
-  { key: "componentLocationCode", label: "Component Location Code", editable: false },
-  { key: "quantity", label: "Quantity", editable: true },
-  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
+  { key: "kitMfrPartNumber", label: "Kit Mfr Part Number", labelKey: "kitItemClassification.kitMfrPartNumber", editable: false },
+  { key: "kitManufacturer", label: "Kit Manufacturer", labelKey: "kitItemClassification.kitManufacturer", editable: false },
+  { key: "componentMfrPartNumber", label: "Component Mfr Part Number", labelKey: "kitItemClassification.componentMfrPartNumber", editable: false },
+  { key: "componentsManufacturer", label: "Components Manufacturer", labelKey: "kitItemClassification.componentsManufacturer", editable: false },
+  { key: "componentLocationCode", label: "Component Location Code", labelKey: "kitItemClassification.componentLocationCode", editable: false },
+  { key: "quantity", label: "Quantity", labelKey: "kitItemClassification.quantity", editable: true },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "kitItemClassification.deletionFlag", editable: true, isCheckbox: true },
 ];
 
 /** Header labels array for backward compatibility */
 export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS.map((col) => col.label);
+
+/** Japanese CSV column headers; order must match KIT_ITEM_CLASSIFICATION_MASTER_HEADERS */
+export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA: string[] = [
+  "キットメーカー品番",
+  "キットメーカー",
+  "構成品メーカー品番",
+  "構成品メーカー",
+  "構成品ロケーションコード",
+  "数量",
+  "削除フラグ",
+];
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
@@ -555,6 +600,17 @@ export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
   "Currency Exchange Rate",
   "Overwrite Prevention Flag",
   "Deletion Flag",
+];
+
+/** Japanese CSV column headers; order must match FX_RATE_ENTRY_MASTER_HEADERS */
+export const FX_RATE_ENTRY_MASTER_HEADERS_JA: string[] = [
+  "処理日",
+  "変換元通貨",
+  "変換先通貨",
+  "通貨タイプ",
+  "為替レート",
+  "上書き防止フラグ",
+  "削除フラグ",
 ];
 
 /** i18n column config for Fx Rate Entry Master table */
@@ -686,6 +742,7 @@ export const LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 export interface GpcMasterColumnConfig {
   key: string;
   label: string;
+  labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
   /** If true, shows search button for the cell */
@@ -697,20 +754,34 @@ export interface GpcMasterColumnConfig {
 }
 
 export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
-  { key: "manufacturer", label: "Manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
-  { key: "manufacturerName", label: "Manufacturer Name", editable: false },
-  { key: "mfrPartNumber", label: "Mfr Part Number", editable: true, searchable: true },
-  { key: "gpcCode", label: "GPC Code", editable: true, searchable: true, associatedColumn: "gpcName" },
-  { key: "gpcName", label: "GPC Name", editable: false },
-  { key: "validYear", label: "Valid Year", editable: true },
-  { key: "bu3Code", label: "BU3 Code", editable: false },
-  { key: "bu3Name", label: "BU3 Name", editable: false },
-  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", editable: true, isCheckbox: true },
-  { key: "deletionFlag", label: "Deletion Flag", editable: true, isCheckbox: true },
+  { key: "manufacturer", label: "Manufacturer", labelKey: "gpcMaster.manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
+  { key: "manufacturerName", label: "Manufacturer Name", labelKey: "gpcMaster.manufacturerName", editable: false },
+  { key: "mfrPartNumber", label: "Mfr Part Number", labelKey: "gpcMaster.mfrPartNumber", editable: true, searchable: true },
+  { key: "gpcCode", label: "GPC Code", labelKey: "gpcMaster.gpcCode", editable: true, searchable: true, associatedColumn: "gpcName" },
+  { key: "gpcName", label: "GPC Name", labelKey: "gpcMaster.gpcName", editable: false },
+  { key: "validYear", label: "Valid Year", labelKey: "gpcMaster.validYear", editable: true },
+  { key: "bu3Code", label: "BU3 Code", labelKey: "gpcMaster.bu3Code", editable: false },
+  { key: "bu3Name", label: "BU3 Name", labelKey: "gpcMaster.bu3Name", editable: false },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "gpcMaster.overwritePreventionFlag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "gpcMaster.deletionFlag", editable: true, isCheckbox: true },
 ];
 
 /** Header labels array for backward compatibility */
 export const GPC_MASTER_HEADERS: string[] = GPC_MASTER_COLUMNS.map((col) => col.label);
+
+/** Japanese CSV column headers; order must match GPC_MASTER_HEADERS */
+export const GPC_MASTER_HEADERS_JA: string[] = [
+  "メーカー",
+  "メーカー名",
+  "メーカー品番",
+  "GPCコード",
+  "GPC名",
+  "有効年",
+  "BU3コード",
+  "BU3名",
+  "上書き防止フラグ",
+  "削除フラグ",
+];
 
 export const GPC_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },

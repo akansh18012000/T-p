@@ -1037,10 +1037,10 @@ export default function GlobalDadMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {GLOBAL_DAD_MASTER_COLUMNS.map((col, colIndex) => (
                                   <ScrollableTableHeaderCell
-                                    key={colIndex}
-                                    $deletionFlag={GLOBAL_DAD_MASTER_COLUMNS[colIndex]?.isCheckbox === true}
+                                    key={col.key}
+                                    $deletionFlag={col.isCheckbox === true}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -1050,7 +1050,7 @@ export default function GlobalDadMasterScreen() {
                                     )}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </ScrollableTableHeaderCell>
                                 ))}

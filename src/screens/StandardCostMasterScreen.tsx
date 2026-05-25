@@ -1415,12 +1415,10 @@ export default function StandardCostMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
-                                {displayData.headers.map((header, colIndex) => (
+                                {STANDARD_COST_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
-                                    key={colIndex}
-                                    $deletionFlag={
-                                      STANDARD_COST_MASTER_COLUMNS[colIndex]?.isCheckbox === true
-                                    }
+                                    key={col.key}
+                                    $deletionFlag={col.isCheckbox === true}
                                     $isFrozen={freezeIndices.includes(
                                       colIndex + 1,
                                     )}
@@ -1430,7 +1428,7 @@ export default function StandardCostMasterScreen() {
                                     )}
                                   >
                                     <StyledTableHeaderText variant="body2">
-                                      {header}
+                                      {t(col.labelKey)}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
