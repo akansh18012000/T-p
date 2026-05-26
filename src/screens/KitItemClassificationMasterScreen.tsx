@@ -585,10 +585,16 @@ export default function KitItemClassificationMasterScreen() {
     });
     editedRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
+      const ownOriginal = rowMetadata[idx]?.original;
       if (
-        searchSnapshotRef.current.some((snap) =>
-          row.every((cell, i) => cell === snap[i]),
-        )
+        searchSnapshotRef.current.some((snap) => {
+          // Exclude this row's own snapshot entry so reverting edits to the
+          // original values isn't flagged as a duplicate against itself.
+          if (ownOriginal && snap.every((cell, i) => cell === ownOriginal[i])) {
+            return false;
+          }
+          return row.every((cell, i) => cell === snap[i]);
+        })
       ) {
         duplicateRowNumbers.push(idx + 1);
       }
