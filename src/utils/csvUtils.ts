@@ -15,7 +15,7 @@ export interface CsvData {
  * @returns Promise<CsvData> - Parsed CSV data with headers and rows
  */
 export async function parseCsv(
-  csvContent: string, 
+  csvContent: string,
   delimiter: string = ','
 ): Promise<CsvData> {
   try {
@@ -24,8 +24,11 @@ export async function parseCsv(
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
 
-    const lines = normalizedContent.split('\n').filter(line => line.trim());
-    
+    // Split into logical lines while respecting quoted fields so that
+    // embedded newlines inside quoted cells (e.g. Excel Alt+Enter headers)
+    // stay attached to their field instead of becoming new rows.
+    const lines = splitCsvLines(normalizedContent).filter(line => line.trim());
+
     if (lines.length === 0) {
       return { headers: [], rows: [] };
     }
@@ -56,6 +59,44 @@ export async function parseCsv(
     console.error('Error parsing CSV:', error);
     throw new Error('Failed to parse CSV content');
   }
+}
+
+/**
+ * Split CSV text into logical record lines, treating newlines inside
+ * quoted fields as part of the field (not as record separators).
+ * Doubled quotes ("") inside a quoted field are preserved verbatim so
+ * the per-line parser can unescape them.
+ */
+function splitCsvLines(content: string): string[] {
+  const lines: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+
+    if (char === '"') {
+      if (inQuotes && content[i + 1] === '"') {
+        // Escaped quote — keep both chars so parseCsvLine can unescape.
+        current += '""';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+        current += char;
+      }
+    } else if (char === '\n' && !inQuotes) {
+      lines.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.length > 0) {
+    lines.push(current);
+  }
+
+  return lines;
 }
 
 /**
