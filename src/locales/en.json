@@ -87,7 +87,16 @@
     "uploadedFilesContent": "List of uploaded files will be displayed here.",
     "backupFilesContent": "List of backup files will be displayed here.",
     "dropFilesHere": "Drop files here",
-    "view": "View"
+    "view": "View",
+    "templateInstructions": "Please do not remove the column header row and reserve columns (Reserve 1, Reserve 2 and Reserve 3) from the template while uploading the file.",
+    "maxFilesError": "You can only upload up to {{max}} files at a time.",
+    "maxFilesHint": "You can select up to {{max}} files at a time.",
+    "validationFailedHeader": "The following files failed validation:",
+    "fileMissingColumns": "{{file}}: missing columns: {{columns}}",
+    "fileParseError": "{{file}}: failed to parse CSV.",
+    "templateLoadError": "Failed to load the template file. Please try again.",
+    "uploadSuccess": "All files uploaded successfully.",
+    "uploadError": "Failed to upload files. Please try again."
   },
   "uploadedCsvPreview": {
     "title": "Uploaded CSV Preview",

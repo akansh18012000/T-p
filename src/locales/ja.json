@@ -87,7 +87,16 @@
     "uploadedFilesContent": "アップロード済みファイルのリストがここに表示されます。",
     "backupFilesContent": "バックアップファイルのリストがここに表示されます。",
     "dropFilesHere": "ファイルをここにドロップしてください",
-    "view": "表示"
+    "view": "表示",
+    "templateInstructions": "ファイルをアップロードする際は、テンプレートから列ヘッダー行と予備列（予備1、予備2、予備3）を削除しないでください。",
+    "maxFilesError": "一度にアップロードできるファイルは最大{{max}}件までです。",
+    "maxFilesHint": "一度に最大{{max}}件のファイルを選択できます。",
+    "validationFailedHeader": "以下のファイルの検証に失敗しました：",
+    "fileMissingColumns": "{{file}}: 不足している列: {{columns}}",
+    "fileParseError": "{{file}}: CSVの解析に失敗しました。",
+    "templateLoadError": "テンプレートファイルの読み込みに失敗しました。もう一度お試しください。",
+    "uploadSuccess": "すべてのファイルが正常にアップロードされました。",
+    "uploadError": "ファイルのアップロードに失敗しました。もう一度お試しください。"
   },
   "uploadedCsvPreview": {
     "title": "アップロード済みCSVプレビュー",

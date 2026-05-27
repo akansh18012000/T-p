@@ -59,3 +59,8 @@ export async function navigateToCsvView(
 export function isCsvFile(fileName: string): boolean {
   return fileName.toLowerCase().endsWith(".csv");
 }
+
+/** Keep only CSV files from the given list (case-insensitive on extension). */
+export function filterCsvFiles(files: File[]): File[] {
+  return files.filter((file) => isCsvFile(file.name));
+}

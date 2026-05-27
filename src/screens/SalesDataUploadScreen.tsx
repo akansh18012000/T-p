@@ -1,18 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled, alpha } from "@mui/material/styles";
 import {
+  Alert,
   Box,
   Typography,
   Button,
-  TextField,
   Paper,
   IconButton,
   Chip,
-  LinearProgress,
   Link,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -21,6 +21,7 @@ import {
   TableRow,
   Tabs,
   Tab,
+  type AlertColor,
 } from "@mui/material";
 import {
   CloudUploadOutlined,
@@ -40,9 +41,15 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import {
   navigateToCsvView,
   isCsvFile,
+  filterCsvFiles,
   type CsvViewNavigationState,
 } from "../utils/csvViewNavigation.js";
-import { parseCsv } from "../utils/csvUtils.js";
+import { parseCsv, validateCsvColumns } from "../utils/csvUtils.js";
+import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
+
+const MAX_UPLOAD_FILES = 12;
+const SALES_DATA_TEMPLATE_FILE = "Sales_Data_Template.csv";
 
 // Styled components for consistent table styling
 const StyledHeaderCell = styled(TableCell)(({ theme }) => ({
@@ -284,24 +291,6 @@ const StyledUploadButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const StyledClearButton = styled(Button)(({ theme }) => ({
-  paddingLeft: 16,
-  paddingRight: 16,
-  paddingTop: 6,
-  paddingBottom: 6,
-  borderColor: theme.palette.grey![200],
-  color: theme.palette.grey![500],
-  fontWeight: 600,
-  textTransform: "none",
-  fontSize: "0.875rem",
-  borderRadius: "8px",
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-    color: theme.palette.primary.main,
-  },
-}));
-
 const StyledCancelButton = styled(Button)(({ theme }) => ({
   paddingLeft: 16,
   paddingRight: 16,
@@ -454,42 +443,6 @@ const StyledFileSize = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![500],
 }));
 
-const StyledReferenceTextField = styled(TextField)(({ theme }) => ({
-  width: 180,
-  "& .MuiOutlinedInput-root": {
-    fontSize: "0.875rem",
-    "& fieldset": {
-      borderColor: theme.palette.grey![200],
-    },
-    "&:hover fieldset": {
-      borderColor: theme.palette.primary.main,
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: theme.palette.primary.main,
-    },
-  },
-}));
-
-const StyledProgressWrapper = styled(Box)({
-  width: "100%",
-});
-
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  height: 6,
-  borderRadius: 4,
-  backgroundColor: theme.palette.grey![200],
-  "& .MuiLinearProgress-bar": {
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: 4,
-  },
-}));
-
-const StyledProgressText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginTop: 4,
-  display: "block",
-}));
-
 const StyledStatusChip = styled(Chip)(({ theme }) => {
   const success = theme.palette.success as unknown as {
     light: string;
@@ -628,58 +581,11 @@ const StyledEmptyStateSubtitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![400],
 }));
 
-// Mock CSV content for sample files - shown in upload csv preview
-const MOCK_CSV_SALES_DATA = `Product Name,Sales,Region,Date,Responsible Person
-Transfer Bag,1500000,Tokyo,2026/01/01,John Doe
-Catheter,2300000,Osaka,2026/01/02,John Doe
-Syringe,890000,Nagoya,2026/01/03,John Doe
-Infusion Set,1200000,Fukuoka,2026/01/04,John Doe
-Angiography Catheter,3400000,Tokyo,2026/01/05,John Doe`;
-
 const MOCK_CSV_ADJUSTMENT_DATA = `Item Code,Adjustment Type,Amount,Period,Notes
 ADJ-001,Q4 Correction,125000,2025-Q4,Volume adjustment
 ADJ-002,Rebate,-45000,2025-Q4,Customer rebate
 ADJ-003,Price Update,78000,2025-Q4,Tariff update
 ADJ-004,Returns,-32000,2025-Q4,Q4 returns`;
-
-const MOCK_CSV_SIMULATION_RATES = `Rate Type,Base Rate,Simulation Rate,Effective Date
-FX-USD,149.50,152.30,2026/01/01
-FX-EUR,162.20,165.80,2026/01/01
-Growth Rate,1.02,1.05,2026/01/01
-Inflation,0.02,0.025,2026/01/01`;
-
-const SAMPLE_ENTRIES: UploadEntry[] = [
-  {
-    id: "sample-1",
-    file: new File([MOCK_CSV_SALES_DATA], "sales_data_january_2026.csv", {
-      type: "text/csv",
-    }),
-    reference: "REF-2026-001",
-    uploadedAt: new Date("2026-01-05T10:30:00"),
-    uploadProgress: 100,
-    uploadStatus: "completed",
-  },
-  {
-    id: "sample-2",
-    file: new File([""], "adjustment_data_q4_2025.xlsx", {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }),
-    reference: "REF-2026-002",
-    uploadedAt: new Date("2026-01-04T14:15:00"),
-    uploadProgress: 100,
-    uploadStatus: "completed",
-  },
-  {
-    id: "sample-3",
-    file: new File([MOCK_CSV_SIMULATION_RATES], "simulation_rates_2026.csv", {
-      type: "text/csv",
-    }),
-    reference: "REF-2026-003",
-    uploadedAt: new Date("2026-01-03T09:45:00"),
-    uploadProgress: 100,
-    uploadStatus: "completed",
-  },
-];
 
 export default function SalesDataUploadScreen() {
   const navigate = useNavigate();
@@ -706,15 +612,20 @@ export default function SalesDataUploadScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
+  const [snackbarSeverity, setSnackbarSeverity] =
+    useState<AlertColor>("success");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasSeededRef = useRef(false);
 
-  useEffect(() => {
-    if (!hasSeededRef.current && fileUploads.length === 0) {
-      hasSeededRef.current = true;
-      setEntries(screenKey, SAMPLE_ENTRIES);
-    }
-  }, [screenKey, fileUploads.length, setEntries]);
+  const showSnackbar = (
+    message: ReactNode,
+    severity: AlertColor = "success",
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -736,7 +647,16 @@ export default function SalesDataUploadScreen() {
   };
 
   const addFiles = (files: File[]) => {
-    const newUploads: UploadEntry[] = files.map((file) => ({
+    const csvFiles = filterCsvFiles(files);
+    if (csvFiles.length === 0) return;
+    if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
+      showSnackbar(
+        t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
+        "error",
+      );
+      return;
+    }
+    const newUploads: UploadEntry[] = csvFiles.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       reference: "",
@@ -753,10 +673,6 @@ export default function SalesDataUploadScreen() {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const handleReferenceChange = (id: string, value: string) => {
-    updateEntry(screenKey, id, { reference: value });
   };
 
   const handleRemoveFile = (id: string) => {
@@ -810,45 +726,147 @@ export default function SalesDataUploadScreen() {
     URL.revokeObjectURL(url);
   };
 
-  const formatFileSize = (bytes: number, seed?: string) => {
-    if (bytes === 0) {
-      // For demonstration files, show deterministic sample sizes based on seed (e.g. file name)
-      const sampleSizes = [2456789, 1876543, 987654, 3456789, 2134567];
-      const index = seed
-        ? seed.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) %
-          sampleSizes.length
-        : 0;
-      return formatFileSize(sampleSizes[index], seed);
-    }
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleSubmit = async () => {
-    setUploading(true);
-    const uploads = getUploadState(screenKey).entries;
+  const readFileAsText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string) || "");
+      reader.onerror = reject;
+      reader.readAsText(file, "UTF-8");
+    });
 
+  const handleSubmit = async () => {
+    const uploads = getUploadState(screenKey).entries;
+    if (uploads.length === 0) return;
+
+    setUploading(true);
+
+    // 1. Load the template once and parse its headers.
+    let templateHeaders: string[];
+    try {
+      const templateResponse = await fetch(
+        `/templates/${SALES_DATA_TEMPLATE_FILE}`,
+      );
+      if (!templateResponse.ok) throw new Error("Template fetch failed");
+      const templateText = await templateResponse.text();
+      const templateParsed = await parseCsv(templateText);
+      templateHeaders = templateParsed.headers;
+    } catch {
+      setUploading(false);
+      showSnackbar(t("upload.templateLoadError"), "error");
+      return;
+    }
+
+    // 2. Validate every file against the template — collect ALL failures.
+    const failures: string[] = [];
     for (const upload of uploads) {
+      try {
+        const text = await readFileAsText(upload.file);
+        const parsed = await parseCsv(text);
+        const validation = validateCsvColumns(parsed.headers, templateHeaders);
+        if (!validation.isValid) {
+          failures.push(
+            t("upload.fileMissingColumns", {
+              file: upload.file.name,
+              columns: validation.missingColumns.join(", "),
+            }),
+          );
+        }
+      } catch {
+        failures.push(
+          t("upload.fileParseError", { file: upload.file.name }),
+        );
+      }
+    }
+
+    // 3. If anything failed, surface every failure and do NOT call the API.
+    if (failures.length > 0) {
+      setUploading(false);
+      showSnackbar(
+        failures.length === 1 ? (
+          failures[0]
+        ) : (
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600, marginBottom: 0.5 }}>
+              {t("upload.validationFailedHeader")}
+            </Typography>
+            <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
+              {failures.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </Box>
+          </Box>
+        ),
+        "error",
+      );
+      return;
+    }
+
+    // 4. All files passed — POST them in a single multipart request.
+    uploads.forEach((upload) =>
       updateEntry(screenKey, upload.id, {
         uploadStatus: "uploading",
         uploadProgress: 0,
-      });
+      }),
+    );
 
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        updateEntry(screenKey, upload.id, { uploadProgress: progress });
+    try {
+      const metadata = {
+        requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+        screen_id: SCREEN_IDS.SALES_DATA_UPLOAD.id,
+        user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        entity_id: "",
+        ip_address: "192.168.1.100",
+      };
+
+      const formData = new FormData();
+      formData.append("requested_by", metadata.requested_by);
+      formData.append("session_id", metadata.session_id);
+      formData.append("screen_id", metadata.screen_id);
+      formData.append("user_id", metadata.user_id);
+      if (metadata.entity_id) formData.append("entity_id", metadata.entity_id);
+      if (metadata.ip_address)
+        formData.append("ip_address", metadata.ip_address);
+      for (const upload of uploads) {
+        formData.append("files", upload.file);
       }
 
-      updateEntry(screenKey, upload.id, {
-        uploadStatus: "completed",
-        uploadProgress: 100,
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
       });
-    }
 
-    setUploading(false);
-    // Handle success
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      uploads.forEach((upload) =>
+        updateEntry(screenKey, upload.id, {
+          uploadStatus: "completed",
+          uploadProgress: 100,
+        }),
+      );
+      showSnackbar(t("upload.uploadSuccess"), "success");
+    } catch (error) {
+      console.error("Upload API error:", error);
+      uploads.forEach((upload) =>
+        updateEntry(screenKey, upload.id, {
+          uploadStatus: "pending",
+          uploadProgress: 0,
+        }),
+      );
+      showSnackbar(t("upload.uploadError"), "error");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleClear = () => {
@@ -932,6 +950,9 @@ export default function SalesDataUploadScreen() {
           {/* Tab Panel 0: Upload */}
           {activeTab === 0 && (
             <Box>
+              <Alert severity="info" sx={{ marginBottom: 2 }}>
+                {t("upload.templateInstructions")}
+              </Alert>
               {/* Modern Drag & Drop File Upload Section */}
               <StyledUploadSectionBox>
                 {/* Left Side - Upload Zone */}
@@ -961,7 +982,7 @@ export default function SalesDataUploadScreen() {
                       ref={fileInputRef}
                       type="file"
                       multiple
-                      accept=".csv,.xlsx,.xls"
+                      accept=".csv"
                       onChange={handleFileSelect}
                       style={{ display: "none" }}
                       aria-hidden="true"
@@ -998,6 +1019,9 @@ export default function SalesDataUploadScreen() {
                         <StyledSupportedFormatsText variant="caption">
                           {t("upload.supportedFormats")}
                         </StyledSupportedFormatsText>
+                        <StyledSupportedFormatsText variant="caption">
+                          {t("upload.maxFilesHint", { max: MAX_UPLOAD_FILES })}
+                        </StyledSupportedFormatsText>
                       </StyledSupportedFormatsWrapper>
                     </StyledDragDropInner>
                   </StyledDragDropZone>
@@ -1019,18 +1043,10 @@ export default function SalesDataUploadScreen() {
                         >
                           {t("upload.upload")}
                         </StyledUploadButton>
-                        <StyledClearButton
-                          variant="outlined"
-                          size="small"
-                          onClick={handleClear}
-                          disabled={uploading}
-                        >
-                          {t("upload.clear")}
-                        </StyledClearButton>
                         <StyledCancelButton
                           variant="outlined"
                           size="small"
-                          onClick={() => navigate("/")}
+                          onClick={handleClear}
                           disabled={uploading}
                         >
                           {t("upload.cancel")}
@@ -1048,12 +1064,6 @@ export default function SalesDataUploadScreen() {
                               </StyledHeaderCell>
                               <StyledHeaderCell>
                                 {t("upload.size")}
-                              </StyledHeaderCell>
-                              <StyledHeaderCell>
-                                {t("upload.reference")}
-                              </StyledHeaderCell>
-                              <StyledHeaderCell>
-                                {t("upload.status")}
                               </StyledHeaderCell>
                               <StyledHeaderCell align="center">
                                 {t("upload.action")}
@@ -1105,50 +1115,8 @@ export default function SalesDataUploadScreen() {
                                 </StyledBodyCell>
                                 <StyledBodyCell>
                                   <StyledFileSize variant="body2">
-                                    {formatFileSize(
-                                      upload.file.size,
-                                      upload.file.name,
-                                    )}
+                                    {formatFileSize(upload.file.size)}
                                   </StyledFileSize>
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  <StyledReferenceTextField
-                                    size="small"
-                                    placeholder="Enter reference"
-                                    value={upload.reference}
-                                    onChange={(e) =>
-                                      handleReferenceChange(
-                                        upload.id,
-                                        e.target.value,
-                                      )
-                                    }
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  {upload.uploadStatus === "uploading" ? (
-                                    <StyledProgressWrapper>
-                                      <StyledLinearProgress
-                                        variant="determinate"
-                                        value={upload.uploadProgress || 0}
-                                      />
-                                      <StyledProgressText variant="caption">
-                                        {upload.uploadProgress}%
-                                      </StyledProgressText>
-                                    </StyledProgressWrapper>
-                                  ) : upload.uploadStatus === "completed" ? (
-                                    <StyledStatusChip
-                                      icon={<CheckCircleOutline />}
-                                      label="Completed"
-                                      size="small"
-                                    />
-                                  ) : (
-                                    <StyledStatusChip
-                                      icon={<CheckCircleOutline />}
-                                      label="Ready"
-                                      size="small"
-                                    />
-                                  )}
                                 </StyledBodyCell>
                                 <StyledBodyCell align="center">
                                   <StyledActionCellBox>
@@ -1249,10 +1217,7 @@ export default function SalesDataUploadScreen() {
                                 </StyledBodyCell>
                                 <StyledBodyCell>
                                   <StyledFileSize variant="body2">
-                                    {formatFileSize(
-                                      upload.file.size,
-                                      upload.file.name,
-                                    )}
+                                    {formatFileSize(upload.file.size)}
                                   </StyledFileSize>
                                 </StyledBodyCell>
                                 <StyledBodyCell>
@@ -1311,15 +1276,26 @@ export default function SalesDataUploadScreen() {
                   <StyledEmptyStateTitle variant="h6">
                     No Uploaded Files
                   </StyledEmptyStateTitle>
-                  <StyledEmptyStateSubtitle variant="body2">
-                    Files you upload will appear here once completed.
-                  </StyledEmptyStateSubtitle>
                 </StyledEmptyStateBox>
               )}
             </Box>
           )}
         </StyledContentBox>
       </StyledMainPaper>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <StyledSnackbarAlert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+        >
+          {snackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
     </>
   );
 }
