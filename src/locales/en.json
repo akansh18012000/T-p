@@ -96,7 +96,12 @@
     "fileParseError": "{{file}}: failed to parse CSV.",
     "templateLoadError": "Failed to load the template file. Please try again.",
     "uploadSuccess": "All files uploaded successfully.",
-    "uploadError": "Failed to upload files. Please try again."
+    "uploadError": "Failed to upload files. Please try again.",
+    "uploading": "Uploading...",
+    "uploadDate": "Upload Date",
+    "actions": "Actions",
+    "download": "Download",
+    "noUploadedFiles": "No Uploaded Files"
   },
   "uploadedCsvPreview": {
     "title": "Uploaded CSV Preview",
@@ -777,6 +782,12 @@
     "deleteRow": "Delete Row",
     "newRowDeleted": "New row deleted.",
     "selectAll": "Select All",
-    "loadingResults": "Loading results..."
+    "loadingResults": "Loading results...",
+    "manufacturerDataLoadFailed": "Failed to load manufacturer data. Please reload the page to try again.",
+    "paginatedListbox": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{current}} of {{total}} ({{count}} items)"
+    }
   }
 }

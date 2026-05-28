@@ -46,6 +46,7 @@ import {
 } from "../utils/csvViewNavigation.js";
 import { parseCsv, validateCsvColumns } from "../utils/csvUtils.js";
 import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 
 const MAX_UPLOAD_FILES = 12;
@@ -848,12 +849,7 @@ export default function SalesDataUploadScreen() {
         throw new Error(`Upload API responded ${response.status}`);
       }
 
-      uploads.forEach((upload) =>
-        updateEntry(screenKey, upload.id, {
-          uploadStatus: "completed",
-          uploadProgress: 100,
-        }),
-      );
+      setEntries(screenKey, []);
       showSnackbar(t("upload.uploadSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
@@ -1175,12 +1171,14 @@ export default function SalesDataUploadScreen() {
                           <StyledHeaderCell>
                             {t("upload.reference")}
                           </StyledHeaderCell>
-                          <StyledHeaderCell>Upload Date</StyledHeaderCell>
+                          <StyledHeaderCell>
+                            {t("upload.uploadDate")}
+                          </StyledHeaderCell>
                           <StyledHeaderCell>
                             {t("upload.status")}
                           </StyledHeaderCell>
                           <StyledHeaderCell align="center">
-                            Actions
+                            {t("upload.actions")}
                           </StyledHeaderCell>
                         </TableRow>
                       </TableHead>
@@ -1237,7 +1235,7 @@ export default function SalesDataUploadScreen() {
                                 <StyledBodyCell>
                                   <StyledStatusChip
                                     icon={<CheckCircleOutline />}
-                                    label="Completed"
+                                    label={t("upload.completed")}
                                     size="small"
                                   />
                                 </StyledBodyCell>
@@ -1259,7 +1257,7 @@ export default function SalesDataUploadScreen() {
                                         handleDownloadFile(upload.file)
                                       }
                                     >
-                                      Download
+                                      {t("upload.download")}
                                     </StyledDownloadButtonSmall>
                                   </StyledActionCellBoxRow>
                                 </StyledBodyCell>
@@ -1274,7 +1272,7 @@ export default function SalesDataUploadScreen() {
                 <StyledEmptyStateBox>
                   <StyledEmptyStateIcon />
                   <StyledEmptyStateTitle variant="h6">
-                    No Uploaded Files
+                    {t("upload.noUploadedFiles")}
                   </StyledEmptyStateTitle>
                 </StyledEmptyStateBox>
               )}
@@ -1282,6 +1280,8 @@ export default function SalesDataUploadScreen() {
           )}
         </StyledContentBox>
       </StyledMainPaper>
+
+      {uploading && <ResultsLoader fullScreen label={t("upload.uploading")} />}
 
       <Snackbar
         open={snackbarOpen}
