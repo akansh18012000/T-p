@@ -15,6 +15,13 @@ import { terumoTheme } from "./config/theme.js";
 import { msalConfig } from "./config/msal.js";
 import { SidebarProvider } from "./context/SidebarContext.js";
 import { UploadProvider } from "./context/UploadContext.js";
+import { ManufacturerDataProvider } from "./context/ManufacturerDataContext.js";
+import { GpcDataProvider } from "./context/GpcDataContext.js";
+import { SystemIdDataProvider } from "./context/SystemIdDataContext.js";
+import { LocationDataProvider } from "./context/LocationDataContext.js";
+import { CorporateDataProvider } from "./context/CorporateDataContext.js";
+import { LocalCustomerDataProvider } from "./context/LocalCustomerDataContext.js";
+import { ProductClassificationDataProvider } from "./context/ProductClassificationDataContext.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
@@ -105,6 +112,13 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
+          <ManufacturerDataProvider>
+          <GpcDataProvider>
+          <SystemIdDataProvider>
+          <LocationDataProvider>
+          <CorporateDataProvider>
+          <LocalCustomerDataProvider>
+          <ProductClassificationDataProvider>
           <UploadProvider>
             <SidebarProvider>
               <BreadcrumbProvider>
@@ -191,6 +205,13 @@ export default function App() {
               </BreadcrumbProvider>
             </SidebarProvider>
           </UploadProvider>
+          </ProductClassificationDataProvider>
+          </LocalCustomerDataProvider>
+          </CorporateDataProvider>
+          </LocationDataProvider>
+          </SystemIdDataProvider>
+          </GpcDataProvider>
+          </ManufacturerDataProvider>
         </Router>
       </ThemeProvider>
     </MsalProvider>
