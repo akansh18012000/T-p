@@ -8,8 +8,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
+  Button,
   Grid,
-  Table,
   TableBody,
   TableHead,
   TableRow,
@@ -78,16 +78,6 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
-  StyledProgressBox,
-  StyledLinearProgressBar,
-  StyledProgressText,
-  StyledUploadedTitle,
-  StyledPreviewTableContainer,
-  StyledPreviewTableHeaderCell,
-  StyledPreviewTableBodyRow,
-  StyledPreviewTableDataCell,
-  StyledActionButtonsBox,
-  StyledCancelButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -100,14 +90,17 @@ import {
   Clear as ClearIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
-import { GPC_MASTER_HEADERS, GPC_MASTER_COLUMNS, GPC_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { GPC_MASTER_HEADERS, GPC_MASTER_HEADERS_JA, GPC_MASTER_COLUMNS, GPC_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -117,15 +110,16 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { useManufacturerData } from "../context/ManufacturerDataContext.js";
+import { useGpcData } from "../context/GpcDataContext.js";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 
-const GPC_MASTER_MANUFACTURERS_API_URL =
-  "/api/v1/item-master/get_manufacturers";
-const GPC_MASTER_MANUFACTURE_PART_NUMBERS_API_URL =
-  "/api/v1/item-master/get_manufacture_part_numbers";
-const GPC_MASTER_GPC_CODES_API_URL = "/api/v1/item-master/get_gpc_codes";
-const GPC_MASTER_SEARCH_API_URL = "/api/v1/item-master/search";
+const GPC_MASTER_SEARCH_API_URL = "/api/v1/item-cls-linkage/search";
+const GPC_MASTER_REGISTER_API_URL = "/api/v1/item-cls-linkage/create";
+const PROFIT_CENTERS_API_URL = "/api/v1/databricks/get_profit_centers";
 
 // Static session/auth payload values used by the search API.
 // TODO: source these from auth/session context once available.
@@ -134,33 +128,65 @@ const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
 const SEARCH_SCREEN_ID = "18f33db0-df38-4c32-88d9-93ca963f2159";
 const SEARCH_IP_ADDRESS = "192.168.1.101";
 
-interface ManufacturerApiRow {
-  manufacturer: string;
-  manufacturer_name: string;
+interface ProfitCenterApiRow {
+  item_code: string;
+  fiscal_year: string;
+  profit_center_code: string;
+  profit_center_name: string;
+  LANGUAGE_CODE: string;
 }
 
-interface ManufacturerApiEnvelope {
-  total: number;
-  data: ManufacturerApiRow[];
+const COL_MANUFACTURER = GPC_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "manufacturer",
+);
+const COL_MFR_PART_NUMBER = GPC_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "mfrPartNumber",
+);
+const COL_GPC_CODE = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "gpcCode");
+const COL_VALID_YEAR = GPC_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "validYear",
+);
+const COL_BU3_CODE = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "bu3Code");
+const COL_BU3_NAME = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "bu3Name");
+
+const PROFIT_CENTER_TRIGGER_COLS = new Set<number>([
+  COL_MANUFACTURER,
+  COL_MFR_PART_NUMBER,
+  COL_GPC_CODE,
+  COL_VALID_YEAR,
+]);
+
+function buildProfitCenterKey(
+  gpc: string,
+  manu: string,
+  mpn: string,
+): string {
+  return `${gpc}|${manu}|${mpn}`;
 }
 
-interface ManufacturePartNumberApiRow {
-  manufacture_part_number: string;
-}
-
-interface ManufacturePartNumberApiEnvelope {
-  total: number;
-  data: ManufacturePartNumberApiRow[];
-}
-
-interface GpcCodeApiRow {
-  gpc_code: string;
-  gpc_name: string;
-}
-
-interface GpcCodeApiEnvelope {
-  total: number;
-  data: GpcCodeApiRow[];
+// Pick the row whose fiscal_year exactly matches targetYear, else the row with
+// the numerically closest fiscal_year. Returns null only for an empty input.
+function pickProfitCenterForYear(
+  rows: ProfitCenterApiRow[],
+  targetYear: string,
+): ProfitCenterApiRow | null {
+  if (rows.length === 0) return null;
+  const exact = rows.find((r) => r.fiscal_year === targetYear);
+  if (exact) return exact;
+  const target = parseInt(targetYear, 10);
+  if (Number.isNaN(target)) return rows[0];
+  let closest = rows[0];
+  let closestDist = Math.abs(parseInt(closest.fiscal_year, 10) - target);
+  for (const r of rows) {
+    const y = parseInt(r.fiscal_year, 10);
+    if (Number.isNaN(y)) continue;
+    const d = Math.abs(y - target);
+    if (d < closestDist) {
+      closest = r;
+      closestDist = d;
+    }
+  }
+  return closest;
 }
 
 interface SearchPayload {
@@ -194,6 +220,47 @@ interface SearchApiEnvelope {
   data: SearchApiRow[];
 }
 
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type GpcRowMeta = { original: string[] } | null;
+
+interface GpcMasterCreateRow {
+  manufacturer: string;
+  manufacturer_name: string;
+  manufacture_part_number: string;
+  gpc_code: string;
+  gpc_name: string;
+  fiscal_year: string;
+  bu_lv3_code: string;
+  bu_lv3_name: string;
+  overwrite_ban_flg: string;
+  delete_flg: string;
+}
+
+interface GpcMasterCreatePayload {
+  rows: GpcMasterCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+// Required-field validation scope (user-confirmed):
+//   - 4 editable: manufacturer, mfrPartNumber, gpcCode, validYear
+//   - 2 BU3 (checked after profit-center backfill): bu3Code, bu3Name
+//   - 2 flags (always "0"/"1"): overwritePreventionFlag, deletionFlag
+// Excluded: manufacturerName (1), gpcName (4) — lookup-derived, sent as-is.
+const REQUIRED_COL_INDICES = [
+  COL_MANUFACTURER,
+  COL_MFR_PART_NUMBER,
+  COL_GPC_CODE,
+  COL_VALID_YEAR,
+  COL_BU3_CODE,
+  COL_BU3_NAME,
+  GPC_MASTER_COLUMNS.findIndex((c) => c.key === "overwritePreventionFlag"),
+  GPC_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag"),
+] as const;
+
 const DEFAULT_CSV_HEADERS = GPC_MASTER_HEADERS;
 
 function getEmptyCsvData(): CsvData {
@@ -201,14 +268,13 @@ function getEmptyCsvData(): CsvData {
 }
 
 export default function GpcMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { closeSidebar } = useSidebar();
   const location = useLocation();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const { getUploadState, setSelectedFile } = useUploadContext();
+  const { selectedFile } = getUploadState(screenKey);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -233,7 +299,7 @@ export default function GpcMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Search box input and debounced values (min 3 chars, 1s debounce)
+  // Search box input and debounced values (min 3 chars, ~300 ms debounce)
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
   const [
     manufacturerPartNumberSearchInput,
@@ -241,117 +307,96 @@ export default function GpcMasterScreen() {
   ] = useState("");
   const [gpcCodeSearchInput, setGpcCodeSearchInput] = useState("");
 
-  const [manufacturerOptions, setManufacturerOptions] = useState<string[]>([]);
-  const [manufacturerNameMap, setManufacturerNameMap] = useState<
-    Record<string, string>
-  >({});
-  const [manufacturersLoading, setManufacturersLoading] = useState(false);
-  const [manufacturerPartNumberOptions, setManufacturerPartNumberOptions] =
-    useState<string[]>([]);
-  const [manufacturerPartNumbersLoading, setManufacturerPartNumbersLoading] =
-    useState(false);
-  const [gpcCodeOptions, setGpcCodeOptions] = useState<string[]>([]);
-  const [gpcCodeNameMap, setGpcCodeNameMap] = useState<
-    Record<string, string>
-  >({});
-  const [gpcCodesLoading, setGpcCodesLoading] = useState(false);
-  const initialDataFetchedRef = useRef(false);
+  // Manufacturer data + part numbers come from the shared context
+  // (fetched at most once per session, reused across pages).
+  const {
+    manufacturerOptions,
+    manufacturerNameMap,
+    manufacturerPartNumberOptions,
+    status: manufacturerDataStatus,
+    ensureLoaded: ensureManufacturerData,
+  } = useManufacturerData();
+  const manufacturersLoading = manufacturerDataStatus === "loading";
+  const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
+
+  // GPC codes come from the shared context as well — fetched in parallel
+  // with the manufacturer data on mount, then cached for the session.
+  const {
+    gpcCodeOptions,
+    gpcCodeNameMap,
+    status: gpcDataStatus,
+    ensureLoaded: ensureGpcData,
+  } = useGpcData();
+  const gpcCodesLoading = gpcDataStatus === "loading";
+
+  // Kick off manufacturer + GPC fetches in parallel; both calls are idempotent.
+  useEffect(() => {
+    ensureManufacturerData();
+    ensureGpcData();
+  }, [ensureManufacturerData, ensureGpcData]);
+
+  // Debounced filter inputs for the two large autocompletes (min 3 chars, 300 ms).
+  const { debouncedValue: manufacturerDebouncedQuery } = useDebouncedSearch(
+    manufacturerSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+  const { debouncedValue: manufacturerPartNumberDebouncedQuery } =
+    useDebouncedSearch(manufacturerPartNumberSearchInput, {
+      minLength: 3,
+      delay: 300,
+    });
+  const { debouncedValue: gpcCodeDebouncedQuery } = useDebouncedSearch(
+    gpcCodeSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+
+  // Cached filtered option arrays — recomputed only when source or query change.
+  const [visibleManufacturerOptions, setVisibleManufacturerOptions] = useState<
+    string[]
+  >([]);
+  const [
+    visibleManufacturerPartNumberOptions,
+    setVisibleManufacturerPartNumberOptions,
+  ] = useState<string[]>([]);
+  const [visibleGpcCodeOptions, setVisibleGpcCodeOptions] = useState<string[]>(
+    [],
+  );
 
   useEffect(() => {
-    if (initialDataFetchedRef.current) return;
-    initialDataFetchedRef.current = true;
-    setManufacturersLoading(true);
-    setManufacturerPartNumbersLoading(true);
-    setGpcCodesLoading(true);
+    const q = manufacturerDebouncedQuery.trim().toLowerCase();
+    if (q.length === 0) {
+      setVisibleManufacturerOptions(manufacturerOptions);
+      return;
+    }
+    setVisibleManufacturerOptions(
+      manufacturerOptions.filter((o) => o.toLowerCase().includes(q)),
+    );
+  }, [manufacturerOptions, manufacturerDebouncedQuery]);
 
-    const fetchManufacturers = async () => {
-      try {
-        const res = await fetch(GPC_MASTER_MANUFACTURERS_API_URL);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as ManufacturerApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        const unique: string[] = [];
-        const nameMap: Record<string, string> = {};
-        for (const r of rows) {
-          if (!r.manufacturer) continue;
-          if (!(r.manufacturer in nameMap)) {
-            unique.push(r.manufacturer);
-            nameMap[r.manufacturer] = r.manufacturer_name || "";
-          }
-        }
-        setManufacturerOptions(unique);
-        setManufacturerNameMap(nameMap);
-      } catch (e) {
-        console.error(e);
-        setManufacturerOptions([]);
-        setManufacturerNameMap({});
-      } finally {
-        setManufacturersLoading(false);
-      }
-    };
+  useEffect(() => {
+    const q = manufacturerPartNumberDebouncedQuery.trim().toLowerCase();
+    if (q.length === 0) {
+      setVisibleManufacturerPartNumberOptions(manufacturerPartNumberOptions);
+      return;
+    }
+    setVisibleManufacturerPartNumberOptions(
+      manufacturerPartNumberOptions.filter((o) => o.toLowerCase().includes(q)),
+    );
+  }, [
+    manufacturerPartNumberOptions,
+    manufacturerPartNumberDebouncedQuery,
+  ]);
 
-    const fetchManufacturePartNumbers = async () => {
-      try {
-        const res = await fetch(GPC_MASTER_MANUFACTURE_PART_NUMBERS_API_URL);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as ManufacturePartNumberApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        const unique: string[] = [];
-        const seen = new Set<string>();
-        for (const r of rows) {
-          if (!r.manufacture_part_number) continue;
-          if (!seen.has(r.manufacture_part_number)) {
-            seen.add(r.manufacture_part_number);
-            unique.push(r.manufacture_part_number);
-          }
-        }
-        setManufacturerPartNumberOptions(unique);
-      } catch (e) {
-        console.error(e);
-        setManufacturerPartNumberOptions([]);
-      } finally {
-        setManufacturerPartNumbersLoading(false);
-      }
-    };
-
-    const fetchGpcCodes = async () => {
-      try {
-        const res = await fetch(GPC_MASTER_GPC_CODES_API_URL);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as GpcCodeApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        const unique: string[] = [];
-        const nameMap: Record<string, string> = {};
-        for (const r of rows) {
-          if (!r.gpc_code) continue;
-          if (!(r.gpc_code in nameMap)) {
-            unique.push(r.gpc_code);
-            nameMap[r.gpc_code] = r.gpc_name || "";
-          }
-        }
-        setGpcCodeOptions(unique);
-        setGpcCodeNameMap(nameMap);
-      } catch (e) {
-        console.error(e);
-        setGpcCodeOptions([]);
-        setGpcCodeNameMap({});
-      } finally {
-        setGpcCodesLoading(false);
-      }
-    };
-
-    void Promise.allSettled([
-      fetchManufacturers(),
-      fetchManufacturePartNumbers(),
-      fetchGpcCodes(),
-    ]);
-  }, []);
+  useEffect(() => {
+    const q = gpcCodeDebouncedQuery.trim().toLowerCase();
+    if (q.length === 0) {
+      setVisibleGpcCodeOptions(gpcCodeOptions);
+      return;
+    }
+    setVisibleGpcCodeOptions(
+      gpcCodeOptions.filter((o) => o.toLowerCase().includes(q)),
+    );
+  }, [gpcCodeOptions, gpcCodeDebouncedQuery]);
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
@@ -380,8 +425,7 @@ export default function GpcMasterScreen() {
     validYear,
   ]);
 
-  // Upload file state (selectedFile and uploadedCsvData from context)
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload file state (selectedFile lives in UploadContext)
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "completed"
   >("idle");
@@ -392,13 +436,45 @@ export default function GpcMasterScreen() {
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
+  // Parallel to csvData.rows. null at index i => row was added locally (new).
+  // Non-null => row came from search; `original` is used to detect edits.
+  const [rowMetadata, setRowMetadata] = useState<GpcRowMeta[]>([]);
+  // Frozen snapshot of the last search results; used for duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+
+  // Surface a snackbar once when the manufacturer-data fetch fails.
+  const lastReportedErrorRef = useRef(false);
+  useEffect(() => {
+    if (manufacturerDataStatus === "error" && !lastReportedErrorRef.current) {
+      lastReportedErrorRef.current = true;
+      setSnackbarMessage(t("common.manufacturerDataLoadFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } else if (manufacturerDataStatus === "loaded") {
+      lastReportedErrorRef.current = false;
+    }
+  }, [manufacturerDataStatus, t]);
+
+  // Surface a snackbar once when the GPC-data fetch fails.
+  const lastReportedGpcErrorRef = useRef(false);
+  useEffect(() => {
+    if (gpcDataStatus === "error" && !lastReportedGpcErrorRef.current) {
+      lastReportedGpcErrorRef.current = true;
+      setSnackbarMessage(t("common.gpcDataLoadFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } else if (gpcDataStatus === "loaded") {
+      lastReportedGpcErrorRef.current = false;
+    }
+  }, [gpcDataStatus, t]);
 
   // Row selection mode hooks
   const {
@@ -421,6 +497,148 @@ export default function GpcMasterScreen() {
     newRowCount,
   } = useNewRowTracking();
 
+  // BU3 (profit-center) lookup --------------------------------------------
+  // Cache of profit-center API responses, keyed by `${gpc}|${manu}|${mpn}`.
+  const profitCenterCacheRef = useRef<Record<string, ProfitCenterApiRow[]>>(
+    {},
+  );
+  // In-flight fetch promises — dedupes concurrent requests for the same key.
+  const inFlightProfitCenterRef = useRef<Record<string, Promise<void>>>({});
+  // Row indices that were created or edited by the user. BU3 auto-lookup
+  // only applies to these — untouched search-result rows keep their server
+  // BU3 values.
+  const touchedRowIndicesRef = useRef<Set<number>>(new Set());
+
+  const markRowTouched = (rowIndex: number) => {
+    touchedRowIndicesRef.current.add(rowIndex);
+  };
+  const markRowsTouched = (indices: number[]) => {
+    indices.forEach((idx) => touchedRowIndicesRef.current.add(idx));
+  };
+  const shiftTouchedForInsertion = (
+    insertionIndex: number,
+    count: number,
+  ) => {
+    const next = new Set<number>();
+    touchedRowIndicesRef.current.forEach((idx) => {
+      next.add(idx >= insertionIndex ? idx + count : idx);
+    });
+    touchedRowIndicesRef.current = next;
+  };
+  const shiftTouchedForDeletion = (deletedIndex: number) => {
+    const next = new Set<number>();
+    touchedRowIndicesRef.current.forEach((idx) => {
+      if (idx === deletedIndex) return;
+      next.add(idx > deletedIndex ? idx - 1 : idx);
+    });
+    touchedRowIndicesRef.current = next;
+  };
+
+  // Compute BU3 cell values for a row given the current cache. Returns null
+  // on cache miss (caller should preserve existing values until the in-flight
+  // fetch resolves). Returns empty strings when any trigger field is missing.
+  const computeBu3ForRow = (
+    row: string[],
+  ): { bu3Code: string; bu3Name: string } | null => {
+    const manu = (row[COL_MANUFACTURER] || "").trim();
+    const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
+    const gpc = (row[COL_GPC_CODE] || "").trim();
+    const yr = (row[COL_VALID_YEAR] || "").trim();
+    if (!manu || !mpn || !gpc || !yr) return { bu3Code: "", bu3Name: "" };
+    const cached =
+      profitCenterCacheRef.current[buildProfitCenterKey(gpc, manu, mpn)];
+    if (!cached) return null;
+    // The API returns one row per (fiscal_year, language). Filter to the
+    // current site language so the name reflects the user's locale. Fall
+    // back to all rows if no entry exists for the current language.
+    const langCode = i18n.language?.toLowerCase().startsWith("ja")
+      ? "JA"
+      : "EN";
+    const localized = cached.filter((r) => r.LANGUAGE_CODE === langCode);
+    const candidates = localized.length > 0 ? localized : cached;
+    const match = pickProfitCenterForYear(candidates, yr);
+    return {
+      bu3Code: match?.profit_center_code ?? "",
+      bu3Name: match?.profit_center_name ?? "",
+    };
+  };
+
+  // Re-apply BU3 from cache for every touched row. Called after each fetch
+  // resolves so all touched rows sharing the just-loaded key are updated.
+  const applyBu3FromCache = () => {
+    setCsvData((prev) => {
+      if (!prev) return prev;
+      let changed = false;
+      const rows = prev.rows.map((row, rIdx) => {
+        if (!touchedRowIndicesRef.current.has(rIdx)) return row;
+        const bu3 = computeBu3ForRow(row);
+        if (bu3 == null) return row;
+        if (
+          row[COL_BU3_CODE] === bu3.bu3Code &&
+          row[COL_BU3_NAME] === bu3.bu3Name
+        ) {
+          return row;
+        }
+        changed = true;
+        return row.map((cell, cIdx) =>
+          cIdx === COL_BU3_CODE
+            ? bu3.bu3Code
+            : cIdx === COL_BU3_NAME
+              ? bu3.bu3Name
+              : cell,
+        );
+      });
+      if (!changed) return prev;
+      return { ...prev, rows };
+    });
+  };
+
+  // Re-derive BU3 names from cache when the site language changes, so any
+  // already-populated rows pick up the localized name for the new locale.
+  useEffect(() => {
+    applyBu3FromCache();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
+
+  // Fetch profit centers for the given (gpc, manu, mpn) key. Dedups concurrent
+  // requests; caches the response; triggers applyBu3FromCache when done so all
+  // touched rows sharing the key pick up the result.
+  const ensureProfitCentersLoaded = (
+    gpc: string,
+    manu: string,
+    mpn: string,
+  ) => {
+    const key = buildProfitCenterKey(gpc, manu, mpn);
+    if (key in profitCenterCacheRef.current) return;
+    if (key in inFlightProfitCenterRef.current) return;
+    inFlightProfitCenterRef.current[key] = (async () => {
+      try {
+        const res = await fetch(PROFIT_CENTERS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gpc_code: gpc,
+            manufacturer_code: manu,
+            manufacture_part_number: mpn,
+          }),
+        });
+        if (!res.ok) {
+          throw new Error(`Profit centers HTTP ${res.status}`);
+        }
+        const data = (await res.json()) as ProfitCenterApiRow[];
+        profitCenterCacheRef.current[key] = Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error("Failed to fetch profit centers:", e);
+        // Cache empty so we don't keep retrying for this key in this session
+        // and applyBu3FromCache clears BU3 for matching rows.
+        profitCenterCacheRef.current[key] = [];
+      } finally {
+        delete inFlightProfitCenterRef.current[key];
+        applyBu3FromCache();
+      }
+    })();
+  };
+
   const buildSearchPayload = (
     conditions: typeof searchConditionsRef.current,
   ): SearchPayload => ({
@@ -438,9 +656,16 @@ export default function GpcMasterScreen() {
     ip_address: SEARCH_IP_ADDRESS,
   });
 
-  const executeSearch = async (payload: SearchPayload) => {
+  const executeSearch = async (
+    payload: SearchPayload,
+    options?: { silent?: boolean },
+  ) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
     setSearchLoading(true);
+    // New search results replace csvData wholesale — any row indices we'd
+    // been tracking as "touched" are now stale.
+    touchedRowIndicesRef.current = new Set();
     try {
       const res = await fetch(GPC_MASTER_SEARCH_API_URL, {
         method: "POST",
@@ -468,28 +693,37 @@ export default function GpcMasterScreen() {
         headers: [...DEFAULT_CSV_HEADERS],
         rows: mappedRows,
       });
-      setSnackbarMessage(
-        mappedRows.length > 0
-          ? t("gpcMaster.searchCompletedWithData")
-          : t("gpcMaster.searchCompletedNoResults"),
-      );
-      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
+      setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
+      searchSnapshotRef.current = mappedRows.map((row) => [...row]);
+      clearNewRowTracking();
+      if (!silent) {
+        setSnackbarMessage(
+          mappedRows.length > 0
+            ? t("gpcMaster.searchCompletedWithData")
+            : t("gpcMaster.searchCompletedNoResults"),
+        );
+        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
+        setSnackbarOpen(true);
+      }
     } catch (e) {
       console.error(e);
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("gpcMaster.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
+      if (!silent) {
+        setSnackbarMessage(t("gpcMaster.searchCompletedNoResults"));
+        setSnackbarSeverity("info");
+        setSnackbarOpen(true);
+      }
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (options?: { silent?: boolean }) => {
     const payload = buildSearchPayload(searchConditionsRef.current);
     lastSearchPayloadRef.current = payload;
-    await executeSearch(payload);
+    await executeSearch(payload, options);
   };
 
   const handleDownloadCsv = () => {
@@ -525,11 +759,18 @@ export default function GpcMasterScreen() {
       ...base.rows.slice(insertIndex),
     ];
     shiftIndicesForInsertion(insertIndex, 1);
+    shiftTouchedForInsertion(insertIndex, 1);
     markRowsAsNew([insertIndex]);
+    markRowsTouched([insertIndex]);
     setCsvData({
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      null,
+      ...prev.slice(insertIndex),
+    ]);
     setSnackbarMessage(t("gpcMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -562,11 +803,34 @@ export default function GpcMasterScreen() {
       ...base.rows.slice(insertIndex),
     ];
     shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
+    shiftTouchedForInsertion(insertIndex, selectedRows.length);
+    const insertedIndices = selectedRows.map(
+      (_: string[], i: number) => insertIndex + i,
+    );
+    markRowsAsNew(insertedIndices);
+    markRowsTouched(insertedIndices);
     setCsvData({
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
+    ]);
+    // For each copied row whose trigger fields are all populated, kick off
+    // the profit-centers fetch so BU3 gets refreshed from the source of truth.
+    selectedRows.forEach((row) => {
+      const manu = (row[COL_MANUFACTURER] || "").trim();
+      const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
+      const gpc = (row[COL_GPC_CODE] || "").trim();
+      const yr = (row[COL_VALID_YEAR] || "").trim();
+      if (manu && mpn && gpc && yr) {
+        ensureProfitCentersLoaded(gpc, manu, mpn);
+      }
+    });
+    // Apply any cached values immediately for keys we already had.
+    applyBu3FromCache();
     exitSelectionMode();
     setSnackbarMessage(t("gpcMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -575,10 +839,12 @@ export default function GpcMasterScreen() {
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!csvData || !isNewRow(rowIndex)) return;
-    
+
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     shiftIndicesForDeletion(rowIndex);
+    shiftTouchedForDeletion(rowIndex);
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -592,15 +858,226 @@ export default function GpcMasterScreen() {
     void executeSearch(payload);
   };
 
+  // Backfill BU3 (profit-center) values for any submitted row whose BU3 cells
+  // are empty but whose trigger fields (manufacturer / mfr part / gpc / year)
+  // are populated. Awaits all in-flight fetches and returns the post-backfill
+  // rows directly so the caller can validate and POST without a state round-trip.
+  const backfillBu3ForSubmission = async (
+    rows: string[][],
+    rowIndices: number[],
+  ): Promise<string[][]> => {
+    // Mark these rows as "touched" so the cache-apply update path treats them
+    // as user-driven and re-renders them with the freshly cached BU3 values.
+    markRowsTouched(rowIndices);
+    const keysToFetch = new Set<string>();
+    rowIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      const bu3Code = (row[COL_BU3_CODE] || "").trim();
+      const bu3Name = (row[COL_BU3_NAME] || "").trim();
+      if (bu3Code && bu3Name) return;
+      const manu = (row[COL_MANUFACTURER] || "").trim();
+      const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
+      const gpc = (row[COL_GPC_CODE] || "").trim();
+      const yr = (row[COL_VALID_YEAR] || "").trim();
+      if (!manu || !mpn || !gpc || !yr) return;
+      keysToFetch.add(buildProfitCenterKey(gpc, manu, mpn));
+      ensureProfitCentersLoaded(gpc, manu, mpn);
+    });
+    if (keysToFetch.size > 0) {
+      await Promise.all(
+        Array.from(keysToFetch)
+          .map((key) => inFlightProfitCenterRef.current[key])
+          .filter((p): p is Promise<void> => p instanceof Promise),
+      );
+    }
+    // Compute the post-backfill rows from the now-populated cache so the
+    // caller can validate without waiting for React to commit.
+    const updated = rows.map((row, idx) => {
+      if (!rowIndices.includes(idx)) return row;
+      const bu3 = computeBu3ForRow(row);
+      if (bu3 == null) return row;
+      if (
+        row[COL_BU3_CODE] === bu3.bu3Code &&
+        row[COL_BU3_NAME] === bu3.bu3Name
+      ) {
+        return row;
+      }
+      return row.map((cell, cIdx) =>
+        cIdx === COL_BU3_CODE
+          ? bu3.bu3Code
+          : cIdx === COL_BU3_NAME
+            ? bu3.bu3Name
+            : cell,
+      );
+    });
+    // Push the same values into table state so the UI reflects the backfill.
+    applyBu3FromCache();
+    return updated;
+  };
+
+  const formatRowList = (rows: number[]): string =>
+    new Intl.ListFormat(i18n.language, {
+      style: "long",
+      type: "conjunction",
+    }).format(rows.map(String));
+
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("gpcMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("gpcMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    // 1. Identify rows to submit.
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= csvData.rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = csvData.rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("gpcMaster.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+
+    // 2. BU3 backfill before validation, so rows missing BU3 get a chance
+    // to be populated by the profit-center API before we flag them.
+    setIsRegistering(true);
+    let rowsForValidation: string[][];
+    try {
+      rowsForValidation = await backfillBu3ForSubmission(
+        csvData.rows,
+        targetIndices,
+      );
+    } catch (e) {
+      console.error("BU3 backfill failed:", e);
+      // Continue — the validation step will catch any rows still missing BU3.
+      rowsForValidation = csvData.rows;
+    }
+
+    // 3. Required-field validation (after BU3 backfill).
+    const missingRequiredRows: number[] = [];
+    targetIndices.forEach((idx) => {
+      const row = rowsForValidation[idx];
+      if (!row) return;
+      const missing = REQUIRED_COL_INDICES.some(
+        (c) => !(row[c] ?? "").trim(),
+      );
+      if (missing) missingRequiredRows.push(idx + 1);
+    });
+    if (missingRequiredRows.length > 0) {
+      missingRequiredRows.sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("gpcMaster.requiredFieldsMissing", {
+          rows: formatRowList(missingRequiredRows),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      setIsRegistering(false);
+      return;
+    }
+
+    // 4. Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table
+    //   (excluding their own original snapshot entry so reverting an edit
+    //   isn't self-flagged).
+    const duplicateRows = new Set<number>();
+    newRowIndices.forEach((idx) => {
+      const row = rowsForValidation[idx];
+      if (!row) return;
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRows.add(idx + 1);
+      }
+    });
+    editedRowIndices.forEach((idx) => {
+      const row = rowsForValidation[idx];
+      if (!row) return;
+      const collides = rowsForValidation.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
+    });
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("gpcMaster.duplicateRowError", { rows: formatRowList(sorted) }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      setIsRegistering(false);
+      return;
+    }
+
+    // 5. Build payload.
+    const buildRow = (idx: number): GpcMasterCreateRow => {
+      const r = rowsForValidation[idx];
+      return {
+        manufacturer: r[COL_MANUFACTURER] ?? "",
+        manufacturer_name: r[1] ?? "",
+        manufacture_part_number: r[COL_MFR_PART_NUMBER] ?? "",
+        gpc_code: r[COL_GPC_CODE] ?? "",
+        gpc_name: r[4] ?? "",
+        fiscal_year: r[COL_VALID_YEAR] ?? "",
+        bu_lv3_code: r[COL_BU3_CODE] ?? "",
+        bu_lv3_name: r[COL_BU3_NAME] ?? "",
+        overwrite_ban_flg: r[8] || "0",
+        delete_flg: r[9] || "0",
+      };
+    };
+
+    const payload: GpcMasterCreatePayload = {
+      rows: targetIndices.map(buildRow),
+      user_id: SEARCH_USER_ID,
+      session_id: SEARCH_SESSION_ID,
+      screen_id: SEARCH_SCREEN_ID,
+      ip_address: SEARCH_IP_ADDRESS,
+    };
+
+    // 6. POST and refresh.
+    try {
+      const res = await fetch(GPC_MASTER_REGISTER_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      await handleSearch({ silent: true });
+
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "gpcMaster.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "gpcMaster.createdNewRows";
+      } else {
+        messageKey = "gpcMaster.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("gpcMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -635,6 +1112,39 @@ export default function GpcMasterScreen() {
         );
       }
     }
+
+    // BU3 lookup: edits to manufacturer / mfrPartNumber / gpcCode / validYear
+    // mark this row as touched and (when all four are populated) fetch the
+    // profit-centers API. The row's BU3 cells are set from the cached response
+    // matched on fiscal_year (closest year wins if no exact match).
+    if (PROFIT_CENTER_TRIGGER_COLS.has(colIndex)) {
+      markRowTouched(rowIndex);
+      const r = newRows[rowIndex];
+      const manu = (r[COL_MANUFACTURER] || "").trim();
+      const mpn = (r[COL_MFR_PART_NUMBER] || "").trim();
+      const gpc = (r[COL_GPC_CODE] || "").trim();
+      const yr = (r[COL_VALID_YEAR] || "").trim();
+      if (manu && mpn && gpc && yr) {
+        ensureProfitCentersLoaded(gpc, manu, mpn);
+      }
+      // computeBu3ForRow returns null on cache miss; in that case we leave the
+      // row's existing BU3 alone and let the in-flight fetch update it.
+      const bu3 = computeBu3ForRow(r);
+      if (bu3 != null) {
+        newRows = newRows.map((row, rIdx) =>
+          rIdx === rowIndex
+            ? row.map((cell, cIdx) =>
+                cIdx === COL_BU3_CODE
+                  ? bu3.bu3Code
+                  : cIdx === COL_BU3_NAME
+                    ? bu3.bu3Name
+                    : cell,
+              )
+            : row,
+        );
+      }
+    }
+
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -670,28 +1180,71 @@ export default function GpcMasterScreen() {
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(selectedFile, "UTF-8");
-    });
+
+    let parsed: CsvData;
     try {
-      const parsed = await parseCsv(text);
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = reject;
+        reader.readAsText(selectedFile, "UTF-8");
+      });
+      parsed = await parseCsv(text);
+    } catch {
+      setUploadStatus("idle");
+      setSnackbarMessage(t("gpcMaster.parseCsvFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const enValidation = validateCsvColumns(parsed.headers, GPC_MASTER_HEADERS);
+    const jaValidation = validateCsvColumns(
+      parsed.headers,
+      GPC_MASTER_HEADERS_JA,
+    );
+    if (!enValidation.isValid && !jaValidation.isValid) {
+      setUploadStatus("idle");
+      const missing =
+        enValidation.missingColumns.length <=
+        jaValidation.missingColumns.length
+          ? enValidation.missingColumns
+          : jaValidation.missingColumns;
+      setSnackbarMessage(
+        t("gpcMaster.missingColumnsError", { columns: missing.join(", ") }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("requested_by", SEARCH_USER_ID);
+      formData.append("session_id", SEARCH_SESSION_ID);
+      formData.append("screen_id", SCREEN_IDS.ITEM_MASTER.id);
+      formData.append("user_id", SEARCH_USER_ID);
+      formData.append("ip_address", SEARCH_IP_ADDRESS);
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setSelectedFile(screenKey, null);
+      setUploadStatus("idle");
+      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
       setSnackbarMessage(t("gpcMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("gpcMaster.parseCsvFailed"));
+      setSnackbarMessage(t("gpcMaster.uploadError"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -699,22 +1252,10 @@ export default function GpcMasterScreen() {
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
-    setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
     setSnackbarMessage(t("gpcMaster.uploadCancelled"));
     setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-  };
-
-  const handleUploadRegister = async () => {
-    setSnackbarMessage(t("gpcMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("gpcMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
@@ -756,8 +1297,10 @@ export default function GpcMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
-  const listboxProps = {
-    style: { maxHeight: 176, overflow: "auto" as const },
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
   };
 
   return (
@@ -791,7 +1334,7 @@ export default function GpcMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={manufacturerOptions}
+                    options={visibleManufacturerOptions}
                     value={manufacturer || null}
                     inputValue={manufacturerSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -806,7 +1349,9 @@ export default function GpcMasterScreen() {
                     freeSolo
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -840,7 +1385,7 @@ export default function GpcMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={manufacturerPartNumberOptions}
+                    options={visibleManufacturerPartNumberOptions}
                     value={manufacturerPartNumber || null}
                     inputValue={manufacturerPartNumberSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -854,7 +1399,9 @@ export default function GpcMasterScreen() {
                     freeSolo
                     disabled={manufacturerPartNumbersLoading}
                     loading={manufacturerPartNumbersLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -879,7 +1426,7 @@ export default function GpcMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={gpcCodeOptions}
+                    options={visibleGpcCodeOptions}
                     value={gpcCode || null}
                     inputValue={gpcCodeSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -894,7 +1441,9 @@ export default function GpcMasterScreen() {
                     freeSolo
                     disabled={gpcCodesLoading}
                     loading={gpcCodesLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -1021,7 +1570,7 @@ export default function GpcMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || isRegistering}
                         >
                           {t("gpcMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1221,6 +1770,7 @@ export default function GpcMasterScreen() {
                                               searchable={isSearchable}
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
+                                              paginated
                                             />
                                           )}
                                         </StyledTableDataCell>
@@ -1278,152 +1828,99 @@ export default function GpcMasterScreen() {
 
           {uploadSectionExpanded && (
             <StyledUploadSectionContent>
-              {!uploadedCsvData ? (
-                <>
-                  <StyledDragDropZone
-                    $dragActive={dragActive}
-                    onDragEnter={handleUploadDrag}
-                    onDragLeave={handleUploadDrag}
-                    onDragOver={handleUploadDrag}
-                    onDrop={handleUploadDrop}
-                    onClick={handleUploadBrowseClick}
-                  >
-                    <input
-                      ref={uploadFileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={handleUploadFileSelect}
-                      style={{ display: "none" }}
-                    />
-                    <StyledUploadIconCircle $dragActive={dragActive}>
-                      <StyledCloudUploadIcon $dragActive={dragActive} />
-                    </StyledUploadIconCircle>
-                    <StyledDragDropTitle variant="h6">
-                      {dragActive
-                        ? t("gpcMaster.dropFileHere")
-                        : t("gpcMaster.dragDropFile")}
-                    </StyledDragDropTitle>
-                    <StyledDragDropSubtitle variant="body2">
-                      {t("gpcMaster.orClickToBrowse")}
-                    </StyledDragDropSubtitle>
-                    <StyledBrowseFilesButton
-                      variant="contained"
-                      startIcon={<CloudUploadOutlinedIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUploadBrowseClick();
-                      }}
-                    >
-                      {t("gpcMaster.browseFiles")}
-                    </StyledBrowseFilesButton>
-                    <StyledSupportedFormatText variant="caption">
-                      {t("gpcMaster.supportedFormatCsv")}
-                    </StyledSupportedFormatText>
-                  </StyledDragDropZone>
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleUploadDrag}
+                onDragLeave={handleUploadDrag}
+                onDragOver={handleUploadDrag}
+                onDrop={handleUploadDrop}
+                onClick={handleUploadBrowseClick}
+              >
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadFileSelect}
+                  style={{ display: "none" }}
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("gpcMaster.dropFileHere")
+                    : t("gpcMaster.dragDropFile")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("gpcMaster.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUploadBrowseClick();
+                  }}
+                >
+                  {t("gpcMaster.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("gpcMaster.supportedFormatCsv")}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
 
-                  {selectedFile && (
-                    <StyledSelectedFileBox>
-                      <StyledFileInfoBox>
-                        <StyledFileInfoInner>
-                          <StyledDescriptionIcon />
-                          <Box>
-                            <StyledFileNameText variant="body2">
-                              {selectedFile.name}
-                            </StyledFileNameText>
-                            <StyledFileSizeText variant="caption">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </StyledFileSizeText>
-                          </Box>
-                        </StyledFileInfoInner>
-                        <StyledUploadButton
-                          variant="contained"
-                          size="small"
-                          onClick={handleUploadClick}
-                          disabled={uploadStatus === "uploading"}
-                        >
-                          {t("gpcMaster.upload")}
-                        </StyledUploadButton>
-                        <StyledViewButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() =>
-                            selectedFile &&
-                            navigateToCsvView(
-                              selectedFile,
-                              navigate,
-                              location.pathname,
-                              t("home.gpcMasterMaintenance"),
-                            )
-                          }
-                          disabled={
-                            !selectedFile || uploadStatus === "uploading"
-                          }
-                        >
-                          {t("upload.view")}
-                        </StyledViewButton>
-                      </StyledFileInfoBox>
-                      {uploadStatus === "uploading" && (
-                        <StyledProgressBox>
-                          <StyledLinearProgressBar
-                            variant="determinate"
-                            value={uploadProgress}
-                          />
-                          <StyledProgressText variant="caption">
-                            {uploadProgress}%
-                          </StyledProgressText>
-                        </StyledProgressBox>
-                      )}
-                    </StyledSelectedFileBox>
-                  )}
-                </>
-              ) : (
-                <>
-                  <StyledUploadedTitle variant="subtitle1">
-                    {selectedFile?.name}
-                  </StyledUploadedTitle>
-                  <StyledPreviewTableContainer>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {uploadedCsvData.headers.map((header, colIndex) => (
-                            <StyledPreviewTableHeaderCell key={colIndex}>
-                              {header}
-                            </StyledPreviewTableHeaderCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {uploadedCsvData.rows.map((row, rowIndex) => (
-                          <StyledPreviewTableBodyRow
-                            key={rowIndex}
-                            $index={rowIndex}
-                          >
-                            {row.map((cell, colIndex) => (
-                              <StyledPreviewTableDataCell key={colIndex}>
-                                {cell}
-                              </StyledPreviewTableDataCell>
-                            ))}
-                          </StyledPreviewTableBodyRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </StyledPreviewTableContainer>
-                  <StyledActionButtonsBox>
-                    <StyledCancelButton
-                      variant="outlined"
-                      onClick={handleUploadCancel}
-                    >
-                      {t("gpcMaster.cancel")}
-                    </StyledCancelButton>
-                    <StyledPrimaryContainedButton
+              {selectedFile && (
+                <StyledSelectedFileBox>
+                  <StyledFileInfoBox>
+                    <StyledFileInfoInner>
+                      <StyledDescriptionIcon />
+                      <Box>
+                        <StyledFileNameText variant="body2">
+                          {selectedFile.name}
+                        </StyledFileNameText>
+                        <StyledFileSizeText variant="caption">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </StyledFileSizeText>
+                      </Box>
+                    </StyledFileInfoInner>
+                    <StyledUploadButton
                       variant="contained"
-                      onClick={handleUploadRegister}
-                      startIcon={<AppRegistrationIcon />}
+                      size="small"
+                      onClick={handleUploadClick}
+                      disabled={uploadStatus === "uploading"}
                     >
-                      {t("gpcMaster.register")}
-                    </StyledPrimaryContainedButton>
-                  </StyledActionButtonsBox>
-                </>
+                      {t("gpcMaster.upload")}
+                    </StyledUploadButton>
+                    <StyledViewButton
+                      variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        selectedFile &&
+                        navigateToCsvView(
+                          selectedFile,
+                          navigate,
+                          location.pathname,
+                          t("home.gpcMasterMaintenance"),
+                        )
+                      }
+                      disabled={
+                        !selectedFile || uploadStatus === "uploading"
+                      }
+                    >
+                      {t("upload.view")}
+                    </StyledViewButton>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
+                      onClick={handleUploadCancel}
+                      disabled={uploadStatus === "uploading"}
+                      sx={{ marginLeft: "auto" }}
+                    >
+                      {t("gpcMaster.cancelUpload")}
+                    </Button>
+                  </StyledFileInfoBox>
+                </StyledSelectedFileBox>
               )}
             </StyledUploadSectionContent>
           )}
@@ -1443,6 +1940,13 @@ export default function GpcMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("gpcMaster.registrationInProgress")}
+        />
+      )}
     </>
   );
 }

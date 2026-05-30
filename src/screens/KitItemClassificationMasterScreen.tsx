@@ -572,7 +572,11 @@ export default function KitItemClassificationMasterScreen() {
       return;
     }
 
-    const duplicateRowNumbers: number[] = [];
+    // Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table
+    //   (excluding their own index so reverting an edit isn't self-flagged).
+    const duplicateRows = new Set<number>();
     newRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
       if (
@@ -580,31 +584,23 @@ export default function KitItemClassificationMasterScreen() {
           row.every((cell, i) => cell === snap[i]),
         )
       ) {
-        duplicateRowNumbers.push(idx + 1);
+        duplicateRows.add(idx + 1);
       }
     });
     editedRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
-      const ownOriginal = rowMetadata[idx]?.original;
-      if (
-        searchSnapshotRef.current.some((snap) => {
-          // Exclude this row's own snapshot entry so reverting edits to the
-          // original values isn't flagged as a duplicate against itself.
-          if (ownOriginal && snap.every((cell, i) => cell === ownOriginal[i])) {
-            return false;
-          }
-          return row.every((cell, i) => cell === snap[i]);
-        })
-      ) {
-        duplicateRowNumbers.push(idx + 1);
-      }
+      const collides = csvData.rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
     });
-    if (duplicateRowNumbers.length > 0) {
-      duplicateRowNumbers.sort((a, b) => a - b);
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
       const rowsText = new Intl.ListFormat(i18n.language, {
         style: "long",
         type: "conjunction",
-      }).format(duplicateRowNumbers.map(String));
+      }).format(sorted.map(String));
       setSnackbarMessage(
         t("kitItemClassification.duplicateRowError", { rows: rowsText }),
       );

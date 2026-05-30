@@ -18,6 +18,12 @@ export interface SearchableCellProps {
   searchOptions?: string[];
   /** Search dialog title override */
   searchTitle?: string;
+  /**
+   * When true, the search dialog uses debounced filtering and shows
+   * prev/next page arrows. Use this for cells whose `searchOptions`
+   * list is large enough that filtering on every keystroke is slow.
+   */
+  paginated?: boolean;
   /** Additional TextField props */
   textFieldProps?: Omit<TextFieldProps, "value" | "onChange">;
 }
@@ -33,6 +39,7 @@ export function SearchableCell({
   searchable = false,
   searchOptions,
   searchTitle,
+  paginated = false,
   textFieldProps = {},
 }: SearchableCellProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -83,6 +90,7 @@ export function SearchableCell({
           onSelect={handleSelect}
           options={searchOptions}
           title={searchTitle}
+          paginated={paginated}
         />
       </Box>
     );

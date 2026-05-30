@@ -1,5 +1,5 @@
 // AI Generated Code by Deloitte + Cursor (BEGIN)
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -13,7 +13,15 @@ import {
   ListItemText,
   Box,
   Typography,
+  IconButton,
 } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { useDebouncedSearch } from "../../hooks/useDebouncedSearch.js";
+
+const PAGE_SIZE = 100;
+const DEBOUNCE_DELAY_MS = 300;
+const MIN_SEARCH_CHARS = 3;
 
 export interface CellSearchDialogProps {
   /** Whether the dialog is open */
@@ -26,11 +34,17 @@ export interface CellSearchDialogProps {
   options: string[];
   /** Dialog title override */
   title?: string;
+  /**
+   * When true, debounce the filter input and split results into pages
+   * with prev/next arrows. Intended for large option lists.
+   */
+  paginated?: boolean;
 }
 
 /**
  * Dialog for searching and selecting a value to fill in a table cell.
- * Filters `options` immediately on every keystroke (full list shown when empty).
+ * Filters `options` immediately on every keystroke by default; when
+ * `paginated` is true, debounces the filter and paginates the results.
  */
 export function CellSearchDialog({
   open,
@@ -38,33 +52,65 @@ export function CellSearchDialog({
   onSelect,
   options,
   title,
+  paginated = false,
 }: CellSearchDialogProps) {
   const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [page, setPage] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // Debounce filter input only when paginated. Below the min-length
+  // threshold the debounced value stays empty, so the dialog falls back
+  // to showing the first page of the full options list — same behavior
+  // as the screen-level autocomplete.
+  const { debouncedValue } = useDebouncedSearch(inputValue, {
+    minLength: MIN_SEARCH_CHARS,
+    delay: DEBOUNCE_DELAY_MS,
+  });
 
   useEffect(() => {
     if (open) {
       setInputValue("");
       setFocusedIndex(-1);
+      setPage(0);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
 
-  const query = inputValue.trim().toLowerCase();
-  const results = query
-    ? options.filter((opt) => opt.toLowerCase().includes(query))
-    : options;
+  const query = (paginated ? debouncedValue : inputValue).trim().toLowerCase();
+  const results = useMemo(
+    () =>
+      query ? options.filter((opt) => opt.toLowerCase().includes(query)) : options,
+    [options, query],
+  );
 
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const showFooter = paginated && totalPages > 1;
+  const visibleResults = paginated
+    ? results.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+    : results;
+
+  // Reset focus + page when the query or option set changes.
   useEffect(() => {
     setFocusedIndex(-1);
-  }, [query]);
+    setPage(0);
+  }, [query, results]);
+
+  // Reset focus when page changes.
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [page]);
 
   const handleSelect = (value: string) => {
     onSelect(value);
     onClose();
+  };
+
+  const goToPage = (next: number) => {
+    if (next < 0 || next >= totalPages) return;
+    setPage(next);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -72,7 +118,7 @@ export function CellSearchDialog({
       case "ArrowDown":
         event.preventDefault();
         setFocusedIndex((prev) =>
-          prev < results.length - 1 ? prev + 1 : prev
+          prev < visibleResults.length - 1 ? prev + 1 : prev,
         );
         break;
       case "ArrowUp":
@@ -81,8 +127,8 @@ export function CellSearchDialog({
         break;
       case "Enter":
         event.preventDefault();
-        if (focusedIndex >= 0 && focusedIndex < results.length) {
-          handleSelect(results[focusedIndex]);
+        if (focusedIndex >= 0 && focusedIndex < visibleResults.length) {
+          handleSelect(visibleResults[focusedIndex]);
         }
         break;
       case "Escape":
@@ -115,14 +161,22 @@ export function CellSearchDialog({
             inputRef={inputRef}
             fullWidth
             size="small"
-            placeholder={t("cellSearch.placeholder")}
+            placeholder={
+              paginated
+                ? t("cellSearch.minCharsPlaceholder")
+                : t("cellSearch.placeholder")
+            }
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             autoFocus
-            aria-label={t("cellSearch.placeholder")}
+            aria-label={
+              paginated
+                ? t("cellSearch.minCharsPlaceholder")
+                : t("cellSearch.placeholder")
+            }
           />
           <Box sx={{ mt: 2 }}>
-            {results.length === 0 ? (
+            {visibleResults.length === 0 ? (
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -136,7 +190,7 @@ export function CellSearchDialog({
                 sx={{ maxHeight: 240, overflow: "auto" }}
                 role="listbox"
               >
-                {results.map((result, index) => (
+                {visibleResults.map((result, index) => (
                   <ListItemButton
                     key={`${result}-${index}`}
                     selected={index === focusedIndex}
@@ -159,6 +213,42 @@ export function CellSearchDialog({
               </List>
             )}
           </Box>
+          {showFooter && (
+            <Box
+              sx={{
+                mt: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                pt: 1,
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={() => goToPage(page - 1)}
+                disabled={page === 0}
+                aria-label={t("common.paginatedListbox.previous")}
+              >
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="caption" color="text.secondary">
+                {t("common.paginatedListbox.pageInfo", {
+                  current: page + 1,
+                  total: totalPages,
+                  count: results.length,
+                })}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => goToPage(page + 1)}
+                disabled={page >= totalPages - 1}
+                aria-label={t("common.paginatedListbox.next")}
+              >
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
