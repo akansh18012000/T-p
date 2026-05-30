@@ -362,40 +362,42 @@ export default function GpcMasterScreen() {
     [],
   );
 
+  // Cap how many options are handed to MUI's Autocomplete. It eagerly builds one
+  // React element per option before the paginated listbox slices them, so an
+  // uncapped list (the part-number source alone can be hundreds of thousands of
+  // entries) stalls the dropdown for 1-2s on open. These lists are search-driven,
+  // so showing the first chunk and letting the user type to narrow is enough.
+  const MAX_VISIBLE_OPTIONS = 1000;
+
   useEffect(() => {
     const q = manufacturerDebouncedQuery.trim().toLowerCase();
-    if (q.length === 0) {
-      setVisibleManufacturerOptions(manufacturerOptions);
-      return;
-    }
-    setVisibleManufacturerOptions(
-      manufacturerOptions.filter((o) => o.toLowerCase().includes(q)),
-    );
+    const matches =
+      q.length === 0
+        ? manufacturerOptions
+        : manufacturerOptions.filter((o) => o.toLowerCase().includes(q));
+    setVisibleManufacturerOptions(matches.slice(0, MAX_VISIBLE_OPTIONS));
   }, [manufacturerOptions, manufacturerDebouncedQuery]);
 
   useEffect(() => {
     const q = manufacturerPartNumberDebouncedQuery.trim().toLowerCase();
-    if (q.length === 0) {
-      setVisibleManufacturerPartNumberOptions(manufacturerPartNumberOptions);
-      return;
-    }
+    const matches =
+      q.length === 0
+        ? manufacturerPartNumberOptions
+        : manufacturerPartNumberOptions.filter((o) =>
+            o.toLowerCase().includes(q),
+          );
     setVisibleManufacturerPartNumberOptions(
-      manufacturerPartNumberOptions.filter((o) => o.toLowerCase().includes(q)),
+      matches.slice(0, MAX_VISIBLE_OPTIONS),
     );
-  }, [
-    manufacturerPartNumberOptions,
-    manufacturerPartNumberDebouncedQuery,
-  ]);
+  }, [manufacturerPartNumberOptions, manufacturerPartNumberDebouncedQuery]);
 
   useEffect(() => {
     const q = gpcCodeDebouncedQuery.trim().toLowerCase();
-    if (q.length === 0) {
-      setVisibleGpcCodeOptions(gpcCodeOptions);
-      return;
-    }
-    setVisibleGpcCodeOptions(
-      gpcCodeOptions.filter((o) => o.toLowerCase().includes(q)),
-    );
+    const matches =
+      q.length === 0
+        ? gpcCodeOptions
+        : gpcCodeOptions.filter((o) => o.toLowerCase().includes(q));
+    setVisibleGpcCodeOptions(matches.slice(0, MAX_VISIBLE_OPTIONS));
   }, [gpcCodeOptions, gpcCodeDebouncedQuery]);
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
