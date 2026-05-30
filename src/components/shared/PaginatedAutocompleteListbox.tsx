@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useRef } from "react";
+import React, { forwardRef, useState } from "react";
 import { IconButton, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
@@ -42,22 +42,18 @@ export const PaginatedAutocompleteListbox = forwardRef<
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
 
-  // Cache the flattened children array via setState-during-render so
-  // re-renders that don't change `children` don't re-iterate 300k elements.
-  const [childArray, setChildArray] = useState<React.ReactNode[]>(() =>
-    React.Children.toArray(children),
-  );
-  const prevChildrenRef = useRef<React.ReactNode>(children);
-  if (prevChildrenRef.current !== children) {
-    prevChildrenRef.current = children;
-    setChildArray(React.Children.toArray(children));
-    setPage(0);
-  }
+  // Derive the flattened children on every render so the visible page always
+  // reflects the latest options. The upstream Autocompletes cap their option
+  // lists, so this stays cheap (no need to cache across renders).
+  const childArray = React.Children.toArray(children);
 
   const totalCount = childArray.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  // Clamp into range so a shrinking list (e.g. after the user types a filter)
+  // never leaves us stranded on an out-of-range, blank page.
+  const currentPage = Math.min(page, totalPages - 1);
   const showFooter = totalPages > 1;
-  const start = page * PAGE_SIZE;
+  const start = currentPage * PAGE_SIZE;
   const visibleChildren = childArray.slice(start, start + PAGE_SIZE);
 
   const goToPage = (next: number) => {
@@ -79,16 +75,16 @@ export const PaginatedAutocompleteListbox = forwardRef<
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              goToPage(page - 1);
+              goToPage(currentPage - 1);
             }}
-            disabled={page === 0}
+            disabled={currentPage === 0}
             aria-label={t("common.paginatedListbox.previous")}
           >
             <ChevronLeftIcon fontSize="small" />
           </IconButton>
           <StyledPageInfo variant="caption">
             {t("common.paginatedListbox.pageInfo", {
-              current: page + 1,
+              current: currentPage + 1,
               total: totalPages,
               count: totalCount,
             })}
@@ -99,9 +95,9 @@ export const PaginatedAutocompleteListbox = forwardRef<
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              goToPage(page + 1);
+              goToPage(currentPage + 1);
             }}
-            disabled={page >= totalPages - 1}
+            disabled={currentPage >= totalPages - 1}
             aria-label={t("common.paginatedListbox.next")}
           >
             <ChevronRightIcon fontSize="small" />
