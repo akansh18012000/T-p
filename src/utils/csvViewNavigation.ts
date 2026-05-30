@@ -9,6 +9,9 @@ export interface CsvViewNavigationState {
   returnPath: string;
   returnLabel?: string;
   sourceScreen?: string;
+  // State to restore on the return screen when navigating back (e.g. the tab
+  // the user came from). Passed verbatim as the location state of returnPath.
+  returnState?: Record<string, unknown>;
 }
 
 /**

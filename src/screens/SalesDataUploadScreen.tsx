@@ -649,7 +649,9 @@ export default function SalesDataUploadScreen() {
 
   const fileUploads = getUploadState(screenKey).entries;
 
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(
+    (location.state as { activeTab?: number } | null)?.activeTab ?? 0,
+  );
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -806,6 +808,8 @@ export default function SalesDataUploadScreen() {
       returnPath: location.pathname,
       returnLabel: t("home.salesDataUpload"),
       sourceScreen: "sales-data-upload",
+      // Land back on the "View uploaded files" tab when the user goes back.
+      returnState: { activeTab: 1 },
     };
 
     const cached = viewFileCache.get(file.file_id);

@@ -217,6 +217,7 @@ interface LocationState {
   returnPath: string;
   returnLabel?: string;
   sourceScreen?: string;
+  returnState?: Record<string, unknown>;
 }
 
 export default function UploadedCsvPreviewScreen() {
@@ -233,6 +234,8 @@ export default function UploadedCsvPreviewScreen() {
   const returnPath = state?.returnPath ?? "/";
   const returnLabel = state?.returnLabel ?? t("home.home");
   const sourceScreen = state?.sourceScreen;
+  const returnState = state?.returnState;
+  const goBack = () => navigate(returnPath, { state: returnState });
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   useEffect(() => {
@@ -242,7 +245,10 @@ export default function UploadedCsvPreviewScreen() {
     }
     setBreadcrumbItems([
       { label: t("home.home"), path: "/" },
-      { label: returnLabel, onClick: () => navigate(returnPath) },
+      {
+        label: returnLabel,
+        onClick: () => navigate(returnPath, { state: returnState }),
+      },
       { label: fileName },
     ]);
     return () => setBreadcrumbItems([]);
@@ -255,6 +261,7 @@ export default function UploadedCsvPreviewScreen() {
     setBreadcrumbItems,
     navigate,
     returnPath,
+    returnState,
   ]);
   // AI Generated Code by Deloitte + Cursor (END)
 
@@ -304,7 +311,7 @@ export default function UploadedCsvPreviewScreen() {
           <StyledOutlinedBackButton
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(returnPath)}
+            onClick={goBack}
           >
             {t("uploadedCsvPreview.back")}
           </StyledOutlinedBackButton>
@@ -313,15 +320,6 @@ export default function UploadedCsvPreviewScreen() {
               ? t("uploadedCsvPreview.viewerTitle")
               : t("uploadedCsvPreview.title")}
           </StyledHeaderTitle>
-          {sourceScreen === "sales-data-upload" && (
-            <StyledDownloadButton
-              variant="outlined"
-              startIcon={<GetAppIcon />}
-              onClick={handleDownload}
-            >
-              {t("uploadedCsvPreview.download")}
-            </StyledDownloadButton>
-          )}
         </StyledHeaderBox>
 
         <StyledContentBox>
