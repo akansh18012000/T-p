@@ -44,10 +44,11 @@ import {
   filterCsvFiles,
   type CsvViewNavigationState,
 } from "../utils/csvViewNavigation.js";
-import { parseCsv, validateCsvColumns } from "../utils/csvUtils.js";
+import { parseCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
+import { useViewFileCache } from "../context/ViewFileCacheContext.js";
 
 const MAX_UPLOAD_FILES = 12;
 const SALES_DATA_TEMPLATE_FILE = "Sales_Data_Template.csv";
@@ -539,17 +540,12 @@ const StyledViewTabTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
 }));
 
-const StyledReferenceText = styled(Typography)(({ theme }) => ({
+const StyledUploadedByText = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![700],
 }));
 
 const StyledUploadDateText = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![500],
-}));
-
-const StyledCaptionSecondary = styled("span")(({ theme }) => ({
-  color: theme.palette.grey![400],
-  fontSize: "0.75rem",
 }));
 
 const StyledEmptyStateBox = styled(Box)(({ theme }) => ({
@@ -588,6 +584,49 @@ ADJ-002,Rebate,-45000,2025-Q4,Customer rebate
 ADJ-003,Price Update,78000,2025-Q4,Tariff update
 ADJ-004,Returns,-32000,2025-Q4,Q4 returns`;
 
+const FETCH_FILES_API_URL = "/api/v1/fetch-files";
+const VIEW_FILE_API_URL = "/api/v1/view-file";
+const DOWNLOAD_FILE_API_URL = "/api/v1/download-file";
+
+interface ViewFileResponse {
+  file_id: string;
+  file_name: string;
+  content_type: string;
+  data: string[][];
+  columns: string[];
+  total_rows: number;
+}
+
+interface FetchedFile {
+  file_id: string;
+  file_name: string;
+  file_size: number;
+  file_status: string;
+  uploaded_by: string;
+  upload_time: string;
+}
+
+interface FetchFilesResponse {
+  total?: number;
+  files?: FetchedFile[];
+}
+
+// Strip the trailing `_<upload-id>` segment the backend appends to stored
+// filenames so the UI shows the user-supplied name. Removes the last
+// underscore and everything after it.
+function stripUploadIdSuffix(fileName: string): string {
+  const lastUnderscore = fileName.lastIndexOf("_");
+  if (lastUnderscore === -1) return fileName;
+  return fileName.substring(0, lastUnderscore);
+}
+
+// Drop fractional seconds from a backend timestamp like "2026-05-28 11:42:18.320316".
+function formatUploadTime(time: string): string {
+  if (!time) return "";
+  const dotIdx = time.indexOf(".");
+  return dotIdx === -1 ? time : time.substring(0, dotIdx);
+}
+
 export default function SalesDataUploadScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -617,7 +656,49 @@ export default function SalesDataUploadScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<AlertColor>("success");
+  const [uploadedFiles, setUploadedFiles] = useState<FetchedFile[]>([]);
+  const [loadingUploadedFiles, setLoadingUploadedFiles] = useState(false);
+  const [fetchFilesError, setFetchFilesError] = useState(false);
+  const [viewingFile, setViewingFile] = useState(false);
+  const [downloadingFile, setDownloadingFile] = useState(false);
+  const viewFileCache = useViewFileCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch the uploaded-files list every time the user opens the View tab.
+  // Abort any in-flight request when the tab is left or the screen unmounts.
+  useEffect(() => {
+    if (activeTab !== 1) return;
+    const controller = new AbortController();
+    setLoadingUploadedFiles(true);
+    setFetchFilesError(false);
+    void (async () => {
+      try {
+        const res = await fetch(FETCH_FILES_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            screen_id: SCREEN_IDS.SALES_DATA_UPLOAD.id,
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`Fetch files HTTP ${res.status}`);
+        }
+        const json = (await res.json()) as FetchFilesResponse;
+        setUploadedFiles(Array.isArray(json.files) ? json.files : []);
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        console.error("Failed to fetch uploaded files:", e);
+        setFetchFilesError(true);
+        showSnackbar(t("upload.fetchFilesError"), "error");
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingUploadedFiles(false);
+        }
+      }
+    })();
+    return () => controller.abort();
+  }, [activeTab]);
 
   const showSnackbar = (
     message: ReactNode,
@@ -715,16 +796,92 @@ export default function SalesDataUploadScreen() {
     }
   };
 
-  const handleDownloadFile = (file: File) => {
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = file.name;
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // View an already-uploaded file. Uses the cached CsvData when present so
+  // re-opening the same file doesn't re-hit the backend. On a cache miss,
+  // calls /api/v1/view-file (page-wide loader visible during the request),
+  // maps {columns, data} -> CsvData {headers, rows}, caches it, and navigates
+  // to the uploaded-csv-preview screen.
+  const handleViewFetchedFile = async (file: FetchedFile) => {
+    const displayName = stripUploadIdSuffix(file.file_name);
+    const navState: CsvViewNavigationState = {
+      csvData: { headers: [], rows: [] },
+      fileName: displayName,
+      returnPath: location.pathname,
+      returnLabel: t("home.salesDataUpload"),
+      sourceScreen: "sales-data-upload",
+    };
+
+    const cached = viewFileCache.get(file.file_id);
+    if (cached) {
+      navigate("/uploaded-csv-preview", {
+        state: { ...navState, csvData: cached },
+      });
+      return;
+    }
+
+    setViewingFile(true);
+    try {
+      const res = await fetch(VIEW_FILE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_id: file.file_id }),
+      });
+      if (!res.ok) {
+        throw new Error(`View file HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as ViewFileResponse;
+      const csvData: CsvData = {
+        headers: Array.isArray(json.columns) ? json.columns : [],
+        rows: Array.isArray(json.data) ? json.data : [],
+      };
+      viewFileCache.set(file.file_id, csvData);
+      navigate("/uploaded-csv-preview", {
+        state: { ...navState, csvData },
+      });
+    } catch (e) {
+      console.error("Failed to view file:", e);
+      showSnackbar(t("upload.viewFileError"), "error");
+    } finally {
+      setViewingFile(false);
+    }
+  };
+
+  // Download an already-uploaded file. The backend's response sets
+  // Content-Disposition: attachment; filename="<file_id-suffixed name>",
+  // which would override an <a download> attribute on a same-origin URL. To
+  // force a user-friendly filename we materialize the response as a Blob and
+  // serve it from a client-created blob: URL (which has no headers).
+  const handleDownloadFetchedFile = async (file: FetchedFile) => {
+    setDownloadingFile(true);
+    let objectUrl: string | null = null;
+    try {
+      const res = await fetch(`${DOWNLOAD_FILE_API_URL}/${file.file_id}`);
+      if (!res.ok) {
+        throw new Error(`Download file HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      // Download name is the stored file name with the trailing `_<upload-id>`
+      // segment removed. Only append `.csv` when the stripped name doesn't
+      // already carry it, so names like `report.csv_<id>` don't become
+      // `report.csv.csv`.
+      const baseName = stripUploadIdSuffix(file.file_name);
+      link.download = baseName.toLowerCase().endsWith(".csv")
+        ? baseName
+        : `${baseName}.csv`;
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error("Failed to download file:", e);
+      showSnackbar(t("upload.downloadFileError"), "error");
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setDownloadingFile(false);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -1155,8 +1312,11 @@ export default function SalesDataUploadScreen() {
                 </StyledViewTabTitle>
               </StyledViewTabHeader>
 
-              {fileUploads.filter((f) => f.uploadStatus === "completed")
-                .length > 0 ? (
+              {loadingUploadedFiles ? (
+                <ResultsLoader label={t("upload.loadingFiles")} />
+              ) : fetchFilesError ? (
+                <Alert severity="error">{t("upload.fetchFilesError")}</Alert>
+              ) : uploadedFiles.length > 0 ? (
                 <StyledTableContainerViewTabWrapper>
                   <TableContainer component={Paper} elevation={0}>
                     <Table stickyHeader>
@@ -1169,13 +1329,13 @@ export default function SalesDataUploadScreen() {
                             {t("upload.size")}
                           </StyledHeaderCell>
                           <StyledHeaderCell>
-                            {t("upload.reference")}
+                            {t("upload.status")}
+                          </StyledHeaderCell>
+                          <StyledHeaderCell>
+                            {t("upload.uploadedBy")}
                           </StyledHeaderCell>
                           <StyledHeaderCell>
                             {t("upload.uploadDate")}
-                          </StyledHeaderCell>
-                          <StyledHeaderCell>
-                            {t("upload.status")}
                           </StyledHeaderCell>
                           <StyledHeaderCell align="center">
                             {t("upload.actions")}
@@ -1183,87 +1343,84 @@ export default function SalesDataUploadScreen() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {fileUploads
-                          .filter((f) => f.uploadStatus === "completed")
-                          .map((upload, index) => {
-                            const fileInfo = getFileIcon(upload.file.name);
-                            const IconComponent = fileInfo.icon;
-                            return (
-                              <StyledBodyRow key={upload.id} index={index}>
-                                <StyledBodyCell>
-                                  <StyledFileCellContent>
-                                    <StyledFileIconWrapperSmall>
-                                      <StyledFileIconWithColor
-                                        $color={fileInfo.color}
-                                        $fontSize={24}
-                                      >
-                                        <IconComponent />
-                                      </StyledFileIconWithColor>
-                                      <StyledFileBadgeSmall
-                                        variant="caption"
-                                        $backgroundColor={fileInfo.badgeColor}
-                                      >
-                                        {fileInfo.label}
-                                      </StyledFileBadgeSmall>
-                                    </StyledFileIconWrapperSmall>
-                                    <Box>
-                                      <StyledFileNameSmall variant="body2">
-                                        {upload.file.name}
-                                      </StyledFileNameSmall>
-                                    </Box>
-                                  </StyledFileCellContent>
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  <StyledFileSize variant="body2">
-                                    {formatFileSize(upload.file.size)}
-                                  </StyledFileSize>
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  <StyledReferenceText variant="body2">
-                                    {upload.reference || "-"}
-                                  </StyledReferenceText>
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  <StyledUploadDateText variant="body2">
-                                    {upload.uploadedAt?.toLocaleDateString()}
-                                    <br />
-                                    <StyledCaptionSecondary>
-                                      {upload.uploadedAt?.toLocaleTimeString()}
-                                    </StyledCaptionSecondary>
-                                  </StyledUploadDateText>
-                                </StyledBodyCell>
-                                <StyledBodyCell>
-                                  <StyledStatusChip
-                                    icon={<CheckCircleOutline />}
-                                    label={t("upload.completed")}
+                        {uploadedFiles.map((file, index) => {
+                          const fileInfo = getFileIcon(file.file_name);
+                          const IconComponent = fileInfo.icon;
+                          const displayName = stripUploadIdSuffix(
+                            file.file_name,
+                          );
+                          return (
+                            <StyledBodyRow key={file.file_id} index={index}>
+                              <StyledBodyCell>
+                                <StyledFileCellContent>
+                                  <StyledFileIconWrapperSmall>
+                                    <StyledFileIconWithColor
+                                      $color={fileInfo.color}
+                                      $fontSize={24}
+                                    >
+                                      <IconComponent />
+                                    </StyledFileIconWithColor>
+                                    <StyledFileBadgeSmall
+                                      variant="caption"
+                                      $backgroundColor={fileInfo.badgeColor}
+                                    >
+                                      {fileInfo.label}
+                                    </StyledFileBadgeSmall>
+                                  </StyledFileIconWrapperSmall>
+                                  <Box>
+                                    <StyledFileNameSmall variant="body2">
+                                      {displayName}
+                                    </StyledFileNameSmall>
+                                  </Box>
+                                </StyledFileCellContent>
+                              </StyledBodyCell>
+                              <StyledBodyCell>
+                                <StyledFileSize variant="body2">
+                                  {formatFileSize(file.file_size)}
+                                </StyledFileSize>
+                              </StyledBodyCell>
+                              <StyledBodyCell>
+                                <StyledStatusChip
+                                  icon={<CheckCircleOutline />}
+                                  label={file.file_status}
+                                  size="small"
+                                />
+                              </StyledBodyCell>
+                              <StyledBodyCell>
+                                <StyledUploadedByText variant="body2">
+                                  {file.uploaded_by}
+                                </StyledUploadedByText>
+                              </StyledBodyCell>
+                              <StyledBodyCell>
+                                <StyledUploadDateText variant="body2">
+                                  {formatUploadTime(file.upload_time)}
+                                </StyledUploadDateText>
+                              </StyledBodyCell>
+                              <StyledBodyCell align="center">
+                                <StyledActionCellBoxRow>
+                                  <StyledViewButtonSmall
                                     size="small"
-                                  />
-                                </StyledBodyCell>
-                                <StyledBodyCell align="center">
-                                  <StyledActionCellBoxRow>
-                                    <StyledViewButtonSmall
-                                      size="small"
-                                      variant="outlined"
-                                      startIcon={<VisibilityIcon />}
-                                      onClick={() => handleViewCsv(upload.file)}
-                                    >
-                                      {t("upload.view")}
-                                    </StyledViewButtonSmall>
-                                    <StyledDownloadButtonSmall
-                                      size="small"
-                                      variant="outlined"
-                                      startIcon={<GetAppIcon />}
-                                      onClick={() =>
-                                        handleDownloadFile(upload.file)
-                                      }
-                                    >
-                                      {t("upload.download")}
-                                    </StyledDownloadButtonSmall>
-                                  </StyledActionCellBoxRow>
-                                </StyledBodyCell>
-                              </StyledBodyRow>
-                            );
-                          })}
+                                    variant="outlined"
+                                    startIcon={<VisibilityIcon />}
+                                    onClick={() => handleViewFetchedFile(file)}
+                                  >
+                                    {t("upload.view")}
+                                  </StyledViewButtonSmall>
+                                  <StyledDownloadButtonSmall
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<GetAppIcon />}
+                                    onClick={() =>
+                                      handleDownloadFetchedFile(file)
+                                    }
+                                  >
+                                    {t("upload.download")}
+                                  </StyledDownloadButtonSmall>
+                                </StyledActionCellBoxRow>
+                              </StyledBodyCell>
+                            </StyledBodyRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -1282,6 +1439,12 @@ export default function SalesDataUploadScreen() {
       </StyledMainPaper>
 
       {uploading && <ResultsLoader fullScreen label={t("upload.uploading")} />}
+      {viewingFile && (
+        <ResultsLoader fullScreen label={t("upload.loadingFile")} />
+      )}
+      {downloadingFile && (
+        <ResultsLoader fullScreen label={t("upload.downloadingFile")} />
+      )}
 
       <Snackbar
         open={snackbarOpen}

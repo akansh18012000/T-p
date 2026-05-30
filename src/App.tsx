@@ -22,6 +22,8 @@ import { LocationDataProvider } from "./context/LocationDataContext.js";
 import { CorporateDataProvider } from "./context/CorporateDataContext.js";
 import { LocalCustomerDataProvider } from "./context/LocalCustomerDataContext.js";
 import { ProductClassificationDataProvider } from "./context/ProductClassificationDataContext.js";
+import { Bu3CodeDataProvider } from "./context/Bu3CodeDataContext.js";
+import { ViewFileCacheProvider } from "./context/ViewFileCacheContext.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
@@ -119,6 +121,8 @@ export default function App() {
           <CorporateDataProvider>
           <LocalCustomerDataProvider>
           <ProductClassificationDataProvider>
+          <Bu3CodeDataProvider>
+          <ViewFileCacheProvider>
           <UploadProvider>
             <SidebarProvider>
               <BreadcrumbProvider>
@@ -205,6 +209,8 @@ export default function App() {
               </BreadcrumbProvider>
             </SidebarProvider>
           </UploadProvider>
+          </ViewFileCacheProvider>
+          </Bu3CodeDataProvider>
           </ProductClassificationDataProvider>
           </LocalCustomerDataProvider>
           </CorporateDataProvider>
