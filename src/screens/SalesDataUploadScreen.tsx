@@ -658,7 +658,6 @@ export default function SalesDataUploadScreen() {
     useState<AlertColor>("success");
   const [uploadedFiles, setUploadedFiles] = useState<FetchedFile[]>([]);
   const [loadingUploadedFiles, setLoadingUploadedFiles] = useState(false);
-  const [fetchFilesError, setFetchFilesError] = useState(false);
   const [viewingFile, setViewingFile] = useState(false);
   const [downloadingFile, setDownloadingFile] = useState(false);
   const viewFileCache = useViewFileCache();
@@ -670,7 +669,6 @@ export default function SalesDataUploadScreen() {
     if (activeTab !== 1) return;
     const controller = new AbortController();
     setLoadingUploadedFiles(true);
-    setFetchFilesError(false);
     void (async () => {
       try {
         const res = await fetch(FETCH_FILES_API_URL, {
@@ -689,7 +687,6 @@ export default function SalesDataUploadScreen() {
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         console.error("Failed to fetch uploaded files:", e);
-        setFetchFilesError(true);
         showSnackbar(t("upload.fetchFilesError"), "error");
       } finally {
         if (!controller.signal.aborted) {
@@ -1314,8 +1311,6 @@ export default function SalesDataUploadScreen() {
 
               {loadingUploadedFiles ? (
                 <ResultsLoader label={t("upload.loadingFiles")} />
-              ) : fetchFilesError ? (
-                <Alert severity="error">{t("upload.fetchFilesError")}</Alert>
               ) : uploadedFiles.length > 0 ? (
                 <StyledTableContainerViewTabWrapper>
                   <TableContainer component={Paper} elevation={0}>
