@@ -729,7 +729,12 @@ export default function SalesDataUploadScreen() {
 
   const addFiles = (files: File[]) => {
     const csvFiles = filterCsvFiles(files);
-    if (csvFiles.length === 0) return;
+    if (csvFiles.length === 0) {
+      if (files.length > 0) {
+        showSnackbar(t("common.invalidFileTypeCsvOnly"), "error");
+      }
+      return;
+    }
     if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
       showSnackbar(
         t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),

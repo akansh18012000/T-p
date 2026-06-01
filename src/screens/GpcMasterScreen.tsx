@@ -1161,17 +1161,35 @@ export default function GpcMasterScreen() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
+    const dropped = Array.from(e.dataTransfer.files);
+    const files = dropped.filter((f) =>
       f.name.toLowerCase().endsWith(".csv"),
     );
-    if (files.length > 0) setSelectedFile(screenKey, files[0]);
+    if (files.length > 0) {
+      setSelectedFile(screenKey, files[0]);
+    } else if (dropped.length > 0) {
+      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
   };
 
   const handleUploadFileSelect = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = event.target.files ? Array.from(event.target.files) : [];
-    if (files.length > 0) setSelectedFile(screenKey, files[0]);
+    const selected = event.target.files
+      ? Array.from(event.target.files)
+      : [];
+    const files = selected.filter((f) =>
+      f.name.toLowerCase().endsWith(".csv"),
+    );
+    if (files.length > 0) {
+      setSelectedFile(screenKey, files[0]);
+    } else if (selected.length > 0) {
+      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
 

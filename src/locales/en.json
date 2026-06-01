@@ -852,6 +852,7 @@
     "loadingResults": "Loading results...",
     "manufacturerDataLoadFailed": "Failed to load manufacturer data. Please reload the page to try again.",
     "gpcDataLoadFailed": "Failed to load GPC data. Please reload the page to try again.",
+    "invalidFileTypeCsvOnly": "Only CSV files are allowed.",
     "paginatedListbox": {
       "previous": "Previous",
       "next": "Next",

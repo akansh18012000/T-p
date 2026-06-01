@@ -595,7 +595,11 @@ export default function AdjustmentSalesDetailScreen() {
 
   const addFiles = (files: File[]) => {
     const csvFile = files.find((f) => isCsvFile(f.name));
-    if (csvFile) setSelectedFile(screenKey, csvFile);
+    if (csvFile) {
+      setSelectedFile(screenKey, csvFile);
+    } else if (files.length > 0) {
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error");
+    }
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

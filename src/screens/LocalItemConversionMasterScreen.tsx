@@ -19,6 +19,7 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -130,23 +131,14 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
+import { useSystemIdData } from "../context/SystemIdDataContext.js";
+import { useManufacturerData } from "../context/ManufacturerDataContext.js";
 import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 
-const SYSTEM_IDS = ["SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005"];
-const MANUFACTURER_CODES = [
-  "MFR-001",
-  "MFR-002",
-  "MFR-003",
-  "MFR-004",
-  "MFR-005",
-];
-
-// Mock data for cell search dialogs
-const CELL_SEARCH_SYSTEM_IDS = [
-  "SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005",
-  "SYS-006", "SYS-007", "SYS-008", "SYS-009", "SYS-010",
-];
+// Mock data for cell search dialogs. System ID, manufacturer code/name and
+// manufacturer part number are sourced from shared contexts inside the
+// component; the remaining columns below have no context yet.
 const CELL_SEARCH_GLOBAL_ITEM_TYPES = [
   "GIT-A", "GIT-B", "GIT-C", "GIT-D", "GIT-E",
   "GIT-ALPHA", "GIT-BETA", "GIT-GAMMA", "GIT-DELTA",
@@ -157,19 +149,6 @@ const CELL_SEARCH_CURRENCIES = [
 ];
 
 // Code-to-Name lookup maps for associated columns
-const MANUFACTURER_CODE_TO_NAME: Record<string, string> = {
-  "MFR-001": "Acme Corporation",
-  "MFR-002": "Beta Industries",
-  "MFR-003": "Gamma Technologies",
-  "MFR-004": "Delta Manufacturing",
-  "MFR-005": "Epsilon Solutions",
-  "MFR-ACM": "Acme Medical Supplies",
-  "MFR-BET": "Beta Healthcare",
-  "MFR-GAM": "Gamma Devices Inc.",
-  "MFR-DEL": "Delta Pharma Ltd.",
-  "MFR-EPS": "Epsilon BioScience",
-};
-
 const GPC_CODE_TO_NAME: Record<string, string> = {
   "GPC01": "Medical Instruments",
   "GPC02": "Surgical Equipment",
@@ -209,29 +188,9 @@ const CORPORATE_CODE_TO_NAME: Record<string, string> = {
 };
 
 // Extract code arrays from lookup maps
-const CELL_SEARCH_MANUFACTURERS = Object.keys(MANUFACTURER_CODE_TO_NAME);
 const CELL_SEARCH_GPC_CODES = Object.keys(GPC_CODE_TO_NAME);
 const CELL_SEARCH_LOCATION_CODES = Object.keys(LOCATION_CODE_TO_NAME);
 const CELL_SEARCH_CORPORATE_CODES = Object.keys(CORPORATE_CODE_TO_NAME);
-
-// Column indices for code-to-name auto-population
-const CODE_TO_NAME_COLUMN_MAP: Record<number, { nameColIndex: number; lookupMap: Record<string, string> }> = {
-  2: { nameColIndex: 3, lookupMap: MANUFACTURER_CODE_TO_NAME },   // manufacturer -> manufacturerName
-  6: { nameColIndex: 7, lookupMap: GPC_CODE_TO_NAME },            // gpcCode -> gpcName
-  9: { nameColIndex: 10, lookupMap: LOCATION_CODE_TO_NAME },      // locationCode -> locationName
-  11: { nameColIndex: 12, lookupMap: CORPORATE_CODE_TO_NAME },    // corporateCode -> corporateName
-};
-
-// Map column keys to their search options
-const SEARCHABLE_COLUMN_OPTIONS: Record<string, string[]> = {
-  systemId: CELL_SEARCH_SYSTEM_IDS,
-  manufacturer: CELL_SEARCH_MANUFACTURERS,
-  globalItemTypes: CELL_SEARCH_GLOBAL_ITEM_TYPES,
-  gpcCode: CELL_SEARCH_GPC_CODES,
-  locationCode: CELL_SEARCH_LOCATION_CODES,
-  corporateCode: CELL_SEARCH_CORPORATE_CODES,
-  currency: CELL_SEARCH_CURRENCIES,
-};
 
 const DEFAULT_CSV_HEADERS = LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
 
@@ -280,14 +239,51 @@ function LocalItemConversionMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Search box input and debounced values for System ID and Manufacturer Code (min 3 chars, 1s debounce)
+  // System ID and manufacturer data come from shared contexts (fetched at most
+  // once per session, reused across pages) — mirrors GpcMaster.
+  const {
+    systemIdOptions: systemIdAllOptions,
+    status: systemIdDataStatus,
+    ensureLoaded: ensureSystemIdData,
+  } = useSystemIdData();
+  const systemIdsLoading = systemIdDataStatus === "loading";
+
+  const {
+    manufacturerOptions,
+    manufacturerNameMap,
+    manufacturerPartNumberOptions,
+    status: manufacturerDataStatus,
+    ensureLoaded: ensureManufacturerData,
+  } = useManufacturerData();
+  const manufacturersLoading = manufacturerDataStatus === "loading";
+
+  // Kick off both fetches on mount; both calls are idempotent.
+  useEffect(() => {
+    ensureSystemIdData();
+    ensureManufacturerData();
+  }, [ensureSystemIdData, ensureManufacturerData]);
+
+  // Search box inputs and debounced values (min 3 chars, 300 ms — matches GpcMaster)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const { debouncedValue: systemIdDebounced } =
-    useDebouncedSearch(systemIdSearchInput);
+  const { debouncedValue: systemIdDebounced } = useDebouncedSearch(
+    systemIdSearchInput,
+    { minLength: 3, delay: 300 },
+  );
   const [manufacturerCodeSearchInput, setManufacturerCodeSearchInput] =
     useState("");
-  const { debouncedValue: manufacturerCodeDebounced } =
-    useDebouncedSearch(manufacturerCodeSearchInput);
+  const { debouncedValue: manufacturerCodeDebounced } = useDebouncedSearch(
+    manufacturerCodeSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+  const [
+    manufacturerPartNumberSearchInput,
+    setManufacturerPartNumberSearchInput,
+  ] = useState("");
+  const { debouncedValue: manufacturerPartNumberDebounced } =
+    useDebouncedSearch(manufacturerPartNumberSearchInput, {
+      minLength: 3,
+      delay: 300,
+    });
 
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
@@ -316,17 +312,62 @@ function LocalItemConversionMasterScreen() {
     manufacturerPartNumber,
   ]);
 
+  // Cap how many options MUI's Autocomplete builds at once (it creates one
+  // element per option up front). These lists are search-driven, so the first
+  // chunk plus type-to-narrow is enough.
+  const MAX_VISIBLE_OPTIONS = 1000;
+
   const systemIdOptions = systemIdDebounced
-    ? SYSTEM_IDS.filter((id) =>
-        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-      )
+    ? systemIdAllOptions
+        .filter((id) =>
+          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+        )
+        .slice(0, MAX_VISIBLE_OPTIONS)
     : [];
 
   const manufacturerCodeOptions = manufacturerCodeDebounced
-    ? MANUFACTURER_CODES.filter((code) =>
-        code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
-      )
+    ? manufacturerOptions
+        .filter((code) =>
+          code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
+        )
+        .slice(0, MAX_VISIBLE_OPTIONS)
     : [];
+
+  const manufacturerPartNumberFilteredOptions = manufacturerPartNumberDebounced
+    ? manufacturerPartNumberOptions
+        .filter((pn) =>
+          pn
+            .toLowerCase()
+            .includes(manufacturerPartNumberDebounced.toLowerCase()),
+        )
+        .slice(0, MAX_VISIBLE_OPTIONS)
+    : [];
+
+  // In-table cell search options. System ID, manufacturer code and
+  // manufacturer part number come from the shared contexts (full lists, since
+  // the cell dialog has its own search); the rest use the local mock data.
+  const searchableColumnOptions: Record<string, string[]> = {
+    systemId: systemIdAllOptions,
+    manufacturer: manufacturerOptions,
+    mfrPartNumber: manufacturerPartNumberOptions,
+    globalItemTypes: CELL_SEARCH_GLOBAL_ITEM_TYPES,
+    gpcCode: CELL_SEARCH_GPC_CODES,
+    locationCode: CELL_SEARCH_LOCATION_CODES,
+    corporateCode: CELL_SEARCH_CORPORATE_CODES,
+    currency: CELL_SEARCH_CURRENCIES,
+  };
+
+  // Column indices for code-to-name auto-population on cell edit. Manufacturer
+  // name (col 3) is filled from the shared manufacturer context.
+  const codeToNameColumnMap: Record<
+    number,
+    { nameColIndex: number; lookupMap: Record<string, string> }
+  > = {
+    2: { nameColIndex: 3, lookupMap: manufacturerNameMap }, // manufacturer -> manufacturerName
+    6: { nameColIndex: 7, lookupMap: GPC_CODE_TO_NAME }, // gpcCode -> gpcName
+    9: { nameColIndex: 10, lookupMap: LOCATION_CODE_TO_NAME }, // locationCode -> locationName
+    11: { nameColIndex: 12, lookupMap: CORPORATE_CODE_TO_NAME }, // corporateCode -> corporateName
+  };
 
   // Upload file state (selectedFile and uploadedCsvData from context)
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -792,7 +833,7 @@ function LocalItemConversionMasterScreen() {
     if (!csvData) return;
     
     // Check if this column has an associated name column
-    const codeToNameMapping = CODE_TO_NAME_COLUMN_MAP[colIndex];
+    const codeToNameMapping = codeToNameColumnMap[colIndex];
     
     const newRows = csvData.rows.map((row, rIdx) => {
       if (rIdx !== rowIndex) return row;
@@ -1014,6 +1055,9 @@ function LocalItemConversionMasterScreen() {
                       searchConditionsRef.current.systemId = v;
                     }}
                     freeSolo
+                    disabled={systemIdsLoading}
+                    loading={systemIdsLoading}
+                    filterOptions={(x) => x}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
@@ -1022,6 +1066,17 @@ function LocalItemConversionMasterScreen() {
                         placeholder={t(
                           "localItemConversion.searchPlaceholderMinChars",
                         )}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {systemIdsLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1099,8 +1154,14 @@ function LocalItemConversionMasterScreen() {
                       setManufacturerCode(v);
                       setManufacturerCodeSearchInput(v);
                       searchConditionsRef.current.manufacturerCode = v;
+                      const name = manufacturerNameMap[v] || "";
+                      setManufacturerName(name);
+                      searchConditionsRef.current.manufacturerName = name;
                     }}
                     freeSolo
+                    disabled={manufacturersLoading}
+                    loading={manufacturersLoading}
+                    filterOptions={(x) => x}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
@@ -1109,6 +1170,17 @@ function LocalItemConversionMasterScreen() {
                         placeholder={t(
                           "localItemConversion.searchPlaceholderMinChars",
                         )}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1127,16 +1199,48 @@ function LocalItemConversionMasterScreen() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
+                  <Autocomplete
                     fullWidth
                     size="small"
-                    label={t("localItemConversion.manufacturerPartNumberLabel")}
-                    value={manufacturerPartNumber}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setManufacturerPartNumber(val);
-                      searchConditionsRef.current.manufacturerPartNumber = val;
+                    options={manufacturerPartNumberFilteredOptions}
+                    value={manufacturerPartNumber || null}
+                    inputValue={manufacturerPartNumberSearchInput}
+                    onInputChange={(_event, newInputValue) => {
+                      setManufacturerPartNumberSearchInput(newInputValue);
+                      searchConditionsRef.current.manufacturerPartNumber =
+                        newInputValue;
                     }}
+                    onChange={(_event, newValue) => {
+                      const v = newValue ?? "";
+                      setManufacturerPartNumber(v);
+                      setManufacturerPartNumberSearchInput(v);
+                      searchConditionsRef.current.manufacturerPartNumber = v;
+                    }}
+                    freeSolo
+                    disabled={manufacturersLoading}
+                    loading={manufacturersLoading}
+                    filterOptions={(x) => x}
+                    ListboxProps={listboxProps}
+                    renderInput={(params) => (
+                      <StyledAutocompleteInput
+                        {...params}
+                        label={t("localItemConversion.manufacturerPartNumberLabel")}
+                        placeholder={t(
+                          "localItemConversion.searchPlaceholderMinChars",
+                        )}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
@@ -1369,7 +1473,7 @@ function LocalItemConversionMasterScreen() {
                                       (col, colIndex) => {
                                         const cell = row[colIndex] ?? "";
                                         const editable = col.editable !== false;
-                                        const searchOptions = SEARCHABLE_COLUMN_OPTIONS[col.key];
+                                        const searchOptions = searchableColumnOptions[col.key];
                                         const isSearchable = editable && !!searchOptions;
                                         return (
                                           <StyledTableDataCell
