@@ -820,6 +820,26 @@ export const COMMON_CONVERSION_MASTER_HEADERS: string[] = [
   "Deletion Flag",
 ];
 
+/** Japanese CSV column headers; order must match COMMON_CONVERSION_MASTER_HEADERS */
+export const COMMON_CONVERSION_MASTER_HEADERS_JA: string[] = [
+  "アイテムID",
+  "アイテム名",
+  "システムID",
+  "変換前コード1",
+  "変換前名1",
+  "変換前コード2",
+  "変換前名2",
+  "変換後コード",
+  "変換後名",
+  "摘要",
+  "予備1",
+  "予備2",
+  "予備3",
+  "予備4",
+  "予備5",
+  "削除フラグ",
+];
+
 /** i18n column config for Common Conversion Master table */
 export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "itemId", labelKey: "commonConversionMaster.itemId", editable: true },

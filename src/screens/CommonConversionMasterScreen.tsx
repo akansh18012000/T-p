@@ -6,8 +6,8 @@ import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
+  Button,
   Grid,
-  Table,
   TableBody,
   TableHead,
   TableRow,
@@ -15,6 +15,7 @@ import {
   IconButton,
   InputAdornment,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -79,16 +80,6 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
-  StyledProgressBox,
-  StyledLinearProgressBar,
-  StyledProgressText,
-  StyledUploadedTitle,
-  StyledPreviewTableContainer,
-  StyledPreviewTableHeaderCell,
-  StyledPreviewTableBodyRow,
-  StyledPreviewTableDataCell,
-  StyledActionButtonsBox,
-  StyledCancelButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -101,6 +92,7 @@ import {
   Clear as ClearIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -108,7 +100,9 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
-import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_COLUMNS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+import { COMMON_CONVERSION_MASTER_HEADERS, COMMON_CONVERSION_MASTER_HEADERS_JA, COMMON_CONVERSION_MASTER_COLUMNS, COMMON_CONVERSION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -117,43 +111,127 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { useSystemIdData } from "../context/SystemIdDataContext.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
-const SYSTEM_IDS = ["SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005"];
+// Cap how many options are handed to MUI's Autocomplete; it eagerly builds one
+// element per option, so very large lists stall the dropdown on open. These
+// lists are search-driven, so the first chunk plus type-to-narrow is enough.
+const MAX_VISIBLE_OPTIONS = 1000;
 
-const ITEM_OPTIONS: ItemWithDetails[] = [
-  {
-    id: "ITEM-001",
-    name: "Item Alpha",
-    abstract: "Abstract description for Item Alpha.",
-  },
-  {
-    id: "ITEM-002",
-    name: "Item Beta",
-    abstract: "Abstract description for Item Beta.",
-  },
-  {
-    id: "ITEM-003",
-    name: "Item Gamma",
-    abstract: "Abstract description for Item Gamma.",
-  },
-  {
-    id: "ITEM-004",
-    name: "Item Delta",
-    abstract: "Abstract description for Item Delta.",
-  },
-  {
-    id: "ITEM-005",
-    name: "Item Epsilon",
-    abstract: "Abstract description for Item Epsilon.",
-  },
-];
+// Item ID options are sourced from this API on page load.
+const COLUMN_IDS_API_URL = "/api/v1/common-conversion-combined/get_column_ids";
 
-const ITEM_ID_OPTIONS: string[] = ITEM_OPTIONS.map((o) => o.id);
+interface ColumnIdApiRow {
+  column_id: string;
+  column_name: string;
+  description: string | null;
+}
+
+interface ColumnIdApiEnvelope {
+  total: number;
+  data: ColumnIdApiRow[];
+}
+
+const COMMON_CONVERSION_SEARCH_API_URL =
+  "/api/v1/common-conversion-combined/search";
+
+// Static session/auth payload values used by the search API.
+// TODO: source these from auth/session context once available.
+const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
+const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
+const SEARCH_SCREEN_ID = "cdf268e2-3161-4292-a582-0cfb3e8f3f74";
+const SEARCH_IP_ADDRESS = "192.168.1.101";
+
+interface SearchPayload {
+  column_id: string;
+  system_id: string;
+  column_name: string;
+  convert_code_before_1: string;
+  convert_code_before_2: string;
+  convert_name_before_1: string;
+  convert_name_before_2: string;
+  convert_code_after: string;
+  convert_name_after: string;
+  delete_flg_pfm: string;
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+interface SearchApiRow {
+  system_id: string;
+  column_id: string;
+  column_name: string;
+  convert_code_before_1: string;
+  convert_name_before_1: string;
+  convert_code_before_2: string;
+  convert_name_before_2: string;
+  convert_code_after: string;
+  convert_name_after: string;
+  description: string | null;
+  reserve1: string | null;
+  reserve2: string | null;
+  reserve3: string | null;
+  reserve4: string | null;
+  reserve5: string | null;
+  delete_flg_pfm: string;
+}
+
+interface SearchApiEnvelope {
+  total: number;
+  data: SearchApiRow[];
+}
+
+const COMMON_CONVERSION_CREATE_API_URL =
+  "/api/v1/common-conversion-combined/create";
+
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type CommonConversionRowMeta = { original: string[] } | null;
+
+interface CommonConversionCreateRow {
+  system_id: string;
+  column_id: string;
+  column_name: string;
+  convert_code_before_1: string;
+  convert_name_before_1: string;
+  convert_code_before_2: string;
+  convert_name_before_2: string;
+  convert_code_after: string;
+  convert_name_after: string;
+  description: string;
+  delete_flg_pfm: string;
+  reserve1: string;
+  reserve2: string;
+  reserve3: string;
+  reserve4: string;
+  reserve5: string;
+}
+
+interface CommonConversionCreatePayload {
+  rows: CommonConversionCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+// Required-field validation scope (user-confirmed): Item ID, Item Name,
+// System ID, Converted Code, Converted Name. Indices are derived from the
+// column config so they stay correct if the column order changes.
+const REQUIRED_COL_INDICES = [
+  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "itemId"),
+  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "itemName"),
+  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "systemId"),
+  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "convertedCode"),
+  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "convertedName"),
+] as const;
 
 const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 
@@ -166,14 +244,13 @@ const listboxProps = {
 };
 
 export default function CommonConversionMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { closeSidebar } = useSidebar();
   const location = useLocation();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const { getUploadState, setSelectedFile } = useUploadContext();
+  const { selectedFile } = getUploadState(screenKey);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -200,13 +277,37 @@ export default function CommonConversionMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Search box input and debounced (min 3 chars, 1s debounce)
+  // Item ID (column id) options fetched from the API on page load.
+  const [itemIdData, setItemIdData] = useState<ItemWithDetails[]>([]);
+  const [itemIdLoading, setItemIdLoading] = useState(false);
+  // Guards the page-load fetch against React StrictMode's double-invoke so the
+  // API call fires exactly once per page load.
+  const itemIdFetchedRef = useRef(false);
+
+  // System ID options come from the shared context (fetched at most once per
+  // session, reused across pages) — mirrors GpcMaster's manufacturer/GPC data.
+  const {
+    systemIdOptions: systemIdAllOptions,
+    status: systemIdDataStatus,
+    ensureLoaded: ensureSystemIdData,
+  } = useSystemIdData();
+  const systemIdsLoading = systemIdDataStatus === "loading";
+
+  useEffect(() => {
+    ensureSystemIdData();
+  }, [ensureSystemIdData]);
+
+  // Search box input and debounced (min 3 chars, 300 ms debounce — matches GpcMaster)
   const [itemIdSearchInput, setItemIdSearchInput] = useState("");
-  const { debouncedValue: itemIdDebounced } =
-    useDebouncedSearch(itemIdSearchInput);
+  const { debouncedValue: itemIdDebounced } = useDebouncedSearch(
+    itemIdSearchInput,
+    { minLength: 3, delay: 300 },
+  );
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const { debouncedValue: systemIdDebounced } =
-    useDebouncedSearch(systemIdSearchInput);
+  const { debouncedValue: systemIdDebounced } = useDebouncedSearch(
+    systemIdSearchInput,
+    { minLength: 3, delay: 300 },
+  );
 
   const searchConditionsRef = useRef({
     itemId: "",
@@ -244,24 +345,30 @@ export default function CommonConversionMasterScreen() {
   ]);
 
   const itemIdOptions: string[] = itemIdDebounced
-    ? ITEM_OPTIONS.filter(
-        (o) =>
-          o.id.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
-          o.name.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
-          o.abstract.toLowerCase().includes(itemIdDebounced.toLowerCase()),
-      ).map((o) => o.id)
+    ? itemIdData
+        .filter(
+          (o) =>
+            o.id.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
+            o.name.toLowerCase().includes(itemIdDebounced.toLowerCase()) ||
+            o.abstract.toLowerCase().includes(itemIdDebounced.toLowerCase()),
+        )
+        .map((o) => o.id)
     : [];
+
+  // Full Item ID list (unfiltered) used by the in-table item id cell.
+  const itemIdAllOptions: string[] = itemIdData.map((o) => o.id);
 
   const systemIdOptions = systemIdDebounced
-    ? SYSTEM_IDS.filter((id) =>
-        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-      )
+    ? systemIdAllOptions
+        .filter((id) =>
+          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+        )
+        .slice(0, MAX_VISIBLE_OPTIONS)
     : [];
 
-  const itemSelected = ITEM_OPTIONS.find((o) => o.id === itemId);
+  const itemSelected = itemIdData.find((o) => o.id === itemId);
 
-  // Upload file state (selectedFile and uploadedCsvData from context)
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload file state (selectedFile lives in UploadContext)
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "completed"
   >("idle");
@@ -274,14 +381,79 @@ export default function CommonConversionMasterScreen() {
   );
   const itemIdColIndex = 0;
   const itemNameColIndex = 1;
+  const systemIdColIndex = COMMON_CONVERSION_MASTER_COLUMNS.findIndex(
+    (c) => c.key === "systemId",
+  );
   const abstractColIndex = 9;
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
+  // Parallel to csvData.rows. null at index i => row was added locally (new).
+  // Non-null => row came from search; `original` is used to detect edits.
+  const [rowMetadata, setRowMetadata] = useState<CommonConversionRowMeta[]>([]);
+  // Frozen snapshot of the last search results; used for duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+
+  // Surface a snackbar once when the system-id data fetch fails.
+  const systemIdErrorReportedRef = useRef(false);
+  useEffect(() => {
+    if (systemIdDataStatus === "error" && !systemIdErrorReportedRef.current) {
+      systemIdErrorReportedRef.current = true;
+      setSnackbarMessage(t("commonConversionMaster.systemIdLoadFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } else if (systemIdDataStatus === "loaded") {
+      systemIdErrorReportedRef.current = false;
+    }
+  }, [systemIdDataStatus, t]);
+
+  // Fetch Item ID (column id) options once on page load. The API returns one
+  // row per (column_id, description); collapse to a unique list keyed by
+  // column_id (first occurrence wins) for the dropdown.
+  useEffect(() => {
+    // The ref persists across StrictMode's mount → unmount → mount cycle, so
+    // the second pass early-returns without scheduling a duplicate request.
+    if (itemIdFetchedRef.current) return;
+    itemIdFetchedRef.current = true;
+    const loadColumnIds = async () => {
+      setItemIdLoading(true);
+      try {
+        const res = await fetch(COLUMN_IDS_API_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as ColumnIdApiEnvelope;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        const byId = new Map<string, ItemWithDetails>();
+        rows.forEach((r) => {
+          if (!byId.has(r.column_id)) {
+            byId.set(r.column_id, {
+              id: r.column_id,
+              name: r.column_name ?? "",
+              abstract: r.description ?? "",
+            });
+          }
+        });
+        setItemIdData(Array.from(byId.values()));
+      } catch (e) {
+        console.error("Failed to fetch column ids:", e);
+        setItemIdData([]);
+        setSnackbarMessage(t("commonConversionMaster.itemIdLoadFailed"));
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+      } finally {
+        setItemIdLoading(false);
+      }
+    };
+    void loadColumnIds();
+    // Intentionally empty deps: this fetch must run exactly once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Row selection mode hooks
   const {
@@ -295,95 +467,97 @@ export default function CommonConversionMasterScreen() {
   } = useRowSelectionMode();
   const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
-  const handleSearch = async () => {
+  const buildSearchPayload = (
+    conditions: typeof searchConditionsRef.current,
+  ): SearchPayload => ({
+    column_id: conditions.itemId.trim(),
+    system_id: conditions.systemId.trim(),
+    // No column_name search input on this screen; sent empty.
+    column_name: "",
+    convert_code_before_1: conditions.preconversionCode1.trim(),
+    convert_code_before_2: conditions.preconversionCode2.trim(),
+    convert_name_before_1: conditions.preconversionCode1Name.trim(),
+    convert_name_before_2: conditions.preconversionCode2Name.trim(),
+    convert_code_after: conditions.convertedCode.trim(),
+    convert_name_after: conditions.convertedCodeName.trim(),
+    delete_flg_pfm: conditions.deletionFlag ? "1" : "0",
+    user_id: SEARCH_USER_ID,
+    session_id: SEARCH_SESSION_ID,
+    screen_id: SEARCH_SCREEN_ID,
+    ip_address: SEARCH_IP_ADDRESS,
+  });
+
+  const executeSearch = async (
+    payload: SearchPayload,
+    options?: { silent?: boolean },
+  ) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchLoading(true);
     try {
-      const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const allRows: string[][] = [
-        [
-          "ITEM-001",
-          "Item Alpha",
-          "SYS-001",
-          "PC1-01",
-          "Preconv 1 Name A",
-          "PC2-01",
-          "Preconv 2 Name A",
-          "CONV-01",
-          "Converted Name A",
-          "Abstract description for Item Alpha.",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "0",
-        ],
-        [
-          "ITEM-002",
-          "Item Beta",
-          "SYS-001",
-          "PC1-02",
-          "Preconv 1 Name B",
-          "PC2-02",
-          "Preconv 2 Name B",
-          "CONV-02",
-          "Converted Name B",
-          "Abstract description for Item Beta.",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "0",
-        ],
-        [
-          "ITEM-003",
-          "Item Gamma",
-          "SYS-002",
-          "PC1-03",
-          "Preconv 1 Name C",
-          "PC2-03",
-          "Preconv 2 Name C",
-          "CONV-03",
-          "Converted Name C",
-          "Abstract description for Item Gamma.",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "0",
-        ],
-      ];
-      const filteredRows = allRows.filter((row) => {
-        const rowItemId = row[0];
-        const rowSystemId = row[2];
-        const rowDelFlag = row[15];
-        if (conditions.itemId.trim() && rowItemId !== conditions.itemId)
-          return false;
-        if (conditions.systemId.trim() && rowSystemId !== conditions.systemId)
-          return false;
-        if (conditions.deletionFlag && rowDelFlag !== "1") return false;
-        return true;
+      const res = await fetch(COMMON_CONVERSION_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as SearchApiEnvelope;
+      const rows = Array.isArray(json.data) ? json.data : [];
+      // Map API rows into the table's column order (see
+      // COMMON_CONVERSION_MASTER_COLUMNS).
+      const mappedRows = rows.map((r) => [
+        r.column_id ?? "",
+        r.column_name ?? "",
+        r.system_id ?? "",
+        r.convert_code_before_1 ?? "",
+        r.convert_name_before_1 ?? "",
+        r.convert_code_before_2 ?? "",
+        r.convert_name_before_2 ?? "",
+        r.convert_code_after ?? "",
+        r.convert_name_after ?? "",
+        r.description ?? "",
+        r.reserve1 ?? "",
+        r.reserve2 ?? "",
+        r.reserve3 ?? "",
+        r.reserve4 ?? "",
+        r.reserve5 ?? "",
+        r.delete_flg_pfm ?? "0",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows,
+        rows: mappedRows,
       });
-      setSnackbarMessage(
-        filteredRows.length > 0
-          ? t("commonConversionMaster.searchCompletedWithData")
-          : t("commonConversionMaster.searchCompletedNoResults"),
-      );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
-    } catch {
+      setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
+      searchSnapshotRef.current = mappedRows.map((row) => [...row]);
+      clearNewRowTracking();
+      if (!silent) {
+        setSnackbarMessage(
+          mappedRows.length > 0
+            ? t("commonConversionMaster.searchCompletedWithData")
+            : t("commonConversionMaster.searchCompletedNoResults"),
+        );
+        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
+        setSnackbarOpen(true);
+      }
+    } catch (e) {
+      console.error(e);
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("commonConversionMaster.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
+      if (!silent) {
+        setSnackbarMessage(t("commonConversionMaster.searchCompletedNoResults"));
+        setSnackbarSeverity("info");
+        setSnackbarOpen(true);
+      }
+    } finally {
+      setSearchLoading(false);
     }
+  };
+
+  const handleSearch = async (options?: { silent?: boolean }) => {
+    const payload = buildSearchPayload(searchConditionsRef.current);
+    lastSearchPayloadRef.current = payload;
+    await executeSearch(payload, options);
   };
 
   const handleDownloadCsv = () => {
@@ -423,6 +597,11 @@ export default function CommonConversionMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      null,
+      ...prev.slice(insertIndex),
+    ]);
     setSnackbarMessage(t("commonConversionMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -460,6 +639,11 @@ export default function CommonConversionMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("commonConversionMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -471,6 +655,7 @@ export default function CommonConversionMasterScreen() {
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -478,18 +663,163 @@ export default function CommonConversionMasterScreen() {
 
   const handleRefresh = () => {
     clearNewRowTracking();
-    handleSearch();
+    const payload =
+      lastSearchPayloadRef.current ??
+      buildSearchPayload(searchConditionsRef.current);
+    void executeSearch(payload);
   };
+
+  const formatRowList = (rowNumbers: number[]): string =>
+    new Intl.ListFormat(i18n.language, {
+      style: "long",
+      type: "conjunction",
+    }).format(rowNumbers.map(String));
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("commonConversionMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("commonConversionMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const rows = csvData.rows;
+
+    // 1. Identify rows to submit.
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("commonConversionMaster.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+
+    // 2. Required-field validation.
+    const missingRequiredRows: number[] = [];
+    targetIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      const missing = REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
+      if (missing) missingRequiredRows.push(idx + 1);
+    });
+    if (missingRequiredRows.length > 0) {
+      missingRequiredRows.sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("commonConversionMaster.requiredFieldsMissing", {
+          rows: formatRowList(missingRequiredRows),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 3. Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table.
+    const duplicateRows = new Set<number>();
+    newRowIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRows.add(idx + 1);
+      }
+    });
+    editedRowIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      const collides = rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
+    });
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("commonConversionMaster.duplicateRowError", {
+          rows: formatRowList(sorted),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 4. Build payload (row indices map to COMMON_CONVERSION_MASTER_COLUMNS).
+    const buildRow = (idx: number): CommonConversionCreateRow => {
+      const r = rows[idx];
+      return {
+        column_id: r[0] ?? "",
+        column_name: r[1] ?? "",
+        system_id: r[2] ?? "",
+        convert_code_before_1: r[3] ?? "",
+        convert_name_before_1: r[4] ?? "",
+        convert_code_before_2: r[5] ?? "",
+        convert_name_before_2: r[6] ?? "",
+        convert_code_after: r[7] ?? "",
+        convert_name_after: r[8] ?? "",
+        description: r[9] ?? "",
+        reserve1: r[10] ?? "",
+        reserve2: r[11] ?? "",
+        reserve3: r[12] ?? "",
+        reserve4: r[13] ?? "",
+        reserve5: r[14] ?? "",
+        delete_flg_pfm: r[15] || "0",
+      };
+    };
+
+    const payload: CommonConversionCreatePayload = {
+      rows: targetIndices.map(buildRow),
+      user_id: SEARCH_USER_ID,
+      session_id: SEARCH_SESSION_ID,
+      screen_id: SEARCH_SCREEN_ID,
+      ip_address: SEARCH_IP_ADDRESS,
+    };
+
+    // 5. POST and refresh.
+    setIsRegistering(true);
+    try {
+      const res = await fetch(COMMON_CONVERSION_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      await handleSearch({ silent: true });
+
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "commonConversionMaster.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "commonConversionMaster.createdNewRows";
+      } else {
+        messageKey = "commonConversionMaster.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("commonConversionMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -503,7 +833,7 @@ export default function CommonConversionMasterScreen() {
       const newRow = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
       // If Item ID changed, auto-fill Item Name and Abstract
       if (colIndex === itemIdColIndex) {
-        const selectedItem = ITEM_OPTIONS.find((o) => o.id === value);
+        const selectedItem = itemIdData.find((o) => o.id === value);
         newRow[itemNameColIndex] = selectedItem ? selectedItem.name : "";
         newRow[abstractColIndex] = selectedItem ? selectedItem.abstract : "";
       }
@@ -542,28 +872,77 @@ export default function CommonConversionMasterScreen() {
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(selectedFile, "UTF-8");
-    });
+
+    let parsed: CsvData;
     try {
-      const parsed = await parseCsv(text);
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = reject;
+        reader.readAsText(selectedFile, "UTF-8");
+      });
+      parsed = await parseCsv(text);
+    } catch {
+      setUploadStatus("idle");
+      setSnackbarMessage(t("commonConversionMaster.parseCsvFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Accept a CSV whose headers match either the English or Japanese column set.
+    const enValidation = validateCsvColumns(
+      parsed.headers,
+      COMMON_CONVERSION_MASTER_HEADERS,
+    );
+    const jaValidation = validateCsvColumns(
+      parsed.headers,
+      COMMON_CONVERSION_MASTER_HEADERS_JA,
+    );
+    if (!enValidation.isValid && !jaValidation.isValid) {
+      setUploadStatus("idle");
+      const missing =
+        enValidation.missingColumns.length <=
+        jaValidation.missingColumns.length
+          ? enValidation.missingColumns
+          : jaValidation.missingColumns;
+      setSnackbarMessage(
+        t("commonConversionMaster.missingColumnsError", {
+          columns: missing.join(", "),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("requested_by", SEARCH_USER_ID);
+      formData.append("session_id", SEARCH_SESSION_ID);
+      formData.append("screen_id", SCREEN_IDS.COMMON_CONVERSION.id);
+      formData.append("user_id", SEARCH_USER_ID);
+      formData.append("ip_address", SEARCH_IP_ADDRESS);
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setSelectedFile(screenKey, null);
+      setUploadStatus("idle");
+      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
       setSnackbarMessage(t("commonConversionMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("commonConversionMaster.parseCsvFailed"));
+      setSnackbarMessage(t("commonConversionMaster.uploadError"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -571,22 +950,10 @@ export default function CommonConversionMasterScreen() {
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
-    setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
     setSnackbarMessage(t("commonConversionMaster.uploadCancelled"));
     setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-  };
-
-  const handleUploadRegister = async () => {
-    setSnackbarMessage(t("commonConversionMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("commonConversionMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
@@ -675,12 +1042,30 @@ export default function CommonConversionMasterScreen() {
                         searchConditionsRef.current.itemId = s;
                       }}
                       freeSolo
+                      disabled={itemIdLoading}
+                      loading={itemIdLoading}
                       ListboxProps={listboxProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
                           label={t("commonConversionMaster.itemId")}
                           placeholder={t("commonConversionMaster.enterCharsToSearch")}
+                          sx={(theme) => ({
+                            "& .MuiInputBase-root.Mui-disabled": {
+                              backgroundColor: theme.palette.common.white,
+                            },
+                          })}
+                          InputProps={{
+                            ...params.InputProps,
+                            endAdornment: (
+                              <>
+                                {itemIdLoading ? (
+                                  <CircularProgress size={18} />
+                                ) : null}
+                                {params.InputProps.endAdornment}
+                              </>
+                            ),
+                          }}
                         />
                       )}
                     />
@@ -714,12 +1099,31 @@ export default function CommonConversionMasterScreen() {
                       searchConditionsRef.current.systemId = s;
                     }}
                     freeSolo
+                    disabled={systemIdsLoading}
+                    loading={systemIdsLoading}
+                    filterOptions={(x) => x}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("commonConversionMaster.systemId")}
                         placeholder={t("commonConversionMaster.enterCharsToSearch")}
+                        sx={(theme) => ({
+                          "& .MuiInputBase-root.Mui-disabled": {
+                            backgroundColor: theme.palette.common.white,
+                          },
+                        })}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {systemIdsLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -874,7 +1278,7 @@ export default function CommonConversionMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || isRegistering}
                         >
                           {t("commonConversionMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -920,7 +1324,11 @@ export default function CommonConversionMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {searchLoading ? (
+                      <StyledEmptyStateBox>
+                        <CircularProgress />
+                      </StyledEmptyStateBox>
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("commonConversionMaster.noRows")}
@@ -1051,8 +1459,23 @@ export default function CommonConversionMasterScreen() {
                                             }
                                             editable
                                             searchable
-                                            searchOptions={ITEM_ID_OPTIONS}
+                                            searchOptions={itemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.itemId")}
+                                          />
+                                        ) : colIndex === systemIdColIndex ? (
+                                          <SearchableCell
+                                            value={cell}
+                                            onChange={(v) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                v,
+                                              )
+                                            }
+                                            editable
+                                            searchable
+                                            searchOptions={systemIdAllOptions}
+                                            searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.systemId")}
                                           />
                                         ) : colIndex === itemNameColIndex ||
                                           colIndex === abstractColIndex ? (
@@ -1130,151 +1553,97 @@ export default function CommonConversionMasterScreen() {
           </StyledSectionHeader>
           {uploadSectionExpanded && (
             <StyledUploadSectionContent>
-              {!uploadedCsvData ? (
-                <>
-                  <StyledDragDropZone
-                    $dragActive={dragActive}
-                    onDragEnter={handleUploadDrag}
-                    onDragLeave={handleUploadDrag}
-                    onDragOver={handleUploadDrag}
-                    onDrop={handleUploadDrop}
-                    onClick={handleUploadBrowseClick}
-                  >
-                    <input
-                      ref={uploadFileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={handleUploadFileSelect}
-                      style={{ display: "none" }}
-                    />
-                    <StyledUploadIconCircle $dragActive={dragActive}>
-                      <StyledCloudUploadIcon $dragActive={dragActive} />
-                    </StyledUploadIconCircle>
-                    <StyledDragDropTitle variant="h6">
-                      {dragActive
-                        ? t("standardCostMaster.dropFileHere")
-                        : t("commonConversionMaster.dragDropFile")}
-                    </StyledDragDropTitle>
-                    <StyledDragDropSubtitle variant="body2">
-                      {t("commonConversionMaster.orClickToBrowse")}
-                    </StyledDragDropSubtitle>
-                    <StyledBrowseFilesButton
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleUploadDrag}
+                onDragLeave={handleUploadDrag}
+                onDragOver={handleUploadDrag}
+                onDrop={handleUploadDrop}
+                onClick={handleUploadBrowseClick}
+              >
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadFileSelect}
+                  style={{ display: "none" }}
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("commonConversionMaster.dropFileHere")
+                    : t("commonConversionMaster.dragDropFile")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("commonConversionMaster.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUploadBrowseClick();
+                  }}
+                >
+                  {t("commonConversionMaster.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("commonConversionMaster.supportedFormatCsv")}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
+
+              {selectedFile && (
+                <StyledSelectedFileBox>
+                  <StyledFileInfoBox>
+                    <StyledFileInfoInner>
+                      <StyledDescriptionIcon />
+                      <Box>
+                        <StyledFileNameText variant="body2">
+                          {selectedFile.name}
+                        </StyledFileNameText>
+                        <StyledFileSizeText variant="caption">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </StyledFileSizeText>
+                      </Box>
+                    </StyledFileInfoInner>
+                    <StyledUploadButton
                       variant="contained"
-                      startIcon={<CloudUploadOutlinedIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUploadBrowseClick();
-                      }}
+                      size="small"
+                      onClick={handleUploadClick}
+                      disabled={uploadStatus === "uploading"}
                     >
-                      {t("commonConversionMaster.browseFiles")}
-                    </StyledBrowseFilesButton>
-                    <StyledSupportedFormatText variant="caption">
-                      {t("commonConversionMaster.supportedFormatCsv")}
-                    </StyledSupportedFormatText>
-                  </StyledDragDropZone>
-                  {selectedFile && (
-                    <StyledSelectedFileBox>
-                      <StyledFileInfoBox>
-                        <StyledFileInfoInner>
-                          <StyledDescriptionIcon />
-                          <Box>
-                            <StyledFileNameText variant="body2">
-                              {selectedFile.name}
-                            </StyledFileNameText>
-                            <StyledFileSizeText variant="caption">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </StyledFileSizeText>
-                          </Box>
-                        </StyledFileInfoInner>
-                        <StyledUploadButton
-                          variant="contained"
-                          size="small"
-                          onClick={handleUploadClick}
-                          disabled={uploadStatus === "uploading"}
-                        >
-                          Upload
-                        </StyledUploadButton>
-                        <StyledViewButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() =>
-                            selectedFile &&
-                            navigateToCsvView(
-                              selectedFile,
-                              navigate,
-                              location.pathname,
-                              t("home.commonConversionMasterMaintenance"),
-                            )
-                          }
-                          disabled={
-                            !selectedFile || uploadStatus === "uploading"
-                          }
-                        >
-                          {t("upload.view")}
-                        </StyledViewButton>
-                      </StyledFileInfoBox>
-                      {uploadStatus === "uploading" && (
-                        <StyledProgressBox>
-                          <StyledLinearProgressBar
-                            variant="determinate"
-                            value={uploadProgress}
-                          />
-                          <StyledProgressText variant="caption">
-                            {uploadProgress}%
-                          </StyledProgressText>
-                        </StyledProgressBox>
-                      )}
-                    </StyledSelectedFileBox>
-                  )}
-                </>
-              ) : (
-                <>
-                  <StyledUploadedTitle variant="subtitle1">
-                    {selectedFile?.name}
-                  </StyledUploadedTitle>
-                  <StyledPreviewTableContainer>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {uploadedCsvData.headers.map((header, colIndex) => (
-                            <StyledPreviewTableHeaderCell key={colIndex}>
-                              {header}
-                            </StyledPreviewTableHeaderCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {uploadedCsvData.rows.map((row, rowIndex) => (
-                          <StyledPreviewTableBodyRow
-                            key={rowIndex}
-                            $index={rowIndex}
-                          >
-                            {row.map((cell, colIndex) => (
-                              <StyledPreviewTableDataCell key={colIndex}>
-                                {cell}
-                              </StyledPreviewTableDataCell>
-                            ))}
-                          </StyledPreviewTableBodyRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </StyledPreviewTableContainer>
-                  <StyledActionButtonsBox>
-                    <StyledCancelButton
+                      {t("commonConversionMaster.upload")}
+                    </StyledUploadButton>
+                    <StyledViewButton
                       variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        selectedFile &&
+                        navigateToCsvView(
+                          selectedFile,
+                          navigate,
+                          location.pathname,
+                          t("home.commonConversionMasterMaintenance"),
+                        )
+                      }
+                      disabled={!selectedFile || uploadStatus === "uploading"}
+                    >
+                      {t("upload.view")}
+                    </StyledViewButton>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
+                      disabled={uploadStatus === "uploading"}
+                      sx={{ marginLeft: "auto" }}
                     >
-                      {t("commonConversionMaster.cancel")}
-                    </StyledCancelButton>
-                    <StyledPrimaryContainedButton
-                      variant="contained"
-                      onClick={handleUploadRegister}
-                      startIcon={<AppRegistrationIcon />}
-                    >
-                      {t("commonConversionMaster.register")}
-                    </StyledPrimaryContainedButton>
-                  </StyledActionButtonsBox>
-                </>
+                      {t("commonConversionMaster.cancelUpload")}
+                    </Button>
+                  </StyledFileInfoBox>
+                </StyledSelectedFileBox>
               )}
             </StyledUploadSectionContent>
           )}
@@ -1294,6 +1663,13 @@ export default function CommonConversionMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("commonConversionMaster.registrationInProgress")}
+        />
+      )}
     </>
   );
 }

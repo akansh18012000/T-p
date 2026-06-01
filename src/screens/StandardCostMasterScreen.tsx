@@ -14,10 +14,8 @@ import {
   Button,
   TextField,
   Grid,
-  Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Snackbar,
@@ -25,8 +23,8 @@ import {
   Checkbox,
   IconButton,
   InputAdornment,
-  LinearProgress,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 
 import {
@@ -38,6 +36,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -45,8 +44,14 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
-import { STANDARD_COST_MASTER_HEADERS, STANDARD_COST_MASTER_COLUMNS, STANDARD_COST_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { STANDARD_COST_MASTER_HEADERS, STANDARD_COST_MASTER_HEADERS_JA, STANDARD_COST_MASTER_COLUMNS, STANDARD_COST_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
+import { useManufacturerData } from "../context/ManufacturerDataContext.js";
+import { useLocationData } from "../context/LocationDataContext.js";
+import { useCorporateData } from "../context/CorporateDataContext.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
@@ -55,7 +60,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   StyledMainPaper,
@@ -426,143 +431,141 @@ const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(3),
 }));
 
-const StyledProgressBox = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  maxWidth: 400,
-}));
-
-const StyledLinearProgressBar = styled(LinearProgress)(({ theme }) => ({
-  height: 6,
-  borderRadius: theme.spacing(1),
-  backgroundColor: theme.palette.grey![200],
-  "& .MuiLinearProgress-bar": {
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: theme.spacing(1),
-  },
-}));
-
-const StyledProgressText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginTop: theme.spacing(0.5),
-  display: "block",
-}));
-
-const StyledUploadedTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 600,
-  color: theme.palette.grey![700],
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledPreviewTableContainer = styled(TableContainer)(({ theme }) => ({
-  border: `1px solid ${theme.palette.grey![200]}`,
-  borderRadius: "12px",
-  maxHeight: 360,
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledPreviewTableHeaderCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: theme.palette.table!.headerBg,
-  fontWeight: 600,
-  color: theme.palette.common.white,
-  border: `1px solid ${theme.palette.grey![200]}`,
-  minWidth: 120,
-}));
-
-const StyledPreviewTableBodyRow = styled(TableRow)<{ $index: number }>(
-  ({ $index, theme }) => ({
-    backgroundColor:
-      $index % 2 === 0
-        ? theme.palette.table!.rowEven
-        : theme.palette.table!.rowOdd,
-  }),
-);
-
-const StyledPreviewTableDataCell = styled(TableCell)(({ theme }) => ({
-  border: `1px solid ${theme.palette.grey![200]}`,
-  color: theme.palette.grey![700],
-}));
-
-const StyledActionButtonsBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  gap: theme.spacing(2),
-}));
-
-const StyledCancelButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.grey![500],
-  color: theme.palette.grey![500],
-  "&:hover": {
-    borderColor: theme.palette.grey![700],
-    backgroundColor: alpha(theme.palette.grey![500], 0.04),
-  },
-}));
-
 const StyledSnackbarAlert = styled(Alert)({
   width: "100%",
 });
 
-const MANUFACTURERS = [
-  "MFR-001",
-  "MFR-002",
-  "MFR-003",
-  "Acme Corp",
-  "Beta Inc",
-];
-const MFR_PART_NUMBERS = [
-  "PART-1001",
-  "PART-2002",
-  "PART-1003",
-  "PART-3001",
-  "PART-4001",
-];
-const LOCATION_CODES = ["LOC-001", "LOC-002", "LOC-003", "LOC-004"];
-const CORPORATE_CODES = ["CORP-001", "CORP-002", "CORP-003", "CORP-004"];
-
-// Search options mapping by column key
-const SEARCH_OPTIONS: Record<string, string[]> = {
-  mfrPartNumber: MFR_PART_NUMBERS,
-  manufacturer: MANUFACTURERS,
-  locationCode: LOCATION_CODES,
-  corporateCode: CORPORATE_CODES,
-};
-
-// Mapping from code to name for associated columns
-const MANUFACTURER_NAME_MAP: Record<string, string> = {
-  "MFR-001": "Acme Corp",
-  "MFR-002": "Beta Inc",
-  "MFR-003": "Gamma Ltd",
-  "Acme Corp": "Acme Corp",
-  "Beta Inc": "Beta Inc",
-};
-
-const LOCATION_NAME_MAP: Record<string, string> = {
-  "LOC-001": "Location Alpha",
-  "LOC-002": "Location Beta",
-  "LOC-003": "Location Gamma",
-  "LOC-004": "Location Delta",
-};
-
-const CORPORATE_NAME_MAP: Record<string, string> = {
-  "CORP-001": "Corporate A",
-  "CORP-002": "Corporate B",
-  "CORP-003": "Corporate C",
-  "CORP-004": "Corporate D",
-};
-
 const DEFAULT_CSV_HEADERS = STANDARD_COST_MASTER_HEADERS;
+
+const STANDARD_COST_SEARCH_API_URL = "/api/v1/std-cost-combined/search";
+
+// TODO: source these from the authenticated session once auth is wired up.
+const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
+const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
+const SEARCH_SCREEN_ID = "e6d10225-575c-4dd2-9a63-e2b1f39878ab";
+const SEARCH_IP_ADDRESS = "192.168.1.101";
+
+interface SearchPayload {
+  manufacture_part_number: string;
+  manufacturer: string;
+  manufacturer_name: string;
+  manufacturer_detail: string;
+  manufacturer_detail_name: string;
+  company_code: string;
+  company_name: string;
+  fiscal_month_from: string;
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+interface SearchApiRow {
+  item_code: string;
+  manufacture_part_number: string;
+  manufacturer: string;
+  manufacturer_name: string;
+  manufacturer_detail: string;
+  manufacturer_detail_name: string;
+  company_code: string;
+  company_name: string;
+  fiscal_month_from: string;
+  fiscal_month_to: string;
+  currency_code: string;
+  standard_cost: string;
+  uptake_from_flg: string;
+  overwrite_ban_flg: string;
+  delete_flg: string;
+}
+
+interface SearchApiEnvelope {
+  total: number;
+  data: SearchApiRow[];
+}
+
+const STANDARD_COST_REGISTER_API_URL = "/api/v1/std-cost-combined/create";
+
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type StandardCostRowMeta = { original: string[] } | null;
+
+interface StandardCostCreateRow {
+  manufacture_part_number: string;
+  manufacturer: string;
+  manufacturer_name: string;
+  manufacturer_detail: string;
+  manufacturer_detail_name: string;
+  company_code: string;
+  company_name: string;
+  fiscal_month_from: string;
+  fiscal_month_to: string;
+  currency_code: string;
+  standard_cost: string;
+  uptake_from_flg: string;
+  overwrite_ban_flg: string;
+  delete_flg: string;
+}
+
+interface StandardCostCreatePayload {
+  rows: StandardCostCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+// Column indices, derived by key so they stay correct if the column order changes.
+const COL_MFR_PART_NUMBER = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "mfrPartNumber",
+);
+const COL_MANUFACTURER = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "manufacturer",
+);
+const COL_LOCATION_CODE = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "locationCode",
+);
+const COL_CORPORATE_CODE = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "corporateCode",
+);
+const COL_EFFECTIVE_START = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "effectiveStartDate",
+);
+const COL_CURRENCY = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "currency",
+);
+const COL_STANDARD_COST = STANDARD_COST_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "standardCost",
+);
+
+// Required-field validation scope: the editable code/value columns plus the two
+// flag columns. The lookup-derived name columns (manufacturerName, locationName,
+// corporateName) are sent as-is and excluded here.
+const REQUIRED_COL_INDICES = [
+  COL_MFR_PART_NUMBER,
+  COL_MANUFACTURER,
+  COL_LOCATION_CODE,
+  COL_CORPORATE_CODE,
+  COL_EFFECTIVE_START,
+  COL_CURRENCY,
+  COL_STANDARD_COST,
+  STANDARD_COST_MASTER_COLUMNS.findIndex(
+    (c) => c.key === "overwritePreventionFlag",
+  ),
+  STANDARD_COST_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag"),
+] as const;
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
 export default function StandardCostMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const screenKey = location.pathname;
   const { closeSidebar } = useSidebar();
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const { getUploadState, setSelectedFile } = useUploadContext();
+  const { selectedFile } = getUploadState(screenKey);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -589,16 +592,67 @@ export default function StandardCostMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Search box input and debounced values (min 3 chars, 1s debounce)
+  // Manufacturer code/name + part numbers come from the shared context
+  // (fetched at most once per session, reused across pages).
+  const {
+    manufacturerOptions,
+    manufacturerNameMap,
+    manufacturerPartNumberOptions,
+    status: manufacturerDataStatus,
+    ensureLoaded: ensureManufacturerData,
+  } = useManufacturerData();
+  const manufacturersLoading = manufacturerDataStatus === "loading";
+  const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
+
+  // Location codes/names come from the shared context as well.
+  const {
+    locationOptions,
+    locationNameMap,
+    status: locationDataStatus,
+    ensureLoaded: ensureLocationData,
+  } = useLocationData();
+  const locationsLoading = locationDataStatus === "loading";
+
+  // Corporate codes/names come from the shared context as well.
+  const {
+    corporateOptions,
+    corporateNameMap,
+    status: corporateDataStatus,
+    ensureLoaded: ensureCorporateData,
+  } = useCorporateData();
+  const corporatesLoading = corporateDataStatus === "loading";
+
+  // Kick off all three fetches in parallel; every call is idempotent.
+  useEffect(() => {
+    ensureManufacturerData();
+    ensureLocationData();
+    ensureCorporateData();
+  }, [ensureManufacturerData, ensureLocationData, ensureCorporateData]);
+
+  // Search box input and debounced values (min 3 chars, 300 ms debounce)
   const [manufacturerSearchInput, setManufacturerSearchInput] = useState("");
-  const { debouncedValue: manufacturerDebounced } =
-    useDebouncedSearch(manufacturerSearchInput);
+  const { debouncedValue: manufacturerDebounced } = useDebouncedSearch(
+    manufacturerSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+  const [
+    manufacturerPartNumberSearchInput,
+    setManufacturerPartNumberSearchInput,
+  ] = useState("");
+  const { debouncedValue: manufacturerPartNumberDebounced } = useDebouncedSearch(
+    manufacturerPartNumberSearchInput,
+    { minLength: 3, delay: 300 },
+  );
   const [locationCodeSearchInput, setLocationCodeSearchInput] = useState("");
-  const { debouncedValue: locationCodeDebounced } =
-    useDebouncedSearch(locationCodeSearchInput);
+  const { debouncedValue: locationCodeDebounced } = useDebouncedSearch(
+    locationCodeSearchInput,
+    { minLength: 3, delay: 300 },
+  );
   const [corporateCodeSearchInput, setCorporateCodeSearchInput] = useState("");
-  const { debouncedValue: corporateCodeDebounced } =
-    useDebouncedSearch(corporateCodeSearchInput);
+  const { debouncedValue: corporateCodeDebounced } = useDebouncedSearch(
+    corporateCodeSearchInput,
+    { minLength: 3, delay: 300 },
+  );
 
   const searchConditionsRef = useRef({
     manufacturerPartNumber: "",
@@ -632,35 +686,57 @@ export default function StandardCostMasterScreen() {
     validFrom,
   ]);
 
-  const manufacturerOptions = manufacturerDebounced
-    ? MANUFACTURERS.filter((m) =>
-        m.toLowerCase().includes(manufacturerDebounced.toLowerCase()),
-      )
-    : [];
+  // Cap how many options are handed to MUI's Autocomplete. It eagerly builds one
+  // React element per option, so an uncapped list stalls the dropdown on open.
+  // These lists are search-driven, so showing the first chunk and letting the
+  // user type to narrow is enough.
+  const MAX_VISIBLE_OPTIONS = 1000;
 
-  const locationCodeOptions = locationCodeDebounced
-    ? LOCATION_CODES.filter((c) =>
-        c.toLowerCase().includes(locationCodeDebounced.toLowerCase()),
-      )
-    : [];
+  const filterCapped = (options: string[], query: string) => {
+    const q = query.trim().toLowerCase();
+    const matches =
+      q.length === 0
+        ? options
+        : options.filter((o) => o.toLowerCase().includes(q));
+    return matches.slice(0, MAX_VISIBLE_OPTIONS);
+  };
 
-  const corporateCodeOptions = corporateCodeDebounced
-    ? CORPORATE_CODES.filter((c) =>
-        c.toLowerCase().includes(corporateCodeDebounced.toLowerCase()),
-      )
-    : [];
+  const visibleManufacturerOptions = filterCapped(
+    manufacturerOptions,
+    manufacturerDebounced,
+  );
+  const visibleManufacturerPartNumberOptions = filterCapped(
+    manufacturerPartNumberOptions,
+    manufacturerPartNumberDebounced,
+  );
+  const visibleLocationCodeOptions = filterCapped(
+    locationOptions,
+    locationCodeDebounced,
+  );
+  const visibleCorporateCodeOptions = filterCapped(
+    corporateOptions,
+    corporateCodeDebounced,
+  );
 
-  // Upload file state (selectedFile and uploadedCsvData from context)
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<
-    "idle" | "uploading" | "completed"
-  >("idle");
+  // Upload file state (selectedFile comes from the shared UploadContext)
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading">(
+    "idle",
+  );
   const [dragActive, setDragActive] = useState(false);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
 
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  // Last search payload, reused by Refresh so it re-runs the same query.
+  const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
+  // Parallel to csvData.rows: null = locally-added new row, { original } = a
+  // search-derived row (compared against to detect edits during registration).
+  const [rowMetadata, setRowMetadata] = useState<StandardCostRowMeta[]>([]);
+  // Frozen copy of the last search results, used for new-row duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -680,143 +756,94 @@ export default function StandardCostMasterScreen() {
   } = useRowSelectionMode();
   const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
-  const handleSearch = async () => {
+  const buildSearchPayload = (
+    conditions: typeof searchConditionsRef.current,
+  ): SearchPayload => ({
+    manufacture_part_number: conditions.manufacturerPartNumber.trim(),
+    manufacturer: conditions.manufacturer.trim(),
+    manufacturer_name: conditions.manufacturerName.trim(),
+    manufacturer_detail: conditions.locationCode.trim(),
+    manufacturer_detail_name: conditions.locationName.trim(),
+    company_code: conditions.corporateCode.trim(),
+    company_name: conditions.corporateName.trim(),
+    fiscal_month_from: conditions.validFrom
+      ? `${conditions.validFrom.getFullYear()}${String(
+          conditions.validFrom.getMonth() + 1,
+        ).padStart(2, "0")}`
+      : "",
+    user_id: SEARCH_USER_ID,
+    session_id: SEARCH_SESSION_ID,
+    screen_id: SEARCH_SCREEN_ID,
+    ip_address: SEARCH_IP_ADDRESS,
+  });
+
+  const executeSearch = async (
+    payload: SearchPayload,
+    options?: { silent?: boolean },
+  ) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchLoading(true);
     try {
-      const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const allRows: string[][] = [
-        [
-          "PART-1001",
-          "MFR-001",
-          "Acme Corp",
-          "LOC-001",
-          "Location Alpha",
-          "CORP-001",
-          "Corporate A",
-          "2026-01",
-          "USD",
-          "100.00",
-          "0",
-          "0",
-        ],
-        [
-          "PART-2002",
-          "MFR-002",
-          "Beta Inc",
-          "LOC-002",
-          "Location Beta",
-          "CORP-002",
-          "Corporate B",
-          "2026-02",
-          "EUR",
-          "150.50",
-          "0",
-          "0",
-        ],
-        [
-          "PART-1003",
-          "MFR-001",
-          "Acme Corp",
-          "LOC-003",
-          "Location Gamma",
-          "CORP-001",
-          "Corporate A",
-          "2026-03",
-          "JPY",
-          "12000",
-          "1",
-          "0",
-        ],
-        [
-          "PART-3001",
-          "MFR-003",
-          "Gamma Ltd",
-          "LOC-001",
-          "Location Alpha",
-          "CORP-003",
-          "Corporate C",
-          "2026-01",
-          "USD",
-          "250.00",
-          "0",
-          "0",
-        ],
-      ];
-      const validFromStr = conditions.validFrom
-        ? `${conditions.validFrom.getFullYear()}-${String(conditions.validFrom.getMonth() + 1).padStart(2, "0")}`
-        : "";
-      const filteredRows = allRows.filter((row) => {
-        const [
-          rowPartNum,
-          rowMfr,
-          rowMfrName,
-          rowLocCode,
-          rowLocName,
-          rowCorpCode,
-          rowCorpName,
-          rowValidFrom,
-        ] = row;
-        if (
-          conditions.manufacturerPartNumber.trim() &&
-          !rowPartNum
-            .toLowerCase()
-            .includes(conditions.manufacturerPartNumber.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.manufacturer.trim() &&
-          rowMfr !== conditions.manufacturer
-        )
-          return false;
-        if (
-          conditions.manufacturerName.trim() &&
-          !rowMfrName
-            .toLowerCase()
-            .includes(conditions.manufacturerName.toLowerCase())
-        )
-          return false;
-        if (conditions.locationCode.trim() && rowLocCode !== conditions.locationCode)
-          return false;
-        if (
-          conditions.locationName.trim() &&
-          !rowLocName.toLowerCase().includes(conditions.locationName.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.corporateCode.trim() &&
-          rowCorpCode !== conditions.corporateCode
-        )
-          return false;
-        if (
-          conditions.corporateName.trim() &&
-          !rowCorpName
-            .toLowerCase()
-            .includes(conditions.corporateName.toLowerCase())
-        )
-          return false;
-        if (validFromStr && rowValidFrom !== validFromStr) return false;
-        return true;
+      const res = await fetch(STANDARD_COST_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as SearchApiEnvelope;
+      const rows = Array.isArray(json.data) ? json.data : [];
+      const mappedRows = rows.map((r) => [
+        r.manufacture_part_number ?? "",
+        r.manufacturer ?? "",
+        r.manufacturer_name ?? "",
+        r.manufacturer_detail ?? "",
+        r.manufacturer_detail_name ?? "",
+        r.company_code ?? "",
+        r.company_name ?? "",
+        r.fiscal_month_from ?? "",
+        r.currency_code ?? "",
+        r.standard_cost ?? "",
+        r.overwrite_ban_flg ?? "0",
+        r.delete_flg ?? "0",
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows.map((row) =>
-          row.length >= 12 ? row : [...row.slice(0, 10), "0", "0"],
-        ),
+        rows: mappedRows,
       });
-      setSnackbarMessage(
-        filteredRows.length > 0
-          ? t("standardCostMaster.searchCompletedWithData")
-          : t("standardCostMaster.searchCompletedNoResults"),
-      );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
-    } catch {
+      setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
+      searchSnapshotRef.current = mappedRows.map((row) => [...row]);
+      clearNewRowTracking();
+      if (!silent) {
+        setSnackbarMessage(
+          mappedRows.length > 0
+            ? t("standardCostMaster.searchCompletedWithData")
+            : t("standardCostMaster.searchCompletedNoResults"),
+        );
+        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
+        setSnackbarOpen(true);
+      }
+    } catch (e) {
+      console.error(e);
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("standardCostMaster.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
+      if (!silent) {
+        setSnackbarMessage(t("standardCostMaster.searchCompletedNoResults"));
+        setSnackbarSeverity("info");
+        setSnackbarOpen(true);
+      }
+    } finally {
+      setSearchLoading(false);
     }
+  };
+
+  const handleSearch = async (options?: { silent?: boolean }) => {
+    const payload = buildSearchPayload(searchConditionsRef.current);
+    lastSearchPayloadRef.current = payload;
+    await executeSearch(payload, options);
   };
 
   const handleDownloadCsv = () => {
@@ -859,6 +886,11 @@ export default function StandardCostMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      null,
+      ...prev.slice(insertIndex),
+    ]);
     setSnackbarMessage(t("standardCostMaster.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -896,6 +928,11 @@ export default function StandardCostMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("standardCostMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -907,6 +944,7 @@ export default function StandardCostMasterScreen() {
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -914,18 +952,163 @@ export default function StandardCostMasterScreen() {
 
   const handleRefresh = () => {
     clearNewRowTracking();
-    handleSearch();
+    const payload =
+      lastSearchPayloadRef.current ??
+      buildSearchPayload(searchConditionsRef.current);
+    lastSearchPayloadRef.current = payload;
+    void executeSearch(payload);
   };
+
+  const formatRowList = (rows: number[]): string =>
+    new Intl.ListFormat(i18n.language, {
+      style: "long",
+      type: "conjunction",
+    }).format(rows.map(String));
 
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("standardCostMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("standardCostMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    // 1. Identify rows to submit (new rows, and existing rows that changed).
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= csvData.rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = csvData.rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("standardCostMaster.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+    const rows = csvData.rows;
+
+    // 2. Required-field validation.
+    const missingRequiredRows: number[] = [];
+    targetIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      const missing = REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
+      if (missing) missingRequiredRows.push(idx + 1);
+    });
+    if (missingRequiredRows.length > 0) {
+      missingRequiredRows.sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("standardCostMaster.requiredFieldsMissing", {
+          rows: formatRowList(missingRequiredRows),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 3. Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table.
+    const duplicateRows = new Set<number>();
+    newRowIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRows.add(idx + 1);
+      }
+    });
+    editedRowIndices.forEach((idx) => {
+      const row = rows[idx];
+      if (!row) return;
+      const collides = rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
+    });
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("standardCostMaster.duplicateRowError", {
+          rows: formatRowList(sorted),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 4. Build payload. fiscal_month_to / uptake_from_flg are not editable
+    // columns on this screen, so they are sent with safe defaults.
+    const buildRow = (idx: number): StandardCostCreateRow => {
+      const r = rows[idx];
+      return {
+        manufacture_part_number: r[COL_MFR_PART_NUMBER] ?? "",
+        manufacturer: r[COL_MANUFACTURER] ?? "",
+        manufacturer_name: r[2] ?? "",
+        manufacturer_detail: r[COL_LOCATION_CODE] ?? "",
+        manufacturer_detail_name: r[4] ?? "",
+        company_code: r[COL_CORPORATE_CODE] ?? "",
+        company_name: r[6] ?? "",
+        fiscal_month_from: r[COL_EFFECTIVE_START] ?? "",
+        fiscal_month_to: "",
+        currency_code: r[COL_CURRENCY] ?? "",
+        standard_cost: r[COL_STANDARD_COST] ?? "",
+        uptake_from_flg: "0",
+        overwrite_ban_flg: r[10] || "0",
+        delete_flg: r[11] || "0",
+      };
+    };
+
+    const payload: StandardCostCreatePayload = {
+      rows: targetIndices.map(buildRow),
+      user_id: SEARCH_USER_ID,
+      session_id: SEARCH_SESSION_ID,
+      screen_id: SEARCH_SCREEN_ID,
+      ip_address: SEARCH_IP_ADDRESS,
+    };
+
+    // 5. POST and refresh.
+    setIsRegistering(true);
+    try {
+      const res = await fetch(STANDARD_COST_REGISTER_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      await handleSearch({ silent: true });
+
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "standardCostMaster.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "standardCostMaster.createdNewRows";
+      } else {
+        messageKey = "standardCostMaster.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("standardCostMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -949,11 +1132,11 @@ export default function StandardCostMasterScreen() {
       if (assocColIndex !== -1) {
         let assocValue = "";
         if (colConfig.key === "manufacturer") {
-          assocValue = MANUFACTURER_NAME_MAP[value] || "";
+          assocValue = manufacturerNameMap[value] || "";
         } else if (colConfig.key === "locationCode") {
-          assocValue = LOCATION_NAME_MAP[value] || "";
+          assocValue = locationNameMap[value] || "";
         } else if (colConfig.key === "corporateCode") {
-          assocValue = CORPORATE_NAME_MAP[value] || "";
+          assocValue = corporateNameMap[value] || "";
         }
         newRows = newRows.map((row, rIdx) =>
           rIdx === rowIndex
@@ -997,28 +1180,77 @@ export default function StandardCostMasterScreen() {
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(selectedFile, "UTF-8");
-    });
+
+    let parsed: CsvData;
     try {
-      const parsed = await parseCsv(text);
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = reject;
+        reader.readAsText(selectedFile, "UTF-8");
+      });
+      parsed = await parseCsv(text);
+    } catch {
+      setUploadStatus("idle");
+      setSnackbarMessage(t("standardCostMaster.parseCsvFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Accept either the English or Japanese header set.
+    const enValidation = validateCsvColumns(
+      parsed.headers,
+      STANDARD_COST_MASTER_HEADERS,
+    );
+    const jaValidation = validateCsvColumns(
+      parsed.headers,
+      STANDARD_COST_MASTER_HEADERS_JA,
+    );
+    if (!enValidation.isValid && !jaValidation.isValid) {
+      setUploadStatus("idle");
+      const missing =
+        enValidation.missingColumns.length <=
+        jaValidation.missingColumns.length
+          ? enValidation.missingColumns
+          : jaValidation.missingColumns;
+      setSnackbarMessage(
+        t("standardCostMaster.missingColumnsError", {
+          columns: missing.join(", "),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("requested_by", SEARCH_USER_ID);
+      formData.append("session_id", SEARCH_SESSION_ID);
+      formData.append("screen_id", SCREEN_IDS.STD_COST.id);
+      formData.append("user_id", SEARCH_USER_ID);
+      formData.append("ip_address", SEARCH_IP_ADDRESS);
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setSelectedFile(screenKey, null);
+      setUploadStatus("idle");
+      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
       setSnackbarMessage(t("standardCostMaster.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("standardCostMaster.parseCsvFailed"));
+      setSnackbarMessage(t("standardCostMaster.uploadError"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -1026,22 +1258,10 @@ export default function StandardCostMasterScreen() {
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
-    setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
     setSnackbarMessage(t("standardCostMaster.uploadCancelled"));
     setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-  };
-
-  const handleUploadRegister = async () => {
-    setSnackbarMessage(t("standardCostMaster.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("standardCostMaster.registrationCompleted"));
-    setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
@@ -1083,8 +1303,10 @@ export default function StandardCostMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
-  const listboxProps = {
-    style: { maxHeight: 176, overflow: "auto" as const },
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
   };
 
   return (
@@ -1115,19 +1337,51 @@ export default function StandardCostMasterScreen() {
             <StyledSectionContent>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
+                  <Autocomplete
                     fullWidth
                     size="small"
-                    label={t("standardCostMaster.manufacturerPartNumber")}
-                    value={manufacturerPartNumber}
-                    onChange={(e) => setManufacturerPartNumber(e.target.value)}
+                    options={visibleManufacturerPartNumberOptions}
+                    value={manufacturerPartNumber || null}
+                    inputValue={manufacturerPartNumberSearchInput}
+                    onInputChange={(_event, newInputValue) =>
+                      setManufacturerPartNumberSearchInput(newInputValue)
+                    }
+                    onChange={(_event, newValue) => {
+                      const v = newValue ?? "";
+                      setManufacturerPartNumber(v);
+                      setManufacturerPartNumberSearchInput(v);
+                    }}
+                    freeSolo
+                    disabled={manufacturerPartNumbersLoading}
+                    loading={manufacturerPartNumbersLoading}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
+                    renderInput={(params) => (
+                      <StyledAutocompleteInput
+                        {...params}
+                        label={t("standardCostMaster.manufacturerPartNumber")}
+                        placeholder={t("standardCostMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturerPartNumbersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={manufacturerOptions}
+                    options={visibleManufacturerOptions}
                     value={manufacturer || null}
                     inputValue={manufacturerSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -1137,14 +1391,30 @@ export default function StandardCostMasterScreen() {
                       const v = newValue ?? "";
                       setManufacturer(v);
                       setManufacturerSearchInput(v);
+                      setManufacturerName(manufacturerNameMap[v] || "");
                     }}
                     freeSolo
-                    ListboxProps={listboxProps}
+                    disabled={manufacturersLoading}
+                    loading={manufacturersLoading}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("standardCostMaster.manufacturer")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {manufacturersLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1162,7 +1432,7 @@ export default function StandardCostMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={locationCodeOptions}
+                    options={visibleLocationCodeOptions}
                     value={locationCode || null}
                     inputValue={locationCodeSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -1172,14 +1442,30 @@ export default function StandardCostMasterScreen() {
                       const v = newValue ?? "";
                       setLocationCode(v);
                       setLocationCodeSearchInput(v);
+                      setLocationName(locationNameMap[v] || "");
                     }}
                     freeSolo
-                    ListboxProps={listboxProps}
+                    disabled={locationsLoading}
+                    loading={locationsLoading}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("standardCostMaster.locationCode")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {locationsLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1197,7 +1483,7 @@ export default function StandardCostMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={corporateCodeOptions}
+                    options={visibleCorporateCodeOptions}
                     value={corporateCode || null}
                     inputValue={corporateCodeSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -1207,14 +1493,30 @@ export default function StandardCostMasterScreen() {
                       const v = newValue ?? "";
                       setCorporateCode(v);
                       setCorporateCodeSearchInput(v);
+                      setCorporateName(corporateNameMap[v] || "");
                     }}
                     freeSolo
-                    ListboxProps={listboxProps}
+                    disabled={corporatesLoading}
+                    loading={corporatesLoading}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
                         label={t("standardCostMaster.corporateCode")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {corporatesLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1372,7 +1674,11 @@ export default function StandardCostMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {searchLoading ? (
+                      <StyledEmptyStateBox>
+                        <CircularProgress />
+                      </StyledEmptyStateBox>
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("standardCostMaster.noRows")}
@@ -1465,7 +1771,16 @@ export default function StandardCostMasterScreen() {
                                       const isCheckbox = colConfig?.isCheckbox;
                                       const isEditable = colConfig?.editable !== false;
                                       const isSearchable = colConfig?.searchable && isEditable;
-                                      const searchOptions = colConfig?.key ? SEARCH_OPTIONS[colConfig.key] : undefined;
+                                      const searchOptions =
+                                        colConfig?.key === "manufacturer"
+                                          ? manufacturerOptions
+                                          : colConfig?.key === "mfrPartNumber"
+                                            ? manufacturerPartNumberOptions
+                                            : colConfig?.key === "locationCode"
+                                              ? locationOptions
+                                              : colConfig?.key === "corporateCode"
+                                                ? corporateOptions
+                                                : undefined;
 
                                       return (
                                         <StyledTableDataCell
@@ -1508,6 +1823,7 @@ export default function StandardCostMasterScreen() {
                                               searchable={isSearchable}
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
+                                              paginated
                                             />
                                           )}
                                         </StyledTableDataCell>
@@ -1564,152 +1880,97 @@ export default function StandardCostMasterScreen() {
 
           {uploadSectionExpanded && (
             <StyledUploadSectionContent>
-              {!uploadedCsvData ? (
-                <>
-                  <StyledDragDropZone
-                    $dragActive={dragActive}
-                    onDragEnter={handleUploadDrag}
-                    onDragLeave={handleUploadDrag}
-                    onDragOver={handleUploadDrag}
-                    onDrop={handleUploadDrop}
-                    onClick={handleUploadBrowseClick}
-                  >
-                    <input
-                      ref={uploadFileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={handleUploadFileSelect}
-                      style={{ display: "none" }}
-                    />
-                    <StyledUploadIconCircle $dragActive={dragActive}>
-                      <StyledCloudUploadIcon $dragActive={dragActive} />
-                    </StyledUploadIconCircle>
-                    <StyledDragDropTitle variant="h6">
-                      {dragActive
-                        ? t("standardCostMaster.dropFileHere")
-                        : t("standardCostMaster.dragDropFile")}
-                    </StyledDragDropTitle>
-                    <StyledDragDropSubtitle variant="body2">
-                      {t("standardCostMaster.orClickToBrowse")}
-                    </StyledDragDropSubtitle>
-                    <StyledBrowseFilesButton
-                      variant="contained"
-                      startIcon={<CloudUploadOutlinedIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUploadBrowseClick();
-                      }}
-                    >
-                      {t("standardCostMaster.browseFiles")}
-                    </StyledBrowseFilesButton>
-                    <StyledSupportedFormatText variant="caption">
-                      {t("standardCostMaster.supportedFormatCsv")}
-                    </StyledSupportedFormatText>
-                  </StyledDragDropZone>
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleUploadDrag}
+                onDragLeave={handleUploadDrag}
+                onDragOver={handleUploadDrag}
+                onDrop={handleUploadDrop}
+                onClick={handleUploadBrowseClick}
+              >
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadFileSelect}
+                  style={{ display: "none" }}
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("standardCostMaster.dropFileHere")
+                    : t("standardCostMaster.dragDropFile")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("standardCostMaster.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUploadBrowseClick();
+                  }}
+                >
+                  {t("standardCostMaster.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("standardCostMaster.supportedFormatCsv")}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
 
-                  {selectedFile && (
-                    <StyledSelectedFileBox>
-                      <StyledFileInfoBox>
-                        <StyledFileInfoInner>
-                          <StyledDescriptionIcon />
-                          <Box>
-                            <StyledFileNameText variant="body2">
-                              {selectedFile.name}
-                            </StyledFileNameText>
-                            <StyledFileSizeText variant="caption">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </StyledFileSizeText>
-                          </Box>
-                        </StyledFileInfoInner>
-                        <StyledUploadButton
-                          variant="contained"
-                          size="small"
-                          onClick={handleUploadClick}
-                          disabled={uploadStatus === "uploading"}
-                        >
-                          {t("upload.upload")}
-                        </StyledUploadButton>
-                        <StyledViewButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() =>
-                            selectedFile &&
-                            navigateToCsvView(
-                              selectedFile,
-                              navigate,
-                              location.pathname,
-                              t("home.standardCostMaintenance"),
-                            )
-                          }
-                          disabled={
-                            !selectedFile || uploadStatus === "uploading"
-                          }
-                        >
-                          {t("upload.view")}
-                        </StyledViewButton>
-                      </StyledFileInfoBox>
-                      {uploadStatus === "uploading" && (
-                        <StyledProgressBox>
-                          <StyledLinearProgressBar
-                            variant="determinate"
-                            value={uploadProgress}
-                          />
-                          <StyledProgressText variant="caption">
-                            {uploadProgress}%
-                          </StyledProgressText>
-                        </StyledProgressBox>
-                      )}
-                    </StyledSelectedFileBox>
-                  )}
-                </>
-              ) : (
-                <>
-                  <StyledUploadedTitle variant="subtitle1">
-                    {selectedFile?.name}
-                  </StyledUploadedTitle>
-                  <StyledPreviewTableContainer>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {uploadedCsvData.headers.map((header, colIndex) => (
-                            <StyledPreviewTableHeaderCell key={colIndex}>
-                              {header}
-                            </StyledPreviewTableHeaderCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {uploadedCsvData.rows.map((row, rowIndex) => (
-                          <StyledPreviewTableBodyRow
-                            key={rowIndex}
-                            $index={rowIndex}
-                          >
-                            {row.map((cell, colIndex) => (
-                              <StyledPreviewTableDataCell key={colIndex}>
-                                {cell}
-                              </StyledPreviewTableDataCell>
-                            ))}
-                          </StyledPreviewTableBodyRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </StyledPreviewTableContainer>
-                  <StyledActionButtonsBox>
-                    <StyledCancelButton
-                      variant="outlined"
-                      onClick={handleUploadCancel}
-                    >
-                      {t("standardCostMaster.cancel")}
-                    </StyledCancelButton>
-                    <StyledPrimaryContainedButton
+              {selectedFile && (
+                <StyledSelectedFileBox>
+                  <StyledFileInfoBox>
+                    <StyledFileInfoInner>
+                      <StyledDescriptionIcon />
+                      <Box>
+                        <StyledFileNameText variant="body2">
+                          {selectedFile.name}
+                        </StyledFileNameText>
+                        <StyledFileSizeText variant="caption">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </StyledFileSizeText>
+                      </Box>
+                    </StyledFileInfoInner>
+                    <StyledUploadButton
                       variant="contained"
-                      onClick={handleUploadRegister}
-                      startIcon={<AppRegistrationIcon />}
+                      size="small"
+                      onClick={handleUploadClick}
+                      disabled={uploadStatus === "uploading"}
                     >
-                      {t("standardCostMaster.register")}
-                    </StyledPrimaryContainedButton>
-                  </StyledActionButtonsBox>
-                </>
+                      {t("standardCostMaster.upload")}
+                    </StyledUploadButton>
+                    <StyledViewButton
+                      variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        selectedFile &&
+                        navigateToCsvView(
+                          selectedFile,
+                          navigate,
+                          location.pathname,
+                          t("home.standardCostMaintenance"),
+                        )
+                      }
+                      disabled={!selectedFile || uploadStatus === "uploading"}
+                    >
+                      {t("upload.view")}
+                    </StyledViewButton>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
+                      onClick={handleUploadCancel}
+                      disabled={uploadStatus === "uploading"}
+                      sx={{ marginLeft: "auto" }}
+                    >
+                      {t("standardCostMaster.cancelUpload")}
+                    </Button>
+                  </StyledFileInfoBox>
+                </StyledSelectedFileBox>
               )}
             </StyledUploadSectionContent>
           )}
@@ -1729,6 +1990,13 @@ export default function StandardCostMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("standardCostMaster.registrationInProgress")}
+        />
+      )}
     </>
   );
 }
