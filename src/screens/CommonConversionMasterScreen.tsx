@@ -350,6 +350,8 @@ export default function CommonConversionMasterScreen() {
     deletionFlag,
   ]);
 
+  // When nothing is typed yet, show the first chunk of options so the dropdown
+  // is populated as soon as the field is clicked/focused (type-to-narrow after).
   const itemIdOptions: string[] = itemIdDebounced
     ? itemIdData
         .filter(
@@ -359,7 +361,7 @@ export default function CommonConversionMasterScreen() {
             o.abstract.toLowerCase().includes(itemIdDebounced.toLowerCase()),
         )
         .map((o) => o.id)
-    : [];
+    : itemIdData.slice(0, MAX_VISIBLE_OPTIONS).map((o) => o.id);
 
   // Full Item ID list (unfiltered) used by the in-table item id cell.
   const itemIdAllOptions: string[] = itemIdData.map((o) => o.id);
@@ -370,7 +372,7 @@ export default function CommonConversionMasterScreen() {
           id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const itemSelected = itemIdData.find((o) => o.id === itemId);
 
@@ -1066,6 +1068,7 @@ export default function CommonConversionMasterScreen() {
                         searchConditionsRef.current.itemId = s;
                       }}
                       freeSolo
+                      openOnFocus
                       disabled={itemIdLoading}
                       loading={itemIdLoading}
                       ListboxProps={listboxProps}
@@ -1123,6 +1126,7 @@ export default function CommonConversionMasterScreen() {
                       searchConditionsRef.current.systemId = s;
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
                     filterOptions={(x) => x}

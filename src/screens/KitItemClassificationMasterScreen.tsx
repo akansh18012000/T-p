@@ -302,10 +302,20 @@ export default function KitItemClassificationMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      kitManufacturerPartNumber,
-      kitManufacturer,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      kitManufacturerPartNumber:
+        kitManufacturerPartNumber || kitManufacturerPartNumberSearchInput,
+      kitManufacturer: kitManufacturer || kitManufacturerSearchInput,
     };
-  }, [kitManufacturerPartNumber, kitManufacturer]);
+  }, [
+    kitManufacturerPartNumber,
+    kitManufacturerPartNumberSearchInput,
+    kitManufacturer,
+    kitManufacturerSearchInput,
+  ]);
 
   // Upload file state (selectedFile from context)
   const [uploadStatus, setUploadStatus] = useState<
@@ -908,6 +918,7 @@ export default function KitItemClassificationMasterScreen() {
                       setKitManufacturerPartNumberSearchInput(v);
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={kitManufacturerPartNumbersLoading}
                     loading={kitManufacturerPartNumbersLoading}
                     ListboxProps={listboxProps}
@@ -949,6 +960,7 @@ export default function KitItemClassificationMasterScreen() {
                       setKitManufacturerSearchInput(v);
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={kitManufacturersLoading}
                     loading={kitManufacturersLoading}
                     ListboxProps={listboxProps}

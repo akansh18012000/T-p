@@ -316,12 +316,23 @@ export default function CommonMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      groupId,
-      code,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      groupId: groupId || groupIdSearchInput,
+      code: code || codeSearchInput,
       codeName,
       deletionFlag,
     };
-  }, [groupId, code, codeName, deletionFlag]);
+  }, [
+    groupId,
+    groupIdSearchInput,
+    code,
+    codeSearchInput,
+    codeName,
+    deletionFlag,
+  ]);
 
   const groupIdOptions: string[] = groupIdSearchInput
     ? groupOptions
@@ -903,6 +914,7 @@ export default function CommonMasterScreen() {
                         }
                       }}
                       freeSolo
+                      openOnFocus
                       disabled={groupOptionsLoading}
                       loading={groupOptionsLoading}
                       ListboxProps={listboxProps}
@@ -964,6 +976,7 @@ export default function CommonMasterScreen() {
                       }
                     }}
                     freeSolo
+                    openOnFocus
                     loading={codeOptionsLoading}
                     ListboxProps={listboxProps}
                     renderInput={(params) => (

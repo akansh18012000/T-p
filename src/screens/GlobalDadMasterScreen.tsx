@@ -414,11 +414,16 @@ export default function GlobalDadMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      systemId,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      systemId: systemId || systemIdSearchInput,
       salesLocationCode,
-      localCustomerCode,
-      productClassification,
-      transferDestBU3,
+      localCustomerCode: localCustomerCode || localCustomerSearchInput,
+      productClassification:
+        productClassification || productClassificationSearchInput,
+      transferDestBU3: transferDestBU3 || transferDestBU3SearchInput,
       patternId,
       effectiveStartDate,
       expirationDate,
@@ -426,10 +431,14 @@ export default function GlobalDadMasterScreen() {
     };
   }, [
     systemId,
+    systemIdSearchInput,
     salesLocationCode,
     localCustomerCode,
+    localCustomerSearchInput,
     productClassification,
+    productClassificationSearchInput,
     transferDestBU3,
+    transferDestBU3SearchInput,
     patternId,
     effectiveStartDate,
     expirationDate,
@@ -442,7 +451,8 @@ export default function GlobalDadMasterScreen() {
           id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : // Show the first chunk so options appear on click; type to narrow.
+      systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const localCustomerCodeOptions = localCustomerDebounced
     ? localCustomerAllOptions
@@ -450,7 +460,8 @@ export default function GlobalDadMasterScreen() {
           code.toLowerCase().includes(localCustomerDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : // Show the first chunk so options appear on click; type to narrow.
+      localCustomerAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const productClassificationCodeOptions = productClassificationDebounced
     ? productClassificationAllOptions
@@ -460,7 +471,8 @@ export default function GlobalDadMasterScreen() {
             .includes(productClassificationDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : // Show the first chunk so options appear on click; type to narrow.
+      productClassificationAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const transferDestBU3CodeOptions = transferDestBU3Debounced
     ? bu3CodeOptions
@@ -468,7 +480,8 @@ export default function GlobalDadMasterScreen() {
           code.toLowerCase().includes(transferDestBU3Debounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : // Show the first chunk so options appear on click; type to narrow.
+      bu3CodeOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   // Get associated names for the selected codes, localized to the site language
   // where the source provides per-language names (product classification, BU3).
@@ -1206,6 +1219,7 @@ export default function GlobalDadMasterScreen() {
                       searchConditionsRef.current.systemId = s;
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
                     ListboxProps={listboxProps}
@@ -1261,6 +1275,7 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.localCustomerCode = s;
                       }}
                       freeSolo
+                      openOnFocus
                       disabled={localCustomersLoading}
                       loading={localCustomersLoading}
                       ListboxProps={listboxProps}
@@ -1311,6 +1326,7 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.productClassification = s;
                       }}
                       freeSolo
+                      openOnFocus
                       disabled={productClassificationsLoading}
                       loading={productClassificationsLoading}
                       ListboxProps={listboxProps}
@@ -1361,6 +1377,7 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.transferDestBU3 = s;
                       }}
                       freeSolo
+                      openOnFocus
                       disabled={transferDestBU3sLoading}
                       loading={transferDestBU3sLoading}
                       ListboxProps={listboxProps}

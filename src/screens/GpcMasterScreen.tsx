@@ -411,18 +411,26 @@ export default function GpcMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      manufacturer,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      manufacturer: manufacturer || manufacturerSearchInput,
       manufacturerName,
-      manufacturerPartNumber,
-      gpcCode,
+      manufacturerPartNumber:
+        manufacturerPartNumber || manufacturerPartNumberSearchInput,
+      gpcCode: gpcCode || gpcCodeSearchInput,
       gpcName,
       validYear,
     };
   }, [
     manufacturer,
+    manufacturerSearchInput,
     manufacturerName,
     manufacturerPartNumber,
+    manufacturerPartNumberSearchInput,
     gpcCode,
+    gpcCodeSearchInput,
     gpcName,
     validYear,
   ]);
@@ -1367,6 +1375,7 @@ export default function GpcMasterScreen() {
                       setManufacturerName(manufacturerNameMap[v] || "");
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}
@@ -1417,6 +1426,7 @@ export default function GpcMasterScreen() {
                       setManufacturerPartNumberSearchInput(v);
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturerPartNumbersLoading}
                     loading={manufacturerPartNumbersLoading}
                     filterOptions={(x) => x}
@@ -1459,6 +1469,7 @@ export default function GpcMasterScreen() {
                       setGpcName(gpcCodeNameMap[v] || "");
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={gpcCodesLoading}
                     loading={gpcCodesLoading}
                     filterOptions={(x) => x}

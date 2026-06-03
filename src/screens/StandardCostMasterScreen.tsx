@@ -666,22 +666,31 @@ export default function StandardCostMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      manufacturerPartNumber,
-      manufacturer,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      manufacturerPartNumber:
+        manufacturerPartNumber || manufacturerPartNumberSearchInput,
+      manufacturer: manufacturer || manufacturerSearchInput,
       manufacturerName,
-      locationCode,
+      locationCode: locationCode || locationCodeSearchInput,
       locationName,
-      corporateCode,
+      corporateCode: corporateCode || corporateCodeSearchInput,
       corporateName,
       validFrom,
     };
   }, [
     manufacturerPartNumber,
+    manufacturerPartNumberSearchInput,
     manufacturer,
+    manufacturerSearchInput,
     manufacturerName,
     locationCode,
+    locationCodeSearchInput,
     locationName,
     corporateCode,
+    corporateCodeSearchInput,
     corporateName,
     validFrom,
   ]);
@@ -1370,6 +1379,7 @@ export default function StandardCostMasterScreen() {
                       setManufacturerPartNumberSearchInput(v);
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturerPartNumbersLoading}
                     loading={manufacturerPartNumbersLoading}
                     filterOptions={(x) => x}
@@ -1412,6 +1422,7 @@ export default function StandardCostMasterScreen() {
                       setManufacturerName(manufacturerNameMap[v] || "");
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}
@@ -1463,6 +1474,7 @@ export default function StandardCostMasterScreen() {
                       setLocationName(locationNameMap[v] || "");
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={locationsLoading}
                     loading={locationsLoading}
                     filterOptions={(x) => x}
@@ -1514,6 +1526,7 @@ export default function StandardCostMasterScreen() {
                       setCorporateName(corporateNameMap[v] || "");
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={corporatesLoading}
                     loading={corporatesLoading}
                     filterOptions={(x) => x}
