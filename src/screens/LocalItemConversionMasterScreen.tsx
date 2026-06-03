@@ -395,20 +395,28 @@ function LocalItemConversionMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      systemId,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // is empty in that case, so without this fallback the typed text would
+      // be dropped from the search payload.
+      systemId: systemId || systemIdSearchInput,
       yearMonth,
       localItemCode,
-      manufacturerCode,
+      manufacturerCode: manufacturerCode || manufacturerCodeSearchInput,
       manufacturerName,
-      manufacturerPartNumber,
+      manufacturerPartNumber:
+        manufacturerPartNumber || manufacturerPartNumberSearchInput,
     };
   }, [
     systemId,
+    systemIdSearchInput,
     yearMonth,
     localItemCode,
     manufacturerCode,
+    manufacturerCodeSearchInput,
     manufacturerName,
     manufacturerPartNumber,
+    manufacturerPartNumberSearchInput,
   ]);
 
   // Cap how many options MUI's Autocomplete builds at once (it creates one
