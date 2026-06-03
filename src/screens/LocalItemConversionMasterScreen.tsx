@@ -116,6 +116,7 @@ import {
   LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA,
   LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS,
 } from "../constants/tableColumns.js";
+import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
@@ -129,6 +130,9 @@ import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useManufacturerData } from "../context/ManufacturerDataContext.js";
+import { useGpcData } from "../context/GpcDataContext.js";
+import { useLocationData } from "../context/LocationDataContext.js";
+import { useCorporateData } from "../context/CorporateDataContext.js";
 import {
   parseCsv,
   stringifyCsv,
@@ -146,58 +150,9 @@ const GLOBAL_ITEM_TYPE_OPTIONS = [
   { value: "4", labelKey: "localItemConversion.globalItemTypeNonStockMaterials" },
 ];
 
-// Mock data for cell search dialogs. System ID, manufacturer code/name and
-// manufacturer part number are sourced from shared contexts inside the
-// component; the remaining columns below have no context yet.
-const CELL_SEARCH_CURRENCIES = [
-  "USD", "EUR", "JPY", "GBP", "CHF",
-  "CAD", "AUD", "CNY", "INR", "KRW",
-];
-
-// Code-to-Name lookup maps for associated columns
-const GPC_CODE_TO_NAME: Record<string, string> = {
-  "GPC01": "Medical Instruments",
-  "GPC02": "Surgical Equipment",
-  "GPC03": "Diagnostic Devices",
-  "GPC04": "Laboratory Supplies",
-  "GPC05": "Patient Care Products",
-  "GPC10": "Cardiovascular Devices",
-  "GPC11": "Orthopedic Implants",
-  "GPC12": "Neurological Equipment",
-  "GPC20": "Respiratory Devices",
-  "GPC21": "Dialysis Equipment",
-};
-
-const LOCATION_CODE_TO_NAME: Record<string, string> = {
-  "BC01": "Tokyo Distribution Center",
-  "BC02": "Osaka Warehouse",
-  "BC03": "Nagoya Facility",
-  "BC04": "Fukuoka Hub",
-  "BC05": "Sapporo Depot",
-  "LOC-NORTH": "North Region Center",
-  "LOC-EAST": "East Region Center",
-  "LOC-WEST": "West Region Center",
-  "LOC-SOUTH": "South Region Center",
-  "LOC-CENTRAL": "Central Region Hub",
-};
-
-const CORPORATE_CODE_TO_NAME: Record<string, string> = {
-  "CC01": "Terumo Corporation",
-  "CC02": "Terumo Americas",
-  "CC03": "Terumo Europe",
-  "CC04": "Terumo Asia Pacific",
-  "CC05": "Terumo China",
-  "CC-ALPHA": "Alpha Medical Division",
-  "CC-BETA": "Beta Healthcare Unit",
-  "CC-GAMMA": "Gamma Research Lab",
-  "CC-DELTA": "Delta Distribution Corp",
-};
-
-// Extract code arrays from lookup maps
-const CELL_SEARCH_GPC_CODES = Object.keys(GPC_CODE_TO_NAME);
-const CELL_SEARCH_LOCATION_CODES = Object.keys(LOCATION_CODE_TO_NAME);
-const CELL_SEARCH_CORPORATE_CODES = Object.keys(CORPORATE_CODE_TO_NAME);
-
+// GPC code, location code and corporate code (and their associated name
+// columns) are sourced from shared contexts inside the component, mirroring
+// GpcMaster / StandardCostMaster. Currency is a dropdown of CURRENCY_CODES.
 const DEFAULT_CSV_HEADERS = LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
 
 // Static auth payload for the upload API. TODO: source these from the
@@ -374,11 +329,38 @@ function LocalItemConversionMasterScreen() {
   } = useManufacturerData();
   const manufacturersLoading = manufacturerDataStatus === "loading";
 
-  // Kick off both fetches on mount; both calls are idempotent.
+  // GPC code, location code and corporate code (plus their associated name
+  // columns) come from shared contexts as well — same as StandardCostMaster.
+  const {
+    gpcCodeOptions,
+    gpcCodeNameMap,
+    ensureLoaded: ensureGpcData,
+  } = useGpcData();
+  const {
+    locationOptions,
+    locationNameMap,
+    ensureLoaded: ensureLocationData,
+  } = useLocationData();
+  const {
+    corporateOptions,
+    corporateNameMap,
+    ensureLoaded: ensureCorporateData,
+  } = useCorporateData();
+
+  // Kick off all fetches on mount; every call is idempotent.
   useEffect(() => {
     ensureSystemIdData();
     ensureManufacturerData();
-  }, [ensureSystemIdData, ensureManufacturerData]);
+    ensureGpcData();
+    ensureLocationData();
+    ensureCorporateData();
+  }, [
+    ensureSystemIdData,
+    ensureManufacturerData,
+    ensureGpcData,
+    ensureLocationData,
+    ensureCorporateData,
+  ]);
 
   // Search box inputs and debounced values (min 3 chars, 300 ms — matches GpcMaster)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
@@ -467,10 +449,9 @@ function LocalItemConversionMasterScreen() {
     systemId: systemIdAllOptions,
     manufacturer: manufacturerOptions,
     mfrPartNumber: manufacturerPartNumberOptions,
-    gpcCode: CELL_SEARCH_GPC_CODES,
-    locationCode: CELL_SEARCH_LOCATION_CODES,
-    corporateCode: CELL_SEARCH_CORPORATE_CODES,
-    currency: CELL_SEARCH_CURRENCIES,
+    gpcCode: gpcCodeOptions,
+    locationCode: locationOptions,
+    corporateCode: corporateOptions,
   };
 
   // Column indices for code-to-name auto-population on cell edit. Manufacturer
@@ -480,9 +461,9 @@ function LocalItemConversionMasterScreen() {
     { nameColIndex: number; lookupMap: Record<string, string> }
   > = {
     2: { nameColIndex: 3, lookupMap: manufacturerNameMap }, // manufacturer -> manufacturerName
-    6: { nameColIndex: 7, lookupMap: GPC_CODE_TO_NAME }, // gpcCode -> gpcName
-    9: { nameColIndex: 10, lookupMap: LOCATION_CODE_TO_NAME }, // locationCode -> locationName
-    11: { nameColIndex: 12, lookupMap: CORPORATE_CODE_TO_NAME }, // corporateCode -> corporateName
+    6: { nameColIndex: 7, lookupMap: gpcCodeNameMap }, // gpcCode -> gpcName
+    9: { nameColIndex: 10, lookupMap: locationNameMap }, // locationCode -> locationName
+    11: { nameColIndex: 12, lookupMap: corporateNameMap }, // corporateCode -> corporateName
   };
 
   // Upload file state (selectedFile from context)
@@ -1593,6 +1574,7 @@ function LocalItemConversionMasterScreen() {
                                         const isSearchable = editable && !!searchOptions;
                                         const isGlobalItemType =
                                           col.key === "globalItemTypes";
+                                        const isCurrency = col.key === "currency";
                                         return (
                                           <StyledTableDataCell
                                             key={col.key}
@@ -1645,6 +1627,40 @@ function LocalItemConversionMasterScreen() {
                                                   ),
                                                 )}
                                               </Select>
+                                            ) : isCurrency ? (
+                                              <Select
+                                                value={cell}
+                                                onChange={(e) =>
+                                                  handleCellEdit(
+                                                    originalRowIndex,
+                                                    colIndex,
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                size="small"
+                                                variant="standard"
+                                                fullWidth
+                                              >
+                                                {cell &&
+                                                  !CURRENCY_CODES.includes(
+                                                    cell,
+                                                  ) && (
+                                                    <MenuItem
+                                                      key={cell}
+                                                      value={cell}
+                                                    >
+                                                      {cell}
+                                                    </MenuItem>
+                                                  )}
+                                                {CURRENCY_CODES.map((code) => (
+                                                  <MenuItem
+                                                    key={code}
+                                                    value={code}
+                                                  >
+                                                    {code}
+                                                  </MenuItem>
+                                                ))}
+                                              </Select>
                                             ) : editable ? (
                                               <SearchableCell
                                                 value={cell}
@@ -1659,6 +1675,7 @@ function LocalItemConversionMasterScreen() {
                                                 searchable={isSearchable}
                                                 searchOptions={searchOptions}
                                                 searchTitle={t(col.labelKey)}
+                                                paginated
                                               />
                                             ) : (
                                               <Box
