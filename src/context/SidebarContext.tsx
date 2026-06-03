@@ -10,6 +10,8 @@ export interface SidebarContextValue {
   setDataInputExpanded: (v: boolean) => void;
   masterMaintenanceExpanded: boolean;
   setMasterMaintenanceExpanded: (v: boolean) => void;
+  adminExpanded: boolean;
+  setAdminExpanded: (v: boolean) => void;
   currentScreenId: string | undefined;
   sidebarOpen: boolean;
   openSidebar: () => void;
@@ -25,14 +27,19 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [dataInputExpanded, setDataInputExpanded] = useState(false);
   const [masterMaintenanceExpanded, setMasterMaintenanceExpanded] =
     useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (currentScreenId) {
-      const { dataInputExpanded: di, masterMaintenanceExpanded: mm } =
-        getInitialSidebarExpanded(currentScreenId);
+      const {
+        dataInputExpanded: di,
+        masterMaintenanceExpanded: mm,
+        adminExpanded: ad,
+      } = getInitialSidebarExpanded(currentScreenId);
       setDataInputExpanded(di);
       setMasterMaintenanceExpanded(mm);
+      setAdminExpanded(ad);
     }
   }, [currentScreenId]);
 
@@ -44,6 +51,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     setDataInputExpanded,
     masterMaintenanceExpanded,
     setMasterMaintenanceExpanded,
+    adminExpanded,
+    setAdminExpanded,
     currentScreenId,
     sidebarOpen,
     openSidebar,

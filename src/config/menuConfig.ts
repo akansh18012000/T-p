@@ -15,6 +15,10 @@ import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import InputIcon from "@mui/icons-material/Input";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 
 export interface MenuItem {
   id: string;
@@ -62,6 +66,11 @@ export const DATA_INPUT_ITEMS: MenuItem[] = [
     label: "home.stravisCoaHierarchyUpload",
     icon: AccountTreeIcon,
   },
+  {
+    id: "pl-data-approval",
+    label: "home.plDataApproval",
+    icon: FactCheckIcon,
+  },
 ];
 
 // Centralized Master Maintenance Items - used across all screens (order as per requirement)
@@ -105,12 +114,37 @@ export const MASTER_MAINTENANCE_ITEMS: MenuItem[] = [
   },
 ];
 
+// Centralized Admin Items - shown only to admin users (visibility to be wired to the user API later)
+export const ADMIN_ITEMS: MenuItem[] = [
+  {
+    id: "create-user",
+    label: "home.createUser",
+    icon: PersonAddIcon,
+  },
+  {
+    id: "update-roles",
+    label: "home.updateRoles",
+    icon: ManageAccountsIcon,
+  },
+];
+
 // Helper function to create menu sections with translations
 export const createMenuSections = (
   t: (key: string) => string,
   dataInputExpanded: boolean,
   masterMaintenanceExpanded: boolean,
+  adminExpanded: boolean,
 ): MenuSection[] => [
+  {
+    id: "admin-pages",
+    label: t("home.adminPages"),
+    icon: AdminPanelSettingsIcon,
+    items: ADMIN_ITEMS.map((item) => ({
+      ...item,
+      label: t(item.label),
+    })),
+    expanded: adminExpanded,
+  },
   {
     id: "data-input",
     label: t("home.dataInput"),
@@ -137,12 +171,15 @@ export const createMenuSections = (
 export function getInitialSidebarExpanded(screenId: string): {
   dataInputExpanded: boolean;
   masterMaintenanceExpanded: boolean;
+  adminExpanded: boolean;
 } {
   const isDataInput = DATA_INPUT_ITEMS.some((i) => i.id === screenId);
   const isMasterMaintenance = MASTER_MAINTENANCE_ITEMS.some((i) => i.id === screenId);
+  const isAdmin = ADMIN_ITEMS.some((i) => i.id === screenId);
   return {
     dataInputExpanded: isDataInput,
     masterMaintenanceExpanded: isMasterMaintenance,
+    adminExpanded: isAdmin,
   };
 }
 
@@ -165,6 +202,9 @@ const PATH_TO_SCREEN_ID: Record<string, string> = {
   "/fx-rate-entry": "fx-rate-daily",
   "/planning-data-ingestion": "planning-data-ingestion",
   "/stravis-coa-hierarchy-upload": "stravis-coa-hierarchy-upload",
+  "/pl-data-approval": "pl-data-approval",
+  "/create-user": "create-user",
+  "/update-roles": "update-roles",
 };
 
 export function getScreenIdFromPathname(pathname: string): string | undefined {
@@ -237,6 +277,15 @@ export const handleMenuItemNavigation = (
       break;
     case "stravis-coa-hierarchy-upload":
       navigate("/stravis-coa-hierarchy-upload");
+      break;
+    case "pl-data-approval":
+      navigate("/pl-data-approval");
+      break;
+    case "create-user":
+      navigate("/create-user");
+      break;
+    case "update-roles":
+      navigate("/update-roles");
       break;
     default:
       console.log("Navigating to:", item.id);

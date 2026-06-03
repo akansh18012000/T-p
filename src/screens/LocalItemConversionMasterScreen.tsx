@@ -9,8 +9,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
+  Button,
   Grid,
-  Table,
   TableBody,
   TableHead,
   TableRow,
@@ -20,6 +20,8 @@ import {
   InputAdornment,
   Autocomplete,
   CircularProgress,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -83,16 +85,6 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
-  StyledProgressBox,
-  StyledLinearProgressBar,
-  StyledProgressText,
-  StyledUploadedTitle,
-  StyledPreviewTableContainer,
-  StyledPreviewTableHeaderCell,
-  StyledPreviewTableBodyRow,
-  StyledPreviewTableDataCell,
-  StyledActionButtonsBox,
-  StyledCancelButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledFormControlLabel,
@@ -110,6 +102,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -120,10 +113,13 @@ import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.
 import {
   LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG,
   LOCAL_ITEM_CONVERSION_MASTER_HEADERS,
+  LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA,
   LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS,
 } from "../constants/tableColumns.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -133,16 +129,26 @@ import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useManufacturerData } from "../context/ManufacturerDataContext.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import {
+  parseCsv,
+  stringifyCsv,
+  validateCsvColumns,
+  type CsvData,
+} from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+
+// Global Item Type dropdown options. The code (value) is stored in the cell and
+// sent in the create/update API call; the dropdown shows "code : value".
+const GLOBAL_ITEM_TYPE_OPTIONS = [
+  { value: "1", labelKey: "localItemConversion.globalItemTypeFinishedGoods" },
+  { value: "2", labelKey: "localItemConversion.globalItemTypeHalfFinishedGoods" },
+  { value: "3", labelKey: "localItemConversion.globalItemTypeRawMaterials" },
+  { value: "4", labelKey: "localItemConversion.globalItemTypeNonStockMaterials" },
+];
 
 // Mock data for cell search dialogs. System ID, manufacturer code/name and
 // manufacturer part number are sourced from shared contexts inside the
 // component; the remaining columns below have no context yet.
-const CELL_SEARCH_GLOBAL_ITEM_TYPES = [
-  "GIT-A", "GIT-B", "GIT-C", "GIT-D", "GIT-E",
-  "GIT-ALPHA", "GIT-BETA", "GIT-GAMMA", "GIT-DELTA",
-];
 const CELL_SEARCH_CURRENCIES = [
   "USD", "EUR", "JPY", "GBP", "CHF",
   "CAD", "AUD", "CNY", "INR", "KRW",
@@ -194,26 +200,137 @@ const CELL_SEARCH_CORPORATE_CODES = Object.keys(CORPORATE_CODE_TO_NAME);
 
 const DEFAULT_CSV_HEADERS = LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
 
-// AI Generated Code by Deloitte + Cursor (BEGIN)
-function rowYearMonthFromValidFrom(validFrom: string): string {
-  const m = validFrom.trim().match(/^(\d{4})-(\d{2})/);
-  return m ? `${m[1]}-${m[2]}` : "";
+// Static auth payload for the upload API. TODO: source these from the
+// authenticated session once auth wiring is in place (mirrors GpcMaster).
+const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
+const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
+const SEARCH_IP_ADDRESS = "192.168.1.101";
+
+const LOCAL_ITEM_SEARCH_API_URL = "/api/v1/local-item/search";
+const LOCAL_ITEM_CREATE_API_URL = "/api/v1/local-item/create";
+const SEARCH_SCREEN_ID = SCREEN_IDS.LOCAL_ITEM.id;
+
+// Column indices into LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS, used by
+// the registration flow for required-field validation and payload mapping.
+const colIndexOf = (key: string) =>
+  LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.findIndex(
+    (c) => c.key === key,
+  );
+const COL_SYSTEM_ID = colIndexOf("systemId");
+const COL_LOCAL_ITEM_CODE = colIndexOf("localItemCode");
+const COL_MANUFACTURER = colIndexOf("manufacturer");
+const COL_MANUFACTURER_NAME = colIndexOf("manufacturerName");
+const COL_MFR_PART_NUMBER = colIndexOf("mfrPartNumber");
+const COL_GLOBAL_ITEM_TYPE = colIndexOf("globalItemTypes");
+const COL_GPC_CODE = colIndexOf("gpcCode");
+const COL_GPC_NAME = colIndexOf("gpcName");
+const COL_VALIDITY_YEAR = colIndexOf("validityYear");
+const COL_LOCATION_CODE = colIndexOf("locationCode");
+const COL_LOCATION_NAME = colIndexOf("locationName");
+const COL_CORPORATE_CODE = colIndexOf("corporateCode");
+const COL_CORPORATE_NAME = colIndexOf("corporateName");
+const COL_STANDARD_COST = colIndexOf("standardCost");
+const COL_CURRENCY = colIndexOf("currency");
+const COL_VALID_FROM_DATE = colIndexOf("validFromDate");
+
+// All fields are required for create/update except Global Item Type, Location
+// Code and Location Name (per the API contract).
+const REQUIRED_COL_INDICES = [
+  COL_SYSTEM_ID,
+  COL_LOCAL_ITEM_CODE,
+  COL_MANUFACTURER,
+  COL_MANUFACTURER_NAME,
+  COL_MFR_PART_NUMBER,
+  COL_GPC_CODE,
+  COL_GPC_NAME,
+  COL_VALIDITY_YEAR,
+  COL_CORPORATE_CODE,
+  COL_CORPORATE_NAME,
+  COL_STANDARD_COST,
+  COL_CURRENCY,
+  COL_VALID_FROM_DATE,
+] as const;
+
+interface LocalItemSearchPayload {
+  system_id: string;
+  local_item_code: string;
+  manufacturer: string;
+  manufacturer_part_number: string;
+  manufacturer_name: string;
+  fiscal_year: string;
+  item_not_registered: boolean;
 }
-// AI Generated Code by Deloitte + Cursor (END)
+
+interface LocalItemSearchApiRow {
+  local_system_id: string;
+  local_item_code: string;
+  manufacturer: string;
+  manufacturer_name: string;
+  manufacturer_part_number: string;
+  item_type: string;
+  item_description: string;
+  gpc_code: string;
+  gpc_name: string;
+  manufacturer_detail: string;
+  manufacturer_detail_name: string;
+  company_code: string;
+  company_name: string;
+  currency_code: string;
+  fiscal_year: string;
+  standard_cost: string;
+  delete_flg: string;
+}
+
+interface LocalItemSearchApiEnvelope {
+  total: number;
+  data: LocalItemSearchApiRow[];
+}
+
+interface LocalItemCreateRow {
+  local_system_id: string;
+  local_item_code: string;
+  manufacturer: string;
+  manufacturer_name: string;
+  mfr_part_number: string;
+  item_type: string;
+  item_description: string;
+  gpc_code: string;
+  gpc_name: string;
+  manufacturer_detail: string;
+  manufacturer_detail_name: string;
+  corporate_code: string;
+  legal_name: string;
+  currency: string;
+  effective_year: string;
+  standard_cost: string;
+  delete_flg: string;
+  effective_month: string;
+}
+
+interface LocalItemCreatePayload {
+  rows: LocalItemCreateRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type LocalItemRowMeta = { original: string[] } | null;
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
 function LocalItemConversionMasterScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { closeSidebar } = useSidebar();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
-    useUploadContext();
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const { getUploadState, setSelectedFile } = useUploadContext();
+  const { selectedFile } = getUploadState(screenKey);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -350,7 +467,6 @@ function LocalItemConversionMasterScreen() {
     systemId: systemIdAllOptions,
     manufacturer: manufacturerOptions,
     mfrPartNumber: manufacturerPartNumberOptions,
-    globalItemTypes: CELL_SEARCH_GLOBAL_ITEM_TYPES,
     gpcCode: CELL_SEARCH_GPC_CODES,
     locationCode: CELL_SEARCH_LOCATION_CODES,
     corporateCode: CELL_SEARCH_CORPORATE_CODES,
@@ -369,11 +485,10 @@ function LocalItemConversionMasterScreen() {
     11: { nameColIndex: 12, lookupMap: CORPORATE_CODE_TO_NAME }, // corporateCode -> corporateName
   };
 
-  // Upload file state (selectedFile and uploadedCsvData from context)
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<
-    "idle" | "uploading" | "completed"
-  >("idle");
+  // Upload file state (selectedFile from context)
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading">(
+    "idle",
+  );
   const [dragActive, setDragActive] = useState(false);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -382,7 +497,14 @@ function LocalItemConversionMasterScreen() {
   const [rowDeletionFlags, setRowDeletionFlags] = useState<Set<number>>(
     new Set(),
   );
+  // Parallel to csvData.rows. null at index i => row was added locally (new).
+  // Non-null => row came from search; `original` is used to detect edits.
+  const [rowMetadata, setRowMetadata] = useState<LocalItemRowMeta[]>([]);
+  // Frozen snapshot of the last search results; used for duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -404,313 +526,88 @@ function LocalItemConversionMasterScreen() {
 
   const handleSearch = async () => {
     setSearchExecuted(true);
-    // TODO: Remove the following block once BE integration is done. Replace with API call and set response to setCsvData.
+    setSearchLoading(true);
+    const conditions = searchConditionsRef.current;
+    const payload: LocalItemSearchPayload = {
+      system_id: conditions.systemId.trim(),
+      local_item_code: conditions.localItemCode.trim(),
+      manufacturer: conditions.manufacturerCode.trim(),
+      manufacturer_part_number: conditions.manufacturerPartNumber.trim(),
+      manufacturer_name: conditions.manufacturerName.trim(),
+      fiscal_year: conditions.yearMonth
+        ? `${conditions.yearMonth.getFullYear()}${String(
+            conditions.yearMonth.getMonth() + 1,
+          ).padStart(2, "0")}`
+        : "",
+      item_not_registered: itemNotRegistered,
+    };
     try {
-      const conditions = searchConditionsRef.current;
-      await new Promise((r) => setTimeout(r, 500));
-      const yearMonthStr = conditions.yearMonth
-        ? `${conditions.yearMonth.getFullYear()}-${String(conditions.yearMonth.getMonth() + 1).padStart(2, "0")}`
-        : "";
-      // AI Generated Code by Deloitte + Cursor (BEGIN)
-      // Mock rows: order matches LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS
-      const allRows: string[][] = [
-        [
-          "SYS-001",
-          "LOC-001",
-          "MFR-001",
-          "Acme Corp",
-          "PART-1001",
-          "GIT-A",
-          "GPC01",
-          "GPC Alpha",
-          "2026",
-          "BC01",
-          "Base North",
-          "CC01",
-          "Corp Alpha",
-          "100.50",
-          "USD",
-          "2026-01-15",
-        ],
-        [
-          "SYS-001",
-          "LOC-002",
-          "MFR-002",
-          "Beta Inc",
-          "PART-2002",
-          "GIT-B",
-          "GPC02",
-          "GPC Beta",
-          "2026",
-          "BC02",
-          "Base East",
-          "CC02",
-          "Corp Beta",
-          "200.00",
-          "EUR",
-          "2026-01-20",
-        ],
-        [
-          "SYS-001",
-          "LOC-003",
-          "MFR-001",
-          "Acme Corp",
-          "PART-1003",
-          "GIT-A",
-          "GPC01",
-          "GPC Alpha",
-          "2026",
-          "BC01",
-          "Base North",
-          "CC01",
-          "Corp Alpha",
-          "150.25",
-          "USD",
-          "2026-02-10",
-        ],
-        [
-          "SYS-002",
-          "LOC-004",
-          "MFR-003",
-          "Gamma Ltd",
-          "PART-3001",
-          "GIT-C",
-          "GPC03",
-          "GPC Gamma",
-          "2026",
-          "BC03",
-          "Base West",
-          "CC03",
-          "Corp Gamma",
-          "300.00",
-          "JPY",
-          "2026-01-05",
-        ],
-        [
-          "SYS-002",
-          "LOC-005",
-          "MFR-002",
-          "Beta Inc",
-          "PART-2003",
-          "GIT-B",
-          "GPC02",
-          "GPC Beta",
-          "2026",
-          "BC02",
-          "Base East",
-          "CC02",
-          "Corp Beta",
-          "210.00",
-          "EUR",
-          "2026-02-01",
-        ],
-        [
-          "SYS-002",
-          "LOC-006",
-          "MFR-004",
-          "Delta Co",
-          "PART-4001",
-          "GIT-D",
-          "GPC04",
-          "GPC Delta",
-          "2026",
-          "BC04",
-          "Base South",
-          "CC04",
-          "Corp Delta",
-          "175.75",
-          "USD",
-          "2026-02-28",
-        ],
-        [
-          "SYS-003",
-          "LOC-007",
-          "MFR-001",
-          "Acme Corp",
-          "PART-1004",
-          "GIT-A",
-          "GPC01",
-          "GPC Alpha",
-          "2026",
-          "BC01",
-          "Base North",
-          "CC01",
-          "Corp Alpha",
-          "99.99",
-          "USD",
-          "2026-01-12",
-        ],
-        [
-          "SYS-003",
-          "LOC-008",
-          "MFR-005",
-          "Epsilon Inc",
-          "PART-5001",
-          "GIT-E",
-          "GPC05",
-          "GPC Epsilon",
-          "2026",
-          "BC05",
-          "Base Central",
-          "CC05",
-          "Corp Epsilon",
-          "400.00",
-          "GBP",
-          "2026-03-01",
-        ],
-        [
-          "SYS-004",
-          "LOC-009",
-          "MFR-002",
-          "Beta Inc",
-          "PART-2004",
-          "GIT-B",
-          "GPC02",
-          "GPC Beta",
-          "2026",
-          "BC02",
-          "Base East",
-          "CC02",
-          "Corp Beta",
-          "220.00",
-          "EUR",
-          "2026-01-18",
-        ],
-        [
-          "SYS-004",
-          "LOC-010",
-          "MFR-003",
-          "Gamma Ltd",
-          "PART-3002",
-          "GIT-C",
-          "GPC03",
-          "GPC Gamma",
-          "2026",
-          "BC03",
-          "Base West",
-          "CC03",
-          "Corp Gamma",
-          "310.50",
-          "JPY",
-          "2026-02-15",
-        ],
-        [
-          "SYS-005",
-          "LOC-011",
-          "MFR-001",
-          "Acme Corp",
-          "PART-1005",
-          "GIT-A",
-          "GPC01",
-          "GPC Alpha",
-          "2026",
-          "BC01",
-          "Base North",
-          "CC01",
-          "Corp Alpha",
-          "105.00",
-          "USD",
-          "2026-01-25",
-        ],
-        [
-          "SYS-005",
-          "LOC-012",
-          "MFR-004",
-          "Delta Co",
-          "PART-4002",
-          "GIT-D",
-          "GPC04",
-          "GPC Delta",
-          "2026",
-          "BC04",
-          "Base South",
-          "CC04",
-          "Corp Delta",
-          "180.00",
-          "USD",
-          "2026-02-20",
-        ],
-        [
-          "SYS-005",
-          "LOC-013",
-          "MFR-005",
-          "Epsilon Inc",
-          "PART-5002",
-          "GIT-E",
-          "GPC05",
-          "GPC Epsilon",
-          "2026",
-          "BC05",
-          "Base Central",
-          "CC05",
-          "Corp Epsilon",
-          "410.00",
-          "GBP",
-          "2026-03-10",
-        ],
-      ];
-      const filteredRows = allRows.filter((row) => {
-        const rowSystemId = row[0];
-        const rowLocalItem = row[1];
-        const rowMfrCode = row[2];
-        const rowMfrName = row[3];
-        const rowPartNum = row[4];
-        const validFrom = row[15] ?? "";
-        if (conditions.systemId.trim() && rowSystemId !== conditions.systemId)
-          return false;
-        if (
-          yearMonthStr &&
-          rowYearMonthFromValidFrom(validFrom) !== yearMonthStr
-        )
-          return false;
-        if (
-          conditions.localItemCode.trim() &&
-          !rowLocalItem
-            .toLowerCase()
-            .includes(conditions.localItemCode.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.manufacturerCode.trim() &&
-          rowMfrCode !== conditions.manufacturerCode
-        )
-          return false;
-        if (
-          conditions.manufacturerName.trim() &&
-          !rowMfrName
-            .toLowerCase()
-            .includes(conditions.manufacturerName.toLowerCase())
-        )
-          return false;
-        if (
-          conditions.manufacturerPartNumber.trim() &&
-          !rowPartNum
-            .toLowerCase()
-            .includes(conditions.manufacturerPartNumber.toLowerCase())
-        )
-          return false;
-        return true;
+      const res = await fetch(LOCAL_ITEM_SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      // AI Generated Code by Deloitte + Cursor (END)
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = (await res.json()) as LocalItemSearchApiEnvelope;
+      const apiRows = Array.isArray(json.data) ? json.data : [];
+      // Map each API row to the column array; order must match
+      // LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS. The deletion flag
+      // (delete_flg) drives the separate deletion-flag checkbox column below.
+      const mappedRows = apiRows.map((r) => [
+        r.local_system_id ?? "", // System ID
+        r.local_item_code ?? "", // Local Item Code
+        r.manufacturer ?? "", // Manufacturer
+        r.manufacturer_name ?? "", // Manufacturer Name
+        r.manufacturer_part_number ?? "", // Mfr Part Number
+        r.item_type ?? "", // Global Item Types
+        r.gpc_code ?? "", // GPC Code
+        r.gpc_name ?? "", // GPC Name
+        r.fiscal_year ?? "", // Validity Year
+        r.manufacturer_detail ?? "", // Location Code
+        r.manufacturer_detail_name ?? "", // Location Name
+        r.company_code ?? "", // Corporate Code
+        r.company_name ?? "", // Corporate Name
+        r.standard_cost ?? "", // Standard Cost
+        r.currency_code ?? "", // Currency
+        "", // Valid from date (no corresponding API field)
+      ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
-        rows: filteredRows,
+        rows: mappedRows,
       });
-      setRowDeletionFlags(new Set());
+      // Pre-check the deletion flag for rows the API marks as deleted.
+      setRowDeletionFlags(
+        new Set(
+          apiRows
+            .map((r, idx) => (r.delete_flg === "1" ? idx : -1))
+            .filter((idx) => idx >= 0),
+        ),
+      );
+      setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
+      searchSnapshotRef.current = mappedRows.map((row) => [...row]);
+      clearNewRowTracking();
       setSnackbarMessage(
-        filteredRows.length > 0
+        mappedRows.length > 0
           ? t("localItemConversion.searchCompletedWithData")
           : t("localItemConversion.searchCompletedNoResults"),
       );
-      setSnackbarSeverity(filteredRows.length > 0 ? "success" : "info");
+      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
       setSnackbarOpen(true);
     } catch (err) {
+      console.error("Local item search failed:", err);
       setCsvData(getEmptyCsvData());
+      setRowDeletionFlags(new Set());
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
+      clearNewRowTracking();
       setSnackbarMessage(t("localItemConversion.searchCompletedNoResults"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
+    } finally {
+      setSearchLoading(false);
     }
-    // END TODO: Remove once BE integration is done.
   };
 
   const handleDownloadCsv = () => {
@@ -756,6 +653,11 @@ function LocalItemConversionMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      null,
+      ...prev.slice(insertIndex),
+    ]);
     setSnackbarMessage(t("localItemConversion.rowAdded"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -793,6 +695,11 @@ function LocalItemConversionMasterScreen() {
       headers: base.headers,
       rows: newRows,
     });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     setSnackbarMessage(t("localItemConversion.rowAdded"));
     setSnackbarSeverity("success");
@@ -804,6 +711,7 @@ function LocalItemConversionMasterScreen() {
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -814,15 +722,163 @@ function LocalItemConversionMasterScreen() {
     handleSearch();
   };
 
+  const formatRowList = (rows: number[]): string =>
+    new Intl.ListFormat(i18n.language, {
+      style: "long",
+      type: "conjunction",
+    }).format(rows.map(String));
+
   const handleRegistration = async () => {
     if (!csvData) return;
-    setSnackbarMessage(t("localItemConversion.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("localItemConversion.registrationCompleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+
+    // 1. Identify rows to submit: new rows (metadata === null) and edited rows
+    // (any cell differs from the original search snapshot).
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= csvData.rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = csvData.rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
+
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("localItemConversion.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const targetIndices = [...newRowIndices, ...editedRowIndices];
+
+    // 2. Required-field validation. All fields are required except Global Item
+    // Type, Location Code and Location Name.
+    const missingRequiredRows: number[] = [];
+    targetIndices.forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (!row) return;
+      const missing = REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
+      if (missing) missingRequiredRows.push(idx + 1);
+    });
+    if (missingRequiredRows.length > 0) {
+      missingRequiredRows.sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("localItemConversion.requiredFieldsMissing", {
+          rows: formatRowList(missingRequiredRows),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 3. Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table.
+    const duplicateRows = new Set<number>();
+    newRowIndices.forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (!row) return;
+      if (
+        searchSnapshotRef.current.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRows.add(idx + 1);
+      }
+    });
+    editedRowIndices.forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (!row) return;
+      const collides = csvData.rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
+    });
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
+      setSnackbarMessage(
+        t("localItemConversion.duplicateRowError", {
+          rows: formatRowList(sorted),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // 4. Build payload. item_description is not required and has no column, so
+    // it is sent empty. effective_year comes from Validity Year and
+    // effective_month from the Valid from date column.
+    const buildRow = (idx: number): LocalItemCreateRow => {
+      const r = csvData.rows[idx];
+      return {
+        local_system_id: r[COL_SYSTEM_ID] ?? "",
+        local_item_code: r[COL_LOCAL_ITEM_CODE] ?? "",
+        manufacturer: r[COL_MANUFACTURER] ?? "",
+        manufacturer_name: r[COL_MANUFACTURER_NAME] ?? "",
+        mfr_part_number: r[COL_MFR_PART_NUMBER] ?? "",
+        item_type: r[COL_GLOBAL_ITEM_TYPE] ?? "",
+        item_description: "",
+        gpc_code: r[COL_GPC_CODE] ?? "",
+        gpc_name: r[COL_GPC_NAME] ?? "",
+        manufacturer_detail: r[COL_LOCATION_CODE] ?? "",
+        manufacturer_detail_name: r[COL_LOCATION_NAME] ?? "",
+        corporate_code: r[COL_CORPORATE_CODE] ?? "",
+        legal_name: r[COL_CORPORATE_NAME] ?? "",
+        currency: r[COL_CURRENCY] ?? "",
+        effective_year: r[COL_VALIDITY_YEAR] ?? "",
+        standard_cost: r[COL_STANDARD_COST] ?? "",
+        delete_flg: rowDeletionFlags.has(idx) ? "1" : "0",
+        effective_month: r[COL_VALID_FROM_DATE] ?? "",
+      };
+    };
+
+    const payload: LocalItemCreatePayload = {
+      rows: targetIndices.map(buildRow),
+      user_id: SEARCH_USER_ID,
+      session_id: SEARCH_SESSION_ID,
+      screen_id: SEARCH_SCREEN_ID,
+      ip_address: SEARCH_IP_ADDRESS,
+    };
+
+    // 5. POST and refresh.
+    setIsRegistering(true);
+    try {
+      const res = await fetch(LOCAL_ITEM_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      clearNewRowTracking();
+      await handleSearch();
+
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "localItemConversion.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "localItemConversion.createdNewRows";
+      } else {
+        messageKey = "localItemConversion.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (e) {
+      console.error("Local item registration failed:", e);
+      setSnackbarMessage(t("localItemConversion.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleCellEdit = (
@@ -857,6 +913,7 @@ function LocalItemConversionMasterScreen() {
     if (!csvData) return;
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("localItemConversion.rowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -875,6 +932,9 @@ function LocalItemConversionMasterScreen() {
     if (!csvData || rowDeletionFlags.size === 0) return;
     const newRows = csvData.rows.filter((_, idx) => !rowDeletionFlags.has(idx));
     setCsvData({ ...csvData, rows: newRows });
+    setRowMetadata((prev) =>
+      prev.filter((_, idx) => !rowDeletionFlags.has(idx)),
+    );
     setRowDeletionFlags(new Set());
     setSnackbarMessage(t("localItemConversion.rowsDeleted"));
     setSnackbarSeverity("success");
@@ -892,17 +952,33 @@ function LocalItemConversionMasterScreen() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    const files = Array.from(e.dataTransfer.files).filter((f) =>
-      f.name.toLowerCase().endsWith(".csv"),
-    );
-    if (files.length > 0) setSelectedFile(screenKey, files[0]);
+    const dropped = Array.from(e.dataTransfer.files);
+    const files = dropped.filter((f) => f.name.toLowerCase().endsWith(".csv"));
+    if (files.length > 0) {
+      setSelectedFile(screenKey, files[0]);
+    } else if (dropped.length > 0) {
+      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
   };
 
   const handleUploadFileSelect = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = event.target.files ? Array.from(event.target.files) : [];
-    if (files.length > 0) setSelectedFile(screenKey, files[0]);
+    const selected = event.target.files
+      ? Array.from(event.target.files)
+      : [];
+    const files = selected.filter((f) =>
+      f.name.toLowerCase().endsWith(".csv"),
+    );
+    if (files.length > 0) {
+      setSelectedFile(screenKey, files[0]);
+    } else if (selected.length > 0) {
+      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
 
@@ -913,28 +989,76 @@ function LocalItemConversionMasterScreen() {
   const handleUploadClick = async () => {
     if (!selectedFile) return;
     setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(selectedFile, "UTF-8");
-    });
+
+    let parsed: CsvData;
     try {
-      const parsed = await parseCsv(text);
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string) || "");
+        reader.onerror = reject;
+        reader.readAsText(selectedFile, "UTF-8");
+      });
+      parsed = await parseCsv(text);
+    } catch {
+      setUploadStatus("idle");
+      setSnackbarMessage(t("localItemConversion.parseCsvFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const enValidation = validateCsvColumns(
+      parsed.headers,
+      LOCAL_ITEM_CONVERSION_MASTER_HEADERS,
+    );
+    const jaValidation = validateCsvColumns(
+      parsed.headers,
+      LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA,
+    );
+    if (!enValidation.isValid && !jaValidation.isValid) {
+      setUploadStatus("idle");
+      const missing =
+        enValidation.missingColumns.length <=
+        jaValidation.missingColumns.length
+          ? enValidation.missingColumns
+          : jaValidation.missingColumns;
+      setSnackbarMessage(
+        t("localItemConversion.missingColumnsError", {
+          columns: missing.join(", "),
+        }),
+      );
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("requested_by", SEARCH_USER_ID);
+      formData.append("session_id", SEARCH_SESSION_ID);
+      formData.append("screen_id", SCREEN_IDS.LOCAL_ITEM.id);
+      formData.append("user_id", SEARCH_USER_ID);
+      formData.append("ip_address", SEARCH_IP_ADDRESS);
+      formData.append("files", selectedFile);
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setSelectedFile(screenKey, null);
+      setUploadStatus("idle");
+      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
       setSnackbarMessage(t("localItemConversion.fileUploadedSuccess"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("localItemConversion.parseCsvFailed"));
+      setSnackbarMessage(t("localItemConversion.uploadError"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -942,22 +1066,10 @@ function LocalItemConversionMasterScreen() {
 
   const handleUploadCancel = () => {
     setSelectedFile(screenKey, null);
-    setUploadProgress(0);
     setUploadStatus("idle");
-    setUploadedCsvData(screenKey, null);
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
     setSnackbarMessage(t("localItemConversion.uploadCancelled"));
     setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-  };
-
-  const handleUploadRegister = async () => {
-    setSnackbarMessage(t("localItemConversion.registrationInProgress"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("localItemConversion.registrationCompleted"));
-    setSnackbarSeverity("success");
     setSnackbarOpen(true);
   };
 
@@ -1313,7 +1425,7 @@ function LocalItemConversionMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || isRegistering}
                         >
                           {t("localItemConversion.registration")}
                         </StyledPrimaryContainedButton>
@@ -1363,7 +1475,11 @@ function LocalItemConversionMasterScreen() {
                         )}
                       </StyledSearchInputWrapper>
                     </StyledSearchBarBox>
-                    {displayData.rows.length === 0 ? (
+                    {searchLoading ? (
+                      <StyledEmptyStateBox>
+                        <CircularProgress />
+                      </StyledEmptyStateBox>
+                    ) : displayData.rows.length === 0 ? (
                       <StyledEmptyStateBox>
                         <StyledEmptyStateTitle variant="h6">
                           {t("localItemConversion.noRows")}
@@ -1475,6 +1591,8 @@ function LocalItemConversionMasterScreen() {
                                         const editable = col.editable !== false;
                                         const searchOptions = searchableColumnOptions[col.key];
                                         const isSearchable = editable && !!searchOptions;
+                                        const isGlobalItemType =
+                                          col.key === "globalItemTypes";
                                         return (
                                           <StyledTableDataCell
                                             key={col.key}
@@ -1489,7 +1607,45 @@ function LocalItemConversionMasterScreen() {
                                               colIndex + 1,
                                             )}
                                           >
-                                            {editable ? (
+                                            {isGlobalItemType ? (
+                                              <Select
+                                                value={cell}
+                                                onChange={(e) =>
+                                                  handleCellEdit(
+                                                    originalRowIndex,
+                                                    colIndex,
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                size="small"
+                                                variant="standard"
+                                                fullWidth
+                                              >
+                                                {cell &&
+                                                  !GLOBAL_ITEM_TYPE_OPTIONS.some(
+                                                    (o) => o.value === cell,
+                                                  ) && (
+                                                    <MenuItem
+                                                      key={cell}
+                                                      value={cell}
+                                                    >
+                                                      {cell}
+                                                    </MenuItem>
+                                                  )}
+                                                {GLOBAL_ITEM_TYPE_OPTIONS.map(
+                                                  (opt) => (
+                                                    <MenuItem
+                                                      key={opt.value}
+                                                      value={opt.value}
+                                                    >
+                                                      {`${opt.value} : ${t(
+                                                        opt.labelKey,
+                                                      )}`}
+                                                    </MenuItem>
+                                                  ),
+                                                )}
+                                              </Select>
+                                            ) : editable ? (
                                               <SearchableCell
                                                 value={cell}
                                                 onChange={(value) =>
@@ -1601,152 +1757,97 @@ function LocalItemConversionMasterScreen() {
 
           {uploadSectionExpanded && (
             <StyledUploadSectionContent>
-              {!uploadedCsvData ? (
-                <>
-                  <StyledDragDropZone
-                    $dragActive={dragActive}
-                    onDragEnter={handleUploadDrag}
-                    onDragLeave={handleUploadDrag}
-                    onDragOver={handleUploadDrag}
-                    onDrop={handleUploadDrop}
-                    onClick={handleUploadBrowseClick}
-                  >
-                    <input
-                      ref={uploadFileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={handleUploadFileSelect}
-                      style={{ display: "none" }}
-                    />
-                    <StyledUploadIconCircle $dragActive={dragActive}>
-                      <StyledCloudUploadIcon $dragActive={dragActive} />
-                    </StyledUploadIconCircle>
-                    <StyledDragDropTitle variant="h6">
-                      {dragActive
-                        ? t("localItemConversion.dropFileHere")
-                        : t("localItemConversion.dragDropCsv")}
-                    </StyledDragDropTitle>
-                    <StyledDragDropSubtitle variant="body2">
-                      {t("localItemConversion.orClickToBrowse")}
-                    </StyledDragDropSubtitle>
-                    <StyledBrowseFilesButton
-                      variant="contained"
-                      startIcon={<CloudUploadOutlinedIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUploadBrowseClick();
-                      }}
-                    >
-                      {t("localItemConversion.browseFiles")}
-                    </StyledBrowseFilesButton>
-                    <StyledSupportedFormatText variant="caption">
-                      {t("localItemConversion.supportedFormatCsv")}
-                    </StyledSupportedFormatText>
-                  </StyledDragDropZone>
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleUploadDrag}
+                onDragLeave={handleUploadDrag}
+                onDragOver={handleUploadDrag}
+                onDrop={handleUploadDrop}
+                onClick={handleUploadBrowseClick}
+              >
+                <input
+                  ref={uploadFileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadFileSelect}
+                  style={{ display: "none" }}
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("localItemConversion.dropFileHere")
+                    : t("localItemConversion.dragDropCsv")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("localItemConversion.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUploadBrowseClick();
+                  }}
+                >
+                  {t("localItemConversion.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("localItemConversion.supportedFormatCsv")}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
 
-                  {selectedFile && (
-                    <StyledSelectedFileBox>
-                      <StyledFileInfoBox>
-                        <StyledFileInfoInner>
-                          <StyledDescriptionIcon />
-                          <Box>
-                            <StyledFileNameText variant="body2">
-                              {selectedFile.name}
-                            </StyledFileNameText>
-                            <StyledFileSizeText variant="caption">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </StyledFileSizeText>
-                          </Box>
-                        </StyledFileInfoInner>
-                        <StyledUploadButton
-                          variant="contained"
-                          size="small"
-                          onClick={handleUploadClick}
-                          disabled={uploadStatus === "uploading"}
-                        >
-                          {t("localItemConversion.upload")}
-                        </StyledUploadButton>
-                        <StyledViewButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() =>
-                            selectedFile &&
-                            navigateToCsvView(
-                              selectedFile,
-                              navigate,
-                              location.pathname,
-                              t("home.localItemConversionMaster"),
-                            )
-                          }
-                          disabled={
-                            !selectedFile || uploadStatus === "uploading"
-                          }
-                        >
-                          {t("upload.view")}
-                        </StyledViewButton>
-                      </StyledFileInfoBox>
-                      {uploadStatus === "uploading" && (
-                        <StyledProgressBox>
-                          <StyledLinearProgressBar
-                            variant="determinate"
-                            value={uploadProgress}
-                          />
-                          <StyledProgressText variant="caption">
-                            {uploadProgress}%
-                          </StyledProgressText>
-                        </StyledProgressBox>
-                      )}
-                    </StyledSelectedFileBox>
-                  )}
-                </>
-              ) : (
-                <>
-                  <StyledUploadedTitle variant="subtitle1">
-                    {selectedFile?.name}
-                  </StyledUploadedTitle>
-                  <StyledPreviewTableContainer>
-                    <Table stickyHeader size="small">
-                      <TableHead>
-                        <TableRow>
-                          {uploadedCsvData.headers.map((header, colIndex) => (
-                            <StyledPreviewTableHeaderCell key={colIndex}>
-                              {header}
-                            </StyledPreviewTableHeaderCell>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {uploadedCsvData.rows.map((row, rowIndex) => (
-                          <StyledPreviewTableBodyRow
-                            key={rowIndex}
-                            $index={rowIndex}
-                          >
-                            {row.map((cell, colIndex) => (
-                              <StyledPreviewTableDataCell key={colIndex}>
-                                {cell}
-                              </StyledPreviewTableDataCell>
-                            ))}
-                          </StyledPreviewTableBodyRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </StyledPreviewTableContainer>
-                  <StyledActionButtonsBox>
-                    <StyledCancelButton
-                      variant="outlined"
-                      onClick={handleUploadCancel}
-                    >
-                      {t("localItemConversion.cancel")}
-                    </StyledCancelButton>
-                    <StyledPrimaryContainedButton
+              {selectedFile && (
+                <StyledSelectedFileBox>
+                  <StyledFileInfoBox>
+                    <StyledFileInfoInner>
+                      <StyledDescriptionIcon />
+                      <Box>
+                        <StyledFileNameText variant="body2">
+                          {selectedFile.name}
+                        </StyledFileNameText>
+                        <StyledFileSizeText variant="caption">
+                          {(selectedFile.size / 1024).toFixed(1)} KB
+                        </StyledFileSizeText>
+                      </Box>
+                    </StyledFileInfoInner>
+                    <StyledUploadButton
                       variant="contained"
-                      onClick={handleUploadRegister}
-                      startIcon={<AppRegistrationIcon />}
+                      size="small"
+                      onClick={handleUploadClick}
+                      disabled={uploadStatus === "uploading"}
                     >
-                      {t("localItemConversion.register")}
-                    </StyledPrimaryContainedButton>
-                  </StyledActionButtonsBox>
-                </>
+                      {t("localItemConversion.upload")}
+                    </StyledUploadButton>
+                    <StyledViewButton
+                      variant="outlined"
+                      size="small"
+                      onClick={() =>
+                        selectedFile &&
+                        navigateToCsvView(
+                          selectedFile,
+                          navigate,
+                          location.pathname,
+                          t("home.localItemConversionMaster"),
+                        )
+                      }
+                      disabled={!selectedFile || uploadStatus === "uploading"}
+                    >
+                      {t("upload.view")}
+                    </StyledViewButton>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
+                      onClick={handleUploadCancel}
+                      disabled={uploadStatus === "uploading"}
+                      sx={{ marginLeft: "auto" }}
+                    >
+                      {t("localItemConversion.cancelUpload")}
+                    </Button>
+                  </StyledFileInfoBox>
+                </StyledSelectedFileBox>
               )}
             </StyledUploadSectionContent>
           )}
@@ -1766,6 +1867,13 @@ function LocalItemConversionMasterScreen() {
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isRegistering && (
+        <ResultsLoader
+          fullScreen
+          label={t("localItemConversion.registrationInProgress")}
+        />
+      )}
     </>
   );
 }

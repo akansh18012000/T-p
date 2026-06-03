@@ -54,6 +54,9 @@ import FxRateEntryMasterScreen from "./screens/FxRateEntryMasterScreen.js";
 import PlanningDataIngestionScreen from "./screens/PlanningDataIngestionScreen.js";
 import StravisCoaHierarchyUploadScreen from "./screens/StravisCoaHierarchyUploadScreen.js";
 import UploadedCsvPreviewScreen from "./screens/UploadedCsvPreviewScreen.js";
+import CreateUserScreen from "./screens/CreateUserScreen.js";
+import UpdateRolesScreen from "./screens/UpdateRolesScreen.js";
+import PlDataApprovalScreen from "./screens/PlDataApprovalScreen.js";
 
 const msalInstance = new PublicClientApplication(msalConfig);
 
@@ -72,6 +75,8 @@ function ConditionalLayout() {
     setDataInputExpanded,
     masterMaintenanceExpanded,
     setMasterMaintenanceExpanded,
+    adminExpanded,
+    setAdminExpanded,
     currentScreenId,
   } = useSidebar();
 
@@ -82,6 +87,7 @@ function ConditionalLayout() {
     t,
     dataInputExpanded,
     masterMaintenanceExpanded,
+    adminExpanded,
   );
 
   const handleSectionToggle = (sectionId: string) => {
@@ -89,6 +95,8 @@ function ConditionalLayout() {
       setDataInputExpanded(!dataInputExpanded);
     } else if (sectionId === "master-maintenance") {
       setMasterMaintenanceExpanded(!masterMaintenanceExpanded);
+    } else if (sectionId === "admin-pages") {
+      setAdminExpanded(!adminExpanded);
     }
   };
 
@@ -202,6 +210,18 @@ export default function App() {
                   <Route
                     path="/stravis-coa-hierarchy-upload"
                     element={<StravisCoaHierarchyUploadScreen />}
+                  />
+                  <Route
+                    path="/pl-data-approval"
+                    element={<PlDataApprovalScreen />}
+                  />
+                  <Route
+                    path="/create-user"
+                    element={<CreateUserScreen />}
+                  />
+                  <Route
+                    path="/update-roles"
+                    element={<UpdateRolesScreen />}
                   />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

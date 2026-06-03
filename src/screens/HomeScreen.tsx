@@ -5,6 +5,7 @@ import { Box, Grid, Paper, Typography } from "@mui/material";
 import {
   DATA_INPUT_ITEMS,
   MASTER_MAINTENANCE_ITEMS,
+  ADMIN_ITEMS,
   handleMenuItemNavigation,
   type MenuItem as MenuItemType,
 } from "../config/menuConfig.js";
@@ -49,6 +50,12 @@ const StyledSectionBox = styled(Box)({
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",
+});
+
+const StyledAdminSectionBox = styled(Box)({
+  flexShrink: 0,
+  display: "flex",
+  flexDirection: "column",
 });
 
 const StyledSectionHeaderBox = styled(Box)(({ theme }) => ({
@@ -242,6 +249,28 @@ export default function HomeScreen() {
     );
   };
 
+  const renderAdminCards = () => {
+    return (
+      <StyledGridContainer container spacing={2}>
+        {ADMIN_ITEMS.map((item: MenuItemType) => {
+          const IconComponent = item.icon;
+          return (
+            <Grid key={item.id}>
+              <StyledMasterMenuCard onClick={() => handleMenuItemClick(item)}>
+                <StyledIconBox>
+                  {IconComponent && <IconComponent />}
+                </StyledIconBox>
+                <StyledCardLabel variant="body2">
+                  {t(item.label)}
+                </StyledCardLabel>
+              </StyledMasterMenuCard>
+            </Grid>
+          );
+        })}
+      </StyledGridContainer>
+    );
+  };
+
   return (
     <StyledContentInnerBox>
       <StyledWelcomeBox>
@@ -252,6 +281,16 @@ export default function HomeScreen() {
           {t("home.manageItems")}
         </StyledWelcomeSubtitle>
       </StyledWelcomeBox>
+
+      <StyledAdminSectionBox>
+        <StyledSectionHeaderBox>
+          <StyledSectionTitle variant="h6">
+            {t("home.adminPages")}
+          </StyledSectionTitle>
+          <StyledSectionAccent />
+        </StyledSectionHeaderBox>
+        {renderAdminCards()}
+      </StyledAdminSectionBox>
 
       <StyledTwoColumnBox>
         <StyledSectionBox>

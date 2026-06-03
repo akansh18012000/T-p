@@ -718,6 +718,26 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
   "Valid from date",
 ];
 
+/** Japanese CSV column headers; order must match LOCAL_ITEM_CONVERSION_MASTER_HEADERS */
+export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA: string[] = [
+  "システムID",
+  "ローカル品目コード",
+  "メーカー",
+  "メーカー名",
+  "メーカー品番",
+  "グローバル品目タイプ",
+  "GPCコード",
+  "GPC名",
+  "有効年",
+  "ロケーションコード",
+  "ロケーション名",
+  "法人コード",
+  "法人名",
+  "標準原価",
+  "通貨",
+  "有効開始日",
+];
+
 /** Freeze dialog: index 0 = #, 1–16 = data cols, 17 = deletion flag */
 export const LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, label: "#", width: 48 },
