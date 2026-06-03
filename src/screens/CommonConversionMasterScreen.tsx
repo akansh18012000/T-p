@@ -115,6 +115,7 @@ import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
@@ -238,10 +239,6 @@ const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
-
-const listboxProps = {
-  style: { maxHeight: 176, overflow: "auto" as const },
-};
 
 export default function CommonConversionMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -1021,6 +1018,12 @@ export default function CommonConversionMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
+  };
+
   return (
     <>
       <StyledMainPaper elevation={2}>
@@ -1071,7 +1074,9 @@ export default function CommonConversionMasterScreen() {
                       openOnFocus
                       disabled={itemIdLoading}
                       loading={itemIdLoading}
-                      ListboxProps={listboxProps}
+                      filterOptions={(x) => x}
+                      ListboxComponent={PaginatedAutocompleteListbox}
+                      slotProps={paginatedListboxSlotProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
@@ -1130,7 +1135,8 @@ export default function CommonConversionMasterScreen() {
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
                     filterOptions={(x) => x}
-                    ListboxProps={listboxProps}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}

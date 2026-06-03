@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -102,6 +103,7 @@ import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { KIT_ITEM_CLASSIFICATION_MASTER_HEADERS, KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA, KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS, KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import {
   useTablePagination,
@@ -192,6 +194,12 @@ const REQUIRED_COL_INDICES = [0, 1, 2, 3, 5] as const;
 
 const DEFAULT_CSV_HEADERS = KIT_ITEM_CLASSIFICATION_MASTER_HEADERS;
 
+// Cap how many options are handed to MUI's Autocomplete. It eagerly builds one
+// React element per option before the paginated listbox slices them, so an
+// uncapped list stalls/blanks the dropdown on open. Showing the first chunk and
+// letting the user type to narrow (MUI's built-in filter) is enough.
+const MAX_VISIBLE_OPTIONS = 1000;
+
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
@@ -231,6 +239,18 @@ export default function KitItemClassificationMasterScreen() {
   ] = useState("");
   const [kitManufacturerSearchInput, setKitManufacturerSearchInput] =
     useState("");
+
+  // Debounced queries used to filter the full option lists (mirrors GpcMaster:
+  // type 3+ chars to search the entire dataset, not just the first chunk).
+  const { debouncedValue: kitManufacturerPartNumberDebouncedQuery } =
+    useDebouncedSearch(kitManufacturerPartNumberSearchInput, {
+      minLength: 3,
+      delay: 300,
+    });
+  const { debouncedValue: kitManufacturerDebouncedQuery } = useDebouncedSearch(
+    kitManufacturerSearchInput,
+    { minLength: 3, delay: 300 },
+  );
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [
@@ -295,6 +315,38 @@ export default function KitItemClassificationMasterScreen() {
     void Promise.allSettled([fetchPartNumbers(), fetchManufacturers()]);
   }, []);
   // AI Generated Code by Deloitte + Cursor (END)
+
+  // Visible option lists: filter the full dataset by the debounced query, then
+  // cap to MAX_VISIBLE_OPTIONS. Empty query shows the first chunk. This mirrors
+  // GpcMaster so a match is reachable even if it sits beyond the first chunk.
+  const [
+    visibleKitManufacturerPartNumberOptions,
+    setVisibleKitManufacturerPartNumberOptions,
+  ] = useState<string[]>([]);
+  const [visibleKitManufacturerOptions, setVisibleKitManufacturerOptions] =
+    useState<string[]>([]);
+
+  useEffect(() => {
+    const q = kitManufacturerPartNumberDebouncedQuery.trim().toLowerCase();
+    const matches =
+      q.length === 0
+        ? kitManufacturerPartNumberOptions
+        : kitManufacturerPartNumberOptions.filter((o) =>
+            o.toLowerCase().includes(q),
+          );
+    setVisibleKitManufacturerPartNumberOptions(
+      matches.slice(0, MAX_VISIBLE_OPTIONS),
+    );
+  }, [kitManufacturerPartNumberOptions, kitManufacturerPartNumberDebouncedQuery]);
+
+  useEffect(() => {
+    const q = kitManufacturerDebouncedQuery.trim().toLowerCase();
+    const matches =
+      q.length === 0
+        ? kitManufacturerOptions
+        : kitManufacturerOptions.filter((o) => o.toLowerCase().includes(q));
+    setVisibleKitManufacturerOptions(matches.slice(0, MAX_VISIBLE_OPTIONS));
+  }, [kitManufacturerOptions, kitManufacturerDebouncedQuery]);
 
   const searchConditionsRef = useRef({
     kitManufacturerPartNumber: "",
@@ -871,8 +923,10 @@ export default function KitItemClassificationMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
-  const listboxProps = {
-    style: { maxHeight: 176, overflow: "auto" as const },
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
   };
 
   return (
@@ -906,7 +960,7 @@ export default function KitItemClassificationMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={kitManufacturerPartNumberOptions}
+                    options={visibleKitManufacturerPartNumberOptions}
                     value={kitManufacturerPartNumber || null}
                     inputValue={kitManufacturerPartNumberSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -921,7 +975,9 @@ export default function KitItemClassificationMasterScreen() {
                     openOnFocus
                     disabled={kitManufacturerPartNumbersLoading}
                     loading={kitManufacturerPartNumbersLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -948,7 +1004,7 @@ export default function KitItemClassificationMasterScreen() {
                   <Autocomplete
                     fullWidth
                     size="small"
-                    options={kitManufacturerOptions}
+                    options={visibleKitManufacturerOptions}
                     value={kitManufacturer || null}
                     inputValue={kitManufacturerSearchInput}
                     onInputChange={(_event, newInputValue) =>
@@ -963,7 +1019,9 @@ export default function KitItemClassificationMasterScreen() {
                     openOnFocus
                     disabled={kitManufacturersLoading}
                     loading={kitManufacturersLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}

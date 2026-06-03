@@ -39,6 +39,7 @@ import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_HEADERS_JA, GLOBAL_DAD_MASTER_COLUMNS, GLOBAL_DAD_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
@@ -263,10 +264,6 @@ const DEFAULT_CSV_HEADERS = GLOBAL_DAD_MASTER_HEADERS;
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
-
-const listboxProps = {
-  style: { maxHeight: 176, overflow: "auto" as const },
-};
 
 // Data columns need explicit width so headers like "Sales Location Code" and "Local Customer Code" don't overlap
 const ScrollableTableHeaderCell = styled(StyledTableHeaderCell)(
@@ -1146,6 +1143,12 @@ export default function GlobalDadMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
+  };
+
   const datePickerSlots = {
     textField: StyledInputBase,
   };
@@ -1222,7 +1225,9 @@ export default function GlobalDadMasterScreen() {
                     openOnFocus
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -1278,7 +1283,9 @@ export default function GlobalDadMasterScreen() {
                       openOnFocus
                       disabled={localCustomersLoading}
                       loading={localCustomersLoading}
-                      ListboxProps={listboxProps}
+                      filterOptions={(x) => x}
+                      ListboxComponent={PaginatedAutocompleteListbox}
+                      slotProps={paginatedListboxSlotProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
@@ -1329,7 +1336,9 @@ export default function GlobalDadMasterScreen() {
                       openOnFocus
                       disabled={productClassificationsLoading}
                       loading={productClassificationsLoading}
-                      ListboxProps={listboxProps}
+                      filterOptions={(x) => x}
+                      ListboxComponent={PaginatedAutocompleteListbox}
+                      slotProps={paginatedListboxSlotProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
@@ -1380,7 +1389,9 @@ export default function GlobalDadMasterScreen() {
                       openOnFocus
                       disabled={transferDestBU3sLoading}
                       loading={transferDestBU3sLoading}
-                      ListboxProps={listboxProps}
+                      filterOptions={(x) => x}
+                      ListboxComponent={PaginatedAutocompleteListbox}
+                      slotProps={paginatedListboxSlotProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
