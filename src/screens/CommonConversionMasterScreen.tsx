@@ -322,8 +322,12 @@ export default function CommonConversionMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      itemId,
-      systemId,
+      // Fall back to the typed input when the user typed a value but did not
+      // pick an option from the dropdown (freeSolo). The selected-value state
+      // (itemId/systemId) is empty in that case, so without this fallback the
+      // typed text would be dropped from the search payload.
+      itemId: itemId || itemIdSearchInput,
+      systemId: systemId || systemIdSearchInput,
       preconversionCode1,
       preconversionCode1Name,
       preconversionCode2,
@@ -335,6 +339,8 @@ export default function CommonConversionMasterScreen() {
   }, [
     itemId,
     systemId,
+    itemIdSearchInput,
+    systemIdSearchInput,
     preconversionCode1,
     preconversionCode1Name,
     preconversionCode2,
