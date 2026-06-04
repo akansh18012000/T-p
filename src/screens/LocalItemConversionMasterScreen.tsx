@@ -232,6 +232,7 @@ interface LocalItemSearchApiRow {
   company_name: string;
   currency_code: string;
   fiscal_year: string;
+  fiscal_month_from: string;
   standard_cost: string;
   delete_flg: string;
 }
@@ -560,7 +561,7 @@ function LocalItemConversionMasterScreen() {
         r.company_name ?? "", // Corporate Name
         r.standard_cost ?? "", // Standard Cost
         r.currency_code ?? "", // Currency
-        "", // Valid from date (no corresponding API field)
+        r.fiscal_month_from ?? "", // Valid from date (YYYYMM)
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
