@@ -144,24 +144,6 @@ type ProcessMonthCreatePayload = {
 };
 
 const CREATE_API_URL = "/api/v1/process-month/create";
-
-type ProcessMonthUpdateRow = {
-  id: string;
-  proc_type: string;
-  proc_type_name: string;
-  proc_year: string;
-  proc_period: string;
-};
-
-type ProcessMonthUpdatePayload = {
-  rows: ProcessMonthUpdateRow[];
-  user_id: string;
-  session_id: string;
-  screen_id: string;
-  ip_address: string;
-};
-
-const UPDATE_API_URL = "/api/v1/process-month/update";
 // AI Generated Code by Deloitte + Cursor (END)
 
 function createNewRow(): string[] {
@@ -192,11 +174,6 @@ function YearMonthMasterScreen() {
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [updateSnackbarOpen, setUpdateSnackbarOpen] = useState(false);
-  const [updateSnackbarMessage, setUpdateSnackbarMessage] = useState("");
-  const [updateSnackbarSeverity, setUpdateSnackbarSeverity] = useState<
-    "success" | "error" | "info"
-  >("success");
   // Parallel array to `rows`: server-assigned id per row. A row is "new"
   // (added locally, not yet persisted) iff its id is empty.
   const [rowIds, setRowIds] = useState<string[]>([]);
@@ -377,7 +354,12 @@ function YearMonthMasterScreen() {
       })
       .filter((idx) => idx >= 0);
 
-    if (newRowIndices.length === 0 && editedRowIndices.length === 0) return;
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("yearMonthMaster.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
     const missingRequired = targetIndices.some((idx) => {
@@ -430,24 +412,29 @@ function YearMonthMasterScreen() {
       return;
     }
 
-    const auth = {
+    // Build a single create payload for both new and edited rows — the create
+    // API upserts on the natural key, so there is no separate update call
+    // (mirrors GpcMaster).
+    const createRows: ProcessMonthCreateRow[] = targetIndices.map((idx) => {
+      const r = rows[idx];
+      return {
+        proc_type: r[PROC_TYPE_COL_INDEX],
+        proc_type_name: r[PROC_TYPE_NAME_COL_INDEX],
+        proc_year: r[PROC_YEAR_COL_INDEX],
+        proc_period: r[PROC_PERIOD_COL_INDEX],
+      };
+    });
+
+    const payload: ProcessMonthCreatePayload = {
+      rows: createRows,
       user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
       session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
       screen_id: SCREEN_IDS.PROCESS_MONTH.id,
       ip_address: "192.168.1.101",
     };
 
-    const callCreate = async () => {
-      const createRows: ProcessMonthCreateRow[] = newRowIndices.map((idx) => {
-        const r = rows[idx];
-        return {
-          proc_type: r[PROC_TYPE_COL_INDEX],
-          proc_type_name: r[PROC_TYPE_NAME_COL_INDEX],
-          proc_year: r[PROC_YEAR_COL_INDEX],
-          proc_period: r[PROC_PERIOD_COL_INDEX],
-        };
-      });
-      const payload: ProcessMonthCreatePayload = { rows: createRows, ...auth };
+    setIsRegistering(true);
+    try {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -456,66 +443,27 @@ function YearMonthMasterScreen() {
       if (!response.ok) {
         throw new Error(`Create API responded ${response.status}`);
       }
-    };
 
-    const callUpdate = async () => {
-      const updateRows: ProcessMonthUpdateRow[] = editedRowIndices.map((idx) => {
-        const r = rows[idx];
-        return {
-          id: rowIds[idx],
-          proc_type: r[PROC_TYPE_COL_INDEX],
-          proc_type_name: r[PROC_TYPE_NAME_COL_INDEX],
-          proc_year: r[PROC_YEAR_COL_INDEX],
-          proc_period: r[PROC_PERIOD_COL_INDEX],
-        };
-      });
-      const payload: ProcessMonthUpdatePayload = { rows: updateRows, ...auth };
-      const response = await fetch(UPDATE_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(`Update API responded ${response.status}`);
-      }
-    };
-
-    setIsRegistering(true);
-    const [createResult, updateResult] = await Promise.allSettled([
-      newRowIndices.length > 0 ? callCreate() : Promise.resolve(),
-      editedRowIndices.length > 0 ? callUpdate() : Promise.resolve(),
-    ]);
-    try {
       await refreshProcessMonthData();
-    } catch (err) {
-      console.error("Failed to refresh data after registration:", err);
-    }
-    setIsRegistering(false);
 
-    if (newRowIndices.length > 0) {
-      const ok = createResult.status === "fulfilled";
-      setSnackbarMessage(
-        t(
-          ok
-            ? "yearMonthMaster.createRowsSuccess"
-            : "yearMonthMaster.createRowsFailed",
-        ),
-      );
-      setSnackbarSeverity(ok ? "success" : "error");
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "yearMonthMaster.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "yearMonthMaster.createdNewRows";
+      } else {
+        messageKey = "yearMonthMaster.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    }
-
-    if (editedRowIndices.length > 0) {
-      const ok = updateResult.status === "fulfilled";
-      setUpdateSnackbarMessage(
-        t(
-          ok
-            ? "yearMonthMaster.updateRowsSuccess"
-            : "yearMonthMaster.updateRowsFailed",
-        ),
-      );
-      setUpdateSnackbarSeverity(ok ? "success" : "error");
-      setUpdateSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("yearMonthMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
     }
   };
   // AI Generated Code by Deloitte + Cursor (END)
@@ -770,23 +718,6 @@ function YearMonthMasterScreen() {
       </Snackbar>
 
       {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
-      <Snackbar
-        open={updateSnackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setUpdateSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        sx={{
-          top: { xs: "80px !important", sm: "88px !important" },
-        }}
-      >
-        <StyledSnackbarAlert
-          onClose={() => setUpdateSnackbarOpen(false)}
-          severity={updateSnackbarSeverity}
-        >
-          {updateSnackbarMessage}
-        </StyledSnackbarAlert>
-      </Snackbar>
-
       {isRegistering && (
         <ResultsLoader
           fullScreen

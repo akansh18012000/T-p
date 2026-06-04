@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -28,6 +29,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { COMMON_MASTER_HEADERS, COMMON_MASTER_COLUMNS, COMMON_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -174,33 +176,6 @@ type CommonMasterCreatePayload = {
 };
 
 const CREATE_API_URL = "/api/v1/common-master/create";
-
-type CommonMasterUpdateRow = {
-  id: string;
-  column_group_id: string;
-  display_order: string;
-  column_name: string;
-  code: string;
-  name_en: string;
-  name_jp: string;
-  description: string;
-  reserve1: string;
-  reserve2: string;
-  reserve3: string;
-  reserve4: string;
-  reserve5: string;
-  delete_flg_pfm: number;
-};
-
-type CommonMasterUpdatePayload = {
-  rows: CommonMasterUpdateRow[];
-  user_id: string;
-  session_id: string;
-  screen_id: string;
-  ip_address: string;
-};
-
-const UPDATE_API_URL = "/api/v1/common-master/update";
 // AI Generated Code by Deloitte + Cursor (END)
 
 const DEFAULT_CSV_HEADERS = COMMON_MASTER_HEADERS;
@@ -209,8 +184,10 @@ function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
-const listboxProps = {
-  style: { maxHeight: 176, overflow: "auto" as const },
+const paginatedListboxSlotProps = {
+  listbox: {
+    style: { maxHeight: 320, overflow: "auto" as const },
+  },
 };
 
 export default function CommonMasterScreen() {
@@ -334,25 +311,55 @@ export default function CommonMasterScreen() {
     deletionFlag,
   ]);
 
-  const groupIdOptions: string[] = groupIdSearchInput
-    ? groupOptions
-        .filter(
-          (o) =>
-            o.id.toLowerCase().includes(groupIdSearchInput.toLowerCase()) ||
-            o.name.toLowerCase().includes(groupIdSearchInput.toLowerCase()),
-        )
-        .map((o) => o.id)
-    : groupOptions.map((o) => o.id);
+  // Group Id options are filtered with a debounced query (min 3 chars, 300 ms)
+  // and capped, mirroring GpcMaster's search-condition autocompletes. Below the
+  // minimum length (or when cleared) the full list is shown, capped at
+  // MAX_VISIBLE_OPTIONS so the dropdown never stalls on a large source.
+  const { debouncedValue: groupIdDebouncedQuery } = useDebouncedSearch(
+    groupIdSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+  const MAX_VISIBLE_OPTIONS = 1000;
+  const [visibleGroupIdOptions, setVisibleGroupIdOptions] = useState<string[]>(
+    [],
+  );
+  useEffect(() => {
+    const q = groupIdDebouncedQuery.trim().toLowerCase();
+    const matches =
+      q.length === 0
+        ? groupOptions
+        : groupOptions.filter(
+            (o) =>
+              o.id.toLowerCase().includes(q) ||
+              o.name.toLowerCase().includes(q),
+          );
+    setVisibleGroupIdOptions(
+      matches.map((o) => o.id).slice(0, MAX_VISIBLE_OPTIONS),
+    );
+  }, [groupOptions, groupIdDebouncedQuery]);
 
-  const codeIdOptions: string[] = codeSearchInput
-    ? codeOptions
-        .filter(
-          (o) =>
-            o.code.toLowerCase().includes(codeSearchInput.toLowerCase()) ||
-            o.name.toLowerCase().includes(codeSearchInput.toLowerCase()),
-        )
-        .map((o) => o.code)
-    : codeOptions.map((o) => o.code);
+  // Code options use the same debounced + capped pattern as Group Id.
+  const { debouncedValue: codeDebouncedQuery } = useDebouncedSearch(
+    codeSearchInput,
+    { minLength: 3, delay: 300 },
+  );
+  const [visibleCodeIdOptions, setVisibleCodeIdOptions] = useState<string[]>(
+    [],
+  );
+  useEffect(() => {
+    const q = codeDebouncedQuery.trim().toLowerCase();
+    const matches =
+      q.length === 0
+        ? codeOptions
+        : codeOptions.filter(
+            (o) =>
+              o.code.toLowerCase().includes(q) ||
+              o.name.toLowerCase().includes(q),
+          );
+    setVisibleCodeIdOptions(
+      matches.map((o) => o.code).slice(0, MAX_VISIBLE_OPTIONS),
+    );
+  }, [codeOptions, codeDebouncedQuery]);
 
   const groupSelected = groupOptions.find((o) => o.id === groupId);
   const codeSelected = codeOptions.find((o) => o.code === code);
@@ -396,11 +403,6 @@ export default function CommonMasterScreen() {
   // run duplicate-row checks against the original (un-mutated) result set.
   const originalRowsByIdRef = useRef<Map<string, string[]>>(new Map());
   const [isRegistering, setIsRegistering] = useState(false);
-  const [updateSnackbarOpen, setUpdateSnackbarOpen] = useState(false);
-  const [updateSnackbarMessage, setUpdateSnackbarMessage] = useState("");
-  const [updateSnackbarSeverity, setUpdateSnackbarSeverity] = useState<
-    "success" | "error" | "info"
-  >("success");
   // AI Generated Code by Deloitte + Cursor (END)
 
   const executeSearch = async (
@@ -619,7 +621,12 @@ export default function CommonMasterScreen() {
       })
       .filter((idx) => idx >= 0);
 
-    if (newRowIndices.length === 0 && editedRowIndices.length === 0) return;
+    if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
+      setSnackbarMessage(t("commonMaster.noChangesToRegister"));
+      setSnackbarSeverity("info");
+      setSnackbarOpen(true);
+      return;
+    }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
     if (
@@ -633,38 +640,38 @@ export default function CommonMasterScreen() {
       return;
     }
 
-    const snapshotEntries = Array.from(
-      originalRowsByIdRef.current.entries(),
-    );
-    const codeColIndex = 2;
-    const getKey = (row: string[]) =>
-      [row[groupIdColIndex], row[codeColIndex]]
-        .map((v) => String(v ?? "").trim())
-        .join("|");
-    const duplicateRowNumbers: number[] = [];
+    // Duplicate detection.
+    // - New rows: must not match any row in the last search snapshot.
+    // - Edited rows: must not collapse onto another row in the current table
+    //   (excluding their own row so reverting an edit isn't self-flagged).
+    const snapshotRows = Array.from(originalRowsByIdRef.current.values());
+    const duplicateRows = new Set<number>();
     newRowIndices.forEach((idx) => {
-      const key = getKey(csvData.rows[idx]);
-      if (snapshotEntries.some(([, snapRow]) => getKey(snapRow) === key)) {
-        duplicateRowNumbers.push(idx + 1);
+      const row = csvData.rows[idx];
+      if (!row) return;
+      if (
+        snapshotRows.some((snap) =>
+          row.every((cell, i) => cell === snap[i]),
+        )
+      ) {
+        duplicateRows.add(idx + 1);
       }
     });
     editedRowIndices.forEach((idx) => {
-      const key = getKey(csvData.rows[idx]);
-      const myId = rowIds[idx];
-      if (
-        snapshotEntries.some(
-          ([snapId, snapRow]) => snapId !== myId && getKey(snapRow) === key,
-        )
-      ) {
-        duplicateRowNumbers.push(idx + 1);
-      }
+      const row = csvData.rows[idx];
+      if (!row) return;
+      const collides = csvData.rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === other[i]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
     });
-    if (duplicateRowNumbers.length > 0) {
-      duplicateRowNumbers.sort((a, b) => a - b);
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
       const rowsText = new Intl.ListFormat(i18n.language, {
         style: "long",
         type: "conjunction",
-      }).format(duplicateRowNumbers.map(String));
+      }).format(sorted.map(String));
       setSnackbarMessage(
         t("commonMaster.duplicateRowError", { rows: rowsText }),
       );
@@ -673,32 +680,37 @@ export default function CommonMasterScreen() {
       return;
     }
 
-    const auth = {
+    // Build a single create payload for both new and edited rows — the create
+    // API upserts on the natural key (column_group_id + code), so there is no
+    // separate update call (mirrors GpcMaster).
+    const rows: CommonMasterCreateRow[] = targetIndices.map((idx) => {
+      const r = csvData.rows[idx];
+      return {
+        column_group_id: r[0],
+        code: r[2],
+        name_en: r[3],
+        name_jp: r[4],
+        description: r[5],
+        sort_order: r[6],
+        reserve1: r[7],
+        reserve2: r[8],
+        reserve3: r[9],
+        reserve4: r[10],
+        reserve5: r[11],
+        delete_flg_pfm: r[12] === "1" ? 1 : 0,
+      };
+    });
+
+    const payload: CommonMasterCreatePayload = {
+      rows,
       user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
       session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
       screen_id: SCREEN_IDS.COMMON.id,
       ip_address: "192.168.1.101",
     };
 
-    const callCreate = async () => {
-      const rows: CommonMasterCreateRow[] = newRowIndices.map((idx) => {
-        const r = csvData.rows[idx];
-        return {
-          column_group_id: r[0],
-          code: r[2],
-          name_en: r[3],
-          name_jp: r[4],
-          description: r[5],
-          sort_order: r[6],
-          reserve1: r[7],
-          reserve2: r[8],
-          reserve3: r[9],
-          reserve4: r[10],
-          reserve5: r[11],
-          delete_flg_pfm: r[12] === "1" ? 1 : 0,
-        };
-      });
-      const payload: CommonMasterCreatePayload = { rows, ...auth };
+    setIsRegistering(true);
+    try {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -707,73 +719,29 @@ export default function CommonMasterScreen() {
       if (!response.ok) {
         throw new Error(`Create API responded ${response.status}`);
       }
-    };
 
-    const callUpdate = async () => {
-      const rows: CommonMasterUpdateRow[] = editedRowIndices.map((idx) => {
-        const r = csvData.rows[idx];
-        return {
-          id: rowIds[idx],
-          column_group_id: r[0],
-          display_order: r[6],
-          column_name: r[1],
-          code: r[2],
-          name_en: r[3],
-          name_jp: r[4],
-          description: r[5],
-          reserve1: r[7],
-          reserve2: r[8],
-          reserve3: r[9],
-          reserve4: r[10],
-          reserve5: r[11],
-          delete_flg_pfm: r[12] === "1" ? 1 : 0,
-        };
-      });
-      const payload: CommonMasterUpdatePayload = { rows, ...auth };
-      const response = await fetch(UPDATE_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(`Update API responded ${response.status}`);
+      if (lastSearchPayloadRef.current) {
+        await executeSearch(lastSearchPayloadRef.current, { silent: true });
       }
-    };
 
-    setIsRegistering(true);
-    const [createResult, updateResult] = await Promise.allSettled([
-      newRowIndices.length > 0 ? callCreate() : Promise.resolve(),
-      editedRowIndices.length > 0 ? callUpdate() : Promise.resolve(),
-    ]);
-    if (lastSearchPayloadRef.current) {
-      await executeSearch(lastSearchPayloadRef.current, { silent: true });
-    }
-    setIsRegistering(false);
-
-    if (newRowIndices.length > 0) {
-      const ok = createResult.status === "fulfilled";
-      setSnackbarMessage(
-        t(
-          ok
-            ? "commonMaster.createRowsSuccess"
-            : "commonMaster.createRowsFailed",
-        ),
-      );
-      setSnackbarSeverity(ok ? "success" : "error");
+      let messageKey: string;
+      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+        messageKey = "commonMaster.createdAndUpdatedRows";
+      } else if (newRowIndices.length > 0) {
+        messageKey = "commonMaster.createdNewRows";
+      } else {
+        messageKey = "commonMaster.updatedExistingRows";
+      }
+      setSnackbarMessage(t(messageKey));
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
-    }
-
-    if (editedRowIndices.length > 0) {
-      const ok = updateResult.status === "fulfilled";
-      setUpdateSnackbarMessage(
-        t(
-          ok
-            ? "commonMaster.updateRowsSuccess"
-            : "commonMaster.updateRowsFailed",
-        ),
-      );
-      setUpdateSnackbarSeverity(ok ? "success" : "error");
-      setUpdateSnackbarOpen(true);
+    } catch (e) {
+      console.error(e);
+      setSnackbarMessage(t("commonMaster.registrationFailed"));
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsRegistering(false);
     }
   };
   // AI Generated Code by Deloitte + Cursor (END)
@@ -885,7 +853,7 @@ export default function CommonMasterScreen() {
                     <Autocomplete
                       fullWidth
                       size="small"
-                      options={groupIdOptions}
+                      options={visibleGroupIdOptions}
                       value={groupId || null}
                       inputValue={groupIdSearchInput}
                       onInputChange={(_e, v) => {
@@ -917,12 +885,14 @@ export default function CommonMasterScreen() {
                       openOnFocus
                       disabled={groupOptionsLoading}
                       loading={groupOptionsLoading}
-                      ListboxProps={listboxProps}
+                      filterOptions={(x) => x}
+                      ListboxComponent={PaginatedAutocompleteListbox}
+                      slotProps={paginatedListboxSlotProps}
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
                           label={t("commonMaster.groupId")}
-                          placeholder={t("commonMaster.enterGroupId")}
+                          placeholder={t("commonMaster.enterCharsToSearch")}
                           InputProps={{
                             ...params.InputProps,
                             endAdornment: (
@@ -949,7 +919,7 @@ export default function CommonMasterScreen() {
                     fullWidth
                     size="small"
                     disabled={!groupId || codeOptionsLoading}
-                    options={codeIdOptions}
+                    options={visibleCodeIdOptions}
                     value={code || null}
                     inputValue={codeSearchInput}
                     onInputChange={(_e, v) => {
@@ -978,7 +948,9 @@ export default function CommonMasterScreen() {
                     freeSolo
                     openOnFocus
                     loading={codeOptionsLoading}
-                    ListboxProps={listboxProps}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledInputBase
                         {...params}
@@ -993,7 +965,7 @@ export default function CommonMasterScreen() {
                             : undefined
                         }
                         label={t("commonMaster.code")}
-                        placeholder={t("commonMaster.enterCode")}
+                        placeholder={t("commonMaster.enterCharsToSearch")}
                         InputProps={{
                           ...params.InputProps,
                           endAdornment: (
@@ -1357,23 +1329,6 @@ export default function CommonMasterScreen() {
       </Snackbar>
 
       {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
-      <Snackbar
-        open={updateSnackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setUpdateSnackbarOpen(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        sx={{
-          top: { xs: "80px !important", sm: "88px !important" },
-        }}
-      >
-        <StyledSnackbarAlert
-          onClose={() => setUpdateSnackbarOpen(false)}
-          severity={updateSnackbarSeverity}
-        >
-          {updateSnackbarMessage}
-        </StyledSnackbarAlert>
-      </Snackbar>
-
       {isRegistering && (
         <ResultsLoader
           fullScreen

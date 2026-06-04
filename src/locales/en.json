@@ -738,10 +738,10 @@
     "groupIdRequired": "Group Id is required for all rows being registered.",
     "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration.",
     "registrationFailed": "Registration failed. Please try again.",
-    "createRowsSuccess": "Create new rows successfully",
-    "createRowsFailed": "Failed to Create New rows",
-    "updateRowsSuccess": "Update existing rows successfully",
-    "updateRowsFailed": "Failed to Update existing rows"
+    "noChangesToRegister": "No new or updated rows to register.",
+    "createdNewRows": "Created new rows.",
+    "updatedExistingRows": "Updated existing rows.",
+    "createdAndUpdatedRows": "Created and updated rows."
   },
   "commonConversionMaster": {
     "itemId": "Item ID",
@@ -824,10 +824,11 @@
     "registrationInProgress": "Registration in progress...",
     "registrationCompleted": "Registration completed successfully.",
     "fetchError": "Failed to load data.",
-    "createRowsSuccess": "New rows created successfully.",
-    "createRowsFailed": "Failed to create new rows.",
-    "updateRowsSuccess": "Existing rows updated successfully.",
-    "updateRowsFailed": "Failed to update existing rows.",
+    "registrationFailed": "Registration failed. Please try again.",
+    "noChangesToRegister": "No new or updated rows to register.",
+    "createdNewRows": "Created new rows.",
+    "updatedExistingRows": "Updated existing rows.",
+    "createdAndUpdatedRows": "Created and updated rows.",
     "requiredFieldsError": "All fields are required for the rows being registered.",
     "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration."
   },
