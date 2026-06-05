@@ -110,6 +110,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import {
   LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG,
   LOCAL_ITEM_CONVERSION_MASTER_HEADERS,
@@ -428,8 +429,8 @@ function LocalItemConversionMasterScreen() {
   const systemIdOptions = systemIdDebounced
     ? systemIdAllOptions
         .filter((id) =>
-          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-        )
+        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+      )
         .slice(0, MAX_VISIBLE_OPTIONS)
     : // Show the first chunk so all options appear on focus; type to narrow.
       systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
@@ -437,8 +438,8 @@ function LocalItemConversionMasterScreen() {
   const manufacturerCodeOptions = manufacturerCodeDebounced
     ? manufacturerOptions
         .filter((code) =>
-          code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
-        )
+        code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
+      )
         .slice(0, MAX_VISIBLE_OPTIONS)
     : manufacturerOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
@@ -448,7 +449,7 @@ function LocalItemConversionMasterScreen() {
           pn
             .toLowerCase()
             .includes(manufacturerPartNumberDebounced.toLowerCase()),
-        )
+      )
         .slice(0, MAX_VISIBLE_OPTIONS)
     : manufacturerPartNumberOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
@@ -1109,8 +1110,10 @@ function LocalItemConversionMasterScreen() {
   });
   const hasRows = displayData.rows.length > 0;
 
-  const listboxProps = {
-    style: { maxHeight: 176, overflow: "auto" as const },
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
   };
 
   return (
@@ -1162,7 +1165,8 @@ function LocalItemConversionMasterScreen() {
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
                     filterOptions={(x) => x}
-                    ListboxProps={listboxProps}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -1267,7 +1271,8 @@ function LocalItemConversionMasterScreen() {
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}
-                    ListboxProps={listboxProps}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
@@ -1326,7 +1331,8 @@ function LocalItemConversionMasterScreen() {
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}
-                    ListboxProps={listboxProps}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
