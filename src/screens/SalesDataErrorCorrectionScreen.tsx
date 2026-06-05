@@ -562,14 +562,19 @@ export default function SalesDataErrorCorrectionScreen() {
     }));
   };
 
-  const errorCategoryOptions = ["All", "Normal", "Caveat", "Sales Error"];
+  const errorCategoryOptions = [
+    { value: "All",        labelKey: "errorCorrection.all" },
+    { value: "Normal",     labelKey: "errorCorrection.normal" },
+    { value: "Caveat",     labelKey: "errorCorrection.caveat" },
+    { value: "Sales Error", labelKey: "errorCorrection.salesError" },
+  ];
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const DEBOUNCE_MS = 1000;
+  const DEBOUNCE_MS = 300;
   const SYSTEM_ID_MIN_CHARS = 3;
 
   const { debouncedValue: systemIdDebounced } =
-    useDebouncedSearch(systemIdInput);
+    useDebouncedSearch(systemIdInput, { minLength: SYSTEM_ID_MIN_CHARS, delay: 300 });
 
   const systemIdOptions = systemIdDebounced
     ? systemIdAllOptions
@@ -1211,14 +1216,8 @@ export default function SalesDataErrorCorrectionScreen() {
                       }
                     >
                       {errorCategoryOptions.map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt === "All"
-                            ? t("errorCorrection.all")
-                            : opt === "Normal"
-                              ? t("errorCorrection.normal")
-                              : opt === "Caveat"
-                                ? t("errorCorrection.caveat")
-                                : t("errorCorrection.salesError")}
+                        <MenuItem key={opt.value} value={opt.value}>
+                          {t(opt.labelKey)}
                         </MenuItem>
                       ))}
                     </Select>
