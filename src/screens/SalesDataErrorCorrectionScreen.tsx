@@ -26,10 +26,6 @@ import {
   FormLabel,
   Grid,
   FormHelperText,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
   TableSortLabel,
   InputAdornment,
   IconButton,
@@ -73,7 +69,6 @@ import {
   StyledSearchContent,
   StyledAutocompleteTextField,
   StyledFormHelperText,
-  StyledFormControl,
   StyledInputTextField,
   StyledFormLabel,
   StyledFormControlLabel,
@@ -250,7 +245,6 @@ const MAX_VISIBLE_OPTIONS = 1000;
 
 interface ErrorData {
   rowCode: string;
-  fileName: string;
   systemId: string;
   dataCreationDate: string;
   dataCreationTime: string;
@@ -279,9 +273,6 @@ interface ErrorData {
   reserved3: string;
   /** API `DATA_CLS_TYPE` (string); legacy mock rows used numeric codes */
   dataTypeCategory: string | number;
-  correctionCategory: number;
-  errorCategory: string;
-  summary: string;
 }
 
 const SALES_DATA_CORRECTION_SEARCH_API_URL =
@@ -296,10 +287,7 @@ interface SalesDataCorrectionSearchPayload {
   local_organization_code: string;
   local_item_code: string;
   local_item_code_match: "prefix" | "partial";
-  item_code: string;
-  item_cls_code: string;
-  bu_layer_3: string;
-  local_custom_code: string;
+  sales_date: string;
 }
 
 /** Single result row (snake_case fields as returned by the service). */
@@ -411,7 +399,6 @@ function mapApiRowToErrorData(
 ): ErrorData {
   return {
     rowCode: `R${rowIndex + 1}`,
-    fileName: "",
     systemId: raw.system_id ?? "",
     dataCreationDate: stripDateDashes(raw.creation_date),
     dataCreationTime: raw.creation_datetime ?? "",
@@ -439,9 +426,6 @@ function mapApiRowToErrorData(
     reserved2: normalizeNullable(raw.reserve2),
     reserved3: normalizeNullable(raw.reserve3),
     dataTypeCategory: normalizeNullable(raw.data_cls_type),
-    correctionCategory: 0,
-    errorCategory: "",
-    summary: "",
   };
 }
 
@@ -496,7 +480,6 @@ export default function SalesDataErrorCorrectionScreen() {
   const [salesBaseCode, setSalesBaseCode] = useState("");
   const [localOrganizationCode, setLocalOrganizationCode] = useState("");
   const [localItemCode, setLocalItemCode] = useState("");
-  const [errorCategory, setErrorCategory] = useState("All");
   const [matchType, setMatchType] = useState<"prefix" | "partial">("prefix");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -561,13 +544,6 @@ export default function SalesDataErrorCorrectionScreen() {
       },
     }));
   };
-
-  const errorCategoryOptions = [
-    { value: "All",        labelKey: "errorCorrection.all" },
-    { value: "Normal",     labelKey: "errorCorrection.normal" },
-    { value: "Caveat",     labelKey: "errorCorrection.caveat" },
-    { value: "Sales Error", labelKey: "errorCorrection.salesError" },
-  ];
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const DEBOUNCE_MS = 300;
@@ -673,6 +649,9 @@ export default function SalesDataErrorCorrectionScreen() {
       const salesMonth = salesDate
         ? `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`
         : "";
+      const salesDateStr = salesRecordingDate
+        ? `${salesRecordingDate.getFullYear()}${String(salesRecordingDate.getMonth() + 1).padStart(2, "0")}${String(salesRecordingDate.getDate()).padStart(2, "0")}`
+        : "";
       const payload: SalesDataCorrectionSearchPayload = {
         system_id: searchSystemId,
         sales_month: salesMonth,
@@ -681,10 +660,7 @@ export default function SalesDataErrorCorrectionScreen() {
         local_organization_code: localOrganizationCode,
         local_item_code: localItemCode,
         local_item_code_match: matchType,
-        item_code: "",
-        item_cls_code: "",
-        bu_layer_3: "",
-        local_custom_code: "",
+        sales_date: salesDateStr,
       };
       const res = await fetch(SALES_DATA_CORRECTION_SEARCH_API_URL, {
         method: "POST",
@@ -935,7 +911,6 @@ export default function SalesDataErrorCorrectionScreen() {
     setSalesBaseCode("");
     setLocalOrganizationCode("");
     setLocalItemCode("");
-    setErrorCategory("All");
     setMatchType("prefix");
     setFieldErrors({});
     setErrorData([]);
@@ -1218,27 +1193,7 @@ export default function SalesDataErrorCorrectionScreen() {
                   </Box>
                 </Grid>
 
-                {/* Error Classification - dropdown */}
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <StyledFormControl fullWidth size="small">
-                    <InputLabel>
-                      {t("errorCorrection.errorCategory")}
-                    </InputLabel>
-                    <Select
-                      value={errorCategory}
-                      label={t("errorCorrection.errorCategory")}
-                      onChange={(e) =>
-                        setErrorCategory(e.target.value as string)
-                      }
-                    >
-                      {errorCategoryOptions.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {t(opt.labelKey)}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </StyledFormControl>
-                </Grid>
+
               </Grid>
 
               <StyledSearchActionsBox sx={{ justifyContent: "flex-end" }}>

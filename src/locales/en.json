@@ -343,7 +343,7 @@
     "deletingFiles": "Deleting files...",
     "yearMonthHeader": "Year and Month",
     "fileNameHeader": "File Name",
-    "userIdHeader": "User ID",
+    "usernameHeader": "Username",
     "dateTimeHeader": "Date and Time"
   },
   "localItemConversion": {

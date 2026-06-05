@@ -371,8 +371,8 @@ export const ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS: I18nColumnConfig[] =
       editable: false,
     },
     {
-      key: "userId",
-      labelKey: "adjustmentDataFileDeletion.userIdHeader",
+      key: "username",
+      labelKey: "adjustmentDataFileDeletion.usernameHeader",
       editable: false,
     },
     {

@@ -343,7 +343,7 @@
     "deletingFiles": "ファイルを削除しています...",
     "yearMonthHeader": "年月",
     "fileNameHeader": "ファイル名",
-    "userIdHeader": "ユーザーID",
+    "usernameHeader": "ユーザー名",
     "dateTimeHeader": "日時"
   },
   "localItemConversion": {

@@ -226,6 +226,19 @@ const COL_PATTERN_ID = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
 const COL_DELETION_FLAG = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
   (c) => c.key === "deletionFlag",
 );
+const COL_LOCAL_CUSTOMER_NAME = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "localCustomerName",
+);
+const COL_PRODUCT_CLASS_NAME = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
+  (c) => c.key === "productClassificationName",
+);
+
+const NEW_ROW_SEARCHABLE_COLS = new Set([
+  "systemId",
+  "localCustomerCode",
+  "productClassification",
+  "transferDestBU3",
+]);
 
 // Required-field validation scope: the identifying codes for a record. Names
 // are lookup-derived and the dates/pattern come from the source row, so they
@@ -941,11 +954,19 @@ export default function GlobalDadMasterScreen() {
     value: string,
   ) => {
     if (!csvData) return;
-    const newRows = csvData.rows.map((row, rIdx) =>
-      rIdx === rowIndex
-        ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
-        : row,
-    );
+    const newRows = csvData.rows.map((row, rIdx) => {
+      if (rIdx !== rowIndex) return row;
+      const updated = row.map((cell, cIdx) => (cIdx === colIndex ? value : cell));
+      if (colIndex === COL_LOCAL_CUSTOMER) {
+        updated[COL_LOCAL_CUSTOMER_NAME] = localCustomerNameMap[value] || "";
+      } else if (colIndex === COL_PRODUCT_CLASS) {
+        updated[COL_PRODUCT_CLASS_NAME] =
+          (isJaLanguage
+            ? productClassificationNameJpMap[value]
+            : productClassificationNameMap[value]) || "";
+      }
+      return updated;
+    });
     setCsvData({ ...csvData, rows: newRows });
   };
 
@@ -1099,8 +1120,10 @@ export default function GlobalDadMasterScreen() {
 
   const displayData = csvData || getEmptyCsvData();
 
-  // In-table searchable cells: column key -> option list (sourced from context).
   const searchOptionsByColumn: Record<string, string[]> = {
+    systemId: systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS),
+    localCustomerCode: localCustomerAllOptions.slice(0, MAX_VISIBLE_OPTIONS),
+    productClassification: productClassificationAllOptions.slice(0, MAX_VISIBLE_OPTIONS),
     transferDestBU3: bu3CodeOptions,
   };
 
@@ -1666,6 +1689,7 @@ export default function GlobalDadMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const isNewRowItem = isNewRow(originalRowIndex);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1691,8 +1715,13 @@ export default function GlobalDadMasterScreen() {
                                     {row.map((cell, colIndex) => {
                                       const colConfig = GLOBAL_DAD_MASTER_COLUMNS[colIndex];
                                       const isCheckbox = colConfig?.isCheckbox;
-                                      const isEditable = colConfig?.editable !== false;
-                                      const isSearchable = colConfig?.searchable && isEditable;
+                                      const isEditable = isNewRowItem
+                                        ? colConfig?.key !== "localCustomerName" && colConfig?.key !== "productClassificationName"
+                                        : colConfig?.editable !== false;
+                                      const isSearchable = isNewRowItem
+                                        ? NEW_ROW_SEARCHABLE_COLS.has(colConfig?.key ?? "")
+                                        : !!(colConfig?.searchable && isEditable);
+                                      const isPaginated = NEW_ROW_SEARCHABLE_COLS.has(colConfig?.key ?? "");
                                       const searchOptions = colConfig?.key ? searchOptionsByColumn[colConfig.key] : undefined;
 
                                       return (
@@ -1736,6 +1765,7 @@ export default function GlobalDadMasterScreen() {
                                               searchable={isSearchable}
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
+                                              paginated={isPaginated}
                                             />
                                           )}
                                         </ScrollableTableDataCell>

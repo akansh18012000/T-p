@@ -221,7 +221,7 @@ interface ResultRow {
   correctionType: string;
   yearMonth: string;
   fileName: string;
-  userId: string;
+  username: string;
   dateTime: string;
   selected: boolean;
 }
@@ -234,7 +234,7 @@ interface AdjustmentDataDeletionSearchEnvelope {
 
 interface AdjustmentDataDeletionSearchRow {
   file_name: string;
-  user_id: string;
+  username: string;
   date_and_time: string;
   year_and_month: string | null;
 }
@@ -258,7 +258,7 @@ function mapApiRowToResultRow(
     correctionType: "",
     yearMonth: raw.year_and_month ?? "",
     fileName: raw.file_name ?? "",
-    userId: raw.user_id ?? "",
+    username: raw.username ?? "",
     dateTime: raw.date_and_time ?? "",
     selected: false,
   };
@@ -395,9 +395,9 @@ function AdjustmentDataFileDeletionScreen() {
     const records = selectedRows.map((r) => ({
       correction_type: correctionTypeForApi,
       file_name: r.fileName,
-      user_id: r.userId,
+      username: r.username,
+      year_and_month: r.yearMonth || null,
       date_and_time: r.dateTime,
-      year_and_month: r.yearMonth,
     }));
 
     setDeleting(true);
@@ -407,10 +407,7 @@ function AdjustmentDataFileDeletionScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           records,
-          current_user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
           screen_id: SCREEN_IDS.SALES_DELETION.id,
-          session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
-          ip_address: "192.168.1.101",
         }),
       });
       if (!res.ok) {
@@ -730,7 +727,7 @@ function AdjustmentDataFileDeletionScreen() {
                                             ResultRow,
                                             | "yearMonth"
                                             | "fileName"
-                                            | "userId"
+                                            | "username"
                                             | "dateTime"
                                           >
                                         ];
