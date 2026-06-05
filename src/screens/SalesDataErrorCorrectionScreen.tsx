@@ -445,6 +445,14 @@ function mapApiRowToErrorData(
   };
 }
 
+/** Returns April 1st of the current Japanese fiscal year (starts in April). */
+function defaultSalesDate(): Date {
+  const today = new Date();
+  const fiscalYear =
+    today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  return new Date(fiscalYear, 3, 1);
+}
+
 export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -478,7 +486,7 @@ export default function SalesDataErrorCorrectionScreen() {
   const [systemIdInput, setSystemIdInput] = useState("");
   const [systemId, setSystemId] = useState("");
   // Default month/year aligned with API sample payload (sales_month: 202410) for local testing
-  const [salesDate, setSalesDate] = useState<Date | null>(new Date(2024, 9, 1)); // Oct 2024 → 202410
+  const [salesDate, setSalesDate] = useState<Date | null>(defaultSalesDate);
   const [salesDatePickerOpen, setSalesDatePickerOpen] = useState(false);
   const [corporateCode, setCorporateCode] = useState("");
   const [salesRecordingDate, setSalesRecordingDate] = useState<Date | null>(
@@ -916,7 +924,7 @@ export default function SalesDataErrorCorrectionScreen() {
     setSystemId("");
     searchConditionsRef.current.systemIdInput = "";
     searchConditionsRef.current.systemId = "";
-    setSalesDate(new Date(2024, 9, 1));
+    setSalesDate(defaultSalesDate());
     setCorporateCode("");
     setSalesRecordingDate(null);
     setSalesBaseCode("");
