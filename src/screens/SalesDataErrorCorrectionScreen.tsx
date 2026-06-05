@@ -1062,7 +1062,7 @@ export default function SalesDataErrorCorrectionScreen() {
                       value={salesDate}
                       onChange={(newValue) => setSalesDate(newValue)}
                       views={["year", "month"]}
-                      format="yyyy/MM"
+                      format="yyyyMM"
                       open={salesDatePickerOpen}
                       onOpen={() => setSalesDatePickerOpen(true)}
                       onClose={() => setSalesDatePickerOpen(false)}
@@ -1075,6 +1075,22 @@ export default function SalesDataErrorCorrectionScreen() {
                           error: !!fieldErrors.salesDate,
                           helperText: fieldErrors.salesDate,
                           required: true,
+                          onClick: () => setSalesDatePickerOpen(true),
+                          inputProps: {
+                            readOnly: true,
+                            style: {
+                              cursor: "pointer",
+                              userSelect: "none",
+                              caretColor: "transparent",
+                            },
+                          },
+                          sx: {
+                            cursor: "pointer",
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                            "& input::selection": {
+                              backgroundColor: "transparent",
+                            },
+                          },
                         },
                       }}
                     />
@@ -1100,8 +1116,8 @@ export default function SalesDataErrorCorrectionScreen() {
                       label={t("errorCorrection.salesRecordingDate")}
                       value={salesRecordingDate}
                       onChange={(newValue) => setSalesRecordingDate(newValue)}
-                      views={["year", "month"]}
-                      format="yyyy/MM"
+                      views={["year", "month", "day"]}
+                      format="yyyyMMdd"
                       open={salesRecordingDatePickerOpen}
                       onOpen={() => setSalesRecordingDatePickerOpen(true)}
                       onClose={() => setSalesRecordingDatePickerOpen(false)}
@@ -1430,7 +1446,7 @@ export default function SalesDataErrorCorrectionScreen() {
                                       size="small"
                                     />
                                   ) : (
-                                    displayValue || "-"
+                                    displayValue
                                   )}
                                 </StyledBodyCell>
                               );
