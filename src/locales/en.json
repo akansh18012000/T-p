@@ -262,7 +262,7 @@
     "systemIdMinChars": "System ID must be at least {{count}} characters",
     "salesDateRequired": "Sales Date is required",
     "matchTypeRequired": "Please select Prefix Match or Partial Match",
-    "enterCharsToSearch": "Enter 3 characters to search",
+    "enterCharsToSearch": "Select or type to filter",
     "searchAllDataPlaceholder": "Search all data...",
     "showingRowsFiltered": "Showing {{filtered}} of {{total}} rows",
     "downloadFileName": "sales_error_data.csv"

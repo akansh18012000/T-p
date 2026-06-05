@@ -262,7 +262,7 @@
     "systemIdMinChars": "システムIDは少なくとも{{count}}文字である必要があります",
     "salesDateRequired": "売上日付は必須です",
     "matchTypeRequired": "前方一致または部分一致を選択してください",
-    "enterCharsToSearch": "3文字以上入力して検索",
+    "enterCharsToSearch": "選択または入力してフィルター",
     "searchAllDataPlaceholder": "すべてのデータを検索...",
     "showingRowsFiltered": "{{filtered}} / {{total}} 件を表示",
     "downloadFileName": "sales_error_data.csv"
