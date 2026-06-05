@@ -431,7 +431,8 @@ function LocalItemConversionMasterScreen() {
           id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : // Show the first chunk so all options appear on focus; type to narrow.
+      systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const manufacturerCodeOptions = manufacturerCodeDebounced
     ? manufacturerOptions
@@ -439,7 +440,7 @@ function LocalItemConversionMasterScreen() {
           code.toLowerCase().includes(manufacturerCodeDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : manufacturerOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const manufacturerPartNumberFilteredOptions = manufacturerPartNumberDebounced
     ? manufacturerPartNumberOptions
@@ -449,7 +450,7 @@ function LocalItemConversionMasterScreen() {
             .includes(manufacturerPartNumberDebounced.toLowerCase()),
         )
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : [];
+    : manufacturerPartNumberOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   // In-table cell search options. System ID, manufacturer code and
   // manufacturer part number come from the shared contexts (full lists, since
@@ -1157,6 +1158,7 @@ function LocalItemConversionMasterScreen() {
                       searchConditionsRef.current.systemId = v;
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={systemIdsLoading}
                     loading={systemIdsLoading}
                     filterOptions={(x) => x}
@@ -1261,6 +1263,7 @@ function LocalItemConversionMasterScreen() {
                       searchConditionsRef.current.manufacturerName = name;
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}
@@ -1319,6 +1322,7 @@ function LocalItemConversionMasterScreen() {
                       searchConditionsRef.current.manufacturerPartNumber = v;
                     }}
                     freeSolo
+                    openOnFocus
                     disabled={manufacturersLoading}
                     loading={manufacturersLoading}
                     filterOptions={(x) => x}

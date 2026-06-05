@@ -48,7 +48,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
   {
     key: "entityCode",
     labelKey: "errorCorrection.corporateCode",
-    editable: true,
+    editable: false,
   },
   {
     key: "salesEntityCode",
@@ -90,7 +90,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
   {
     key: "productionPlantCode",
     labelKey: "errorCorrection.productionFactoryCode",
-    editable: false,
+    editable: true,
   },
   {
     key: "localCustomerCode",
@@ -105,7 +105,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
   {
     key: "destinationCountry",
     labelKey: "errorCorrection.destinationCountry",
-    editable: true,
+    editable: false,
   },
   { key: "quantity", labelKey: "errorCorrection.quantity", editable: false },
   {
@@ -162,7 +162,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS_LEGACY: I18nColumnConfig[] = [
   {
     key: "entityCode",
     labelKey: "errorCorrection.corporateCode",
-    editable: true,
+    editable: false,
   },
   {
     key: "salesEntityCode",
@@ -204,7 +204,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS_LEGACY: I18nColumnConfig[] = [
   {
     key: "productionPlantCode",
     labelKey: "errorCorrection.productionFactoryCode",
-    editable: false,
+    editable: true,
   },
   {
     key: "localCustomerCode",
@@ -219,7 +219,7 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS_LEGACY: I18nColumnConfig[] = [
   {
     key: "destinationCountry",
     labelKey: "errorCorrection.destinationCountry",
-    editable: true,
+    editable: false,
   },
   { key: "quantity", labelKey: "errorCorrection.quantity", editable: false },
   {

@@ -35,6 +35,8 @@ import {
   IconButton,
   Toolbar,
   Autocomplete,
+  CircularProgress,
+  Checkbox,
 } from "@mui/material";
 
 import {
@@ -45,10 +47,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   AppRegistration as AppRegistrationIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
-// AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
-// AI Generated Code by Deloitte + Cursor (END)
+import { useSystemIdData } from "../context/SystemIdDataContext.js";
+import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import {
   SALES_DATA_ERROR_CORRECTION_COLUMNS,
@@ -107,7 +111,6 @@ import {
 import { useSidebar } from "../context/SidebarContext.js";
 
 // Screen-specific table components (white borders for this screen)
-// AI Generated Code by Deloitte + Cursor (BEGIN)
 const StyledTableHeaderCell = styled(TableCell)<{
   $isFrozen?: boolean;
   $leftOffset?: number;
@@ -166,7 +169,6 @@ const StyledTableHeaderCellSortable = styled(TableCell)<{
     }),
   }),
 }));
-// AI Generated Code by Deloitte + Cursor (END)
 
 const StyledTableSortLabel = styled(TableSortLabel)(({ theme }) => ({
   color: theme.palette.common.white,
@@ -185,7 +187,6 @@ const StyledTableBodyRow = styled(TableRow)<{ $index: number }>(
   }),
 );
 
-// AI Generated Code by Deloitte + Cursor (BEGIN)
 const StyledIndexCell = styled(TableCell)<{
   $isFrozen?: boolean;
   $leftOffset?: number;
@@ -243,10 +244,9 @@ const StyledBodyCell = styled(TableCell)<{
       }),
     }),
 }));
-// AI Generated Code by Deloitte + Cursor (END)
 
-// Mock autocomplete options until a system-id search API exists (TEX → MVC for API testing)
-const MOCK_SYSTEM_IDS = ["MVC", "TE", "TA", "SAP", "ERP"];
+// MUI renders one element per option, so cap how many we hand the Autocomplete.
+const MAX_VISIBLE_OPTIONS = 1000;
 
 interface ErrorData {
   rowCode: string;
@@ -284,105 +284,172 @@ interface ErrorData {
   summary: string;
 }
 
-// AI Generated Code by Deloitte + Cursor (BEGIN)
-/** POST /api/v1/databricks/sales/error-corrections — top-level JSON shape */
-interface SalesErrorCorrectionApiEnvelope {
-  ["number of records"]: number;
-  response: SalesErrorCorrectionApiRow[];
+const SALES_DATA_CORRECTION_SEARCH_API_URL =
+  "/api/v1/sales-data-correction/search";
+
+/** Request body for POST /api/v1/sales-data-correction/search */
+interface SalesDataCorrectionSearchPayload {
+  system_id: string;
+  sales_month: string;
+  company_code: string;
+  sales_entity_code: string;
+  local_organization_code: string;
+  local_item_code: string;
+  local_item_code_match: "prefix" | "partial";
+  item_code: string;
+  item_cls_code: string;
+  bu_layer_3: string;
+  local_custom_code: string;
 }
 
-/** Single row from Databricks error-corrections response (field names as returned by API) */
-interface SalesErrorCorrectionApiRow {
-  SYSTEM_ID: string;
-  CREATION_DATE: string;
-  CREATION_DATETIME: string;
-  COMPANY_CODE: string;
-  SALES_ENTITY_CODE: string;
-  LOCAL_ORGANIZATION_CODE: string;
-  SALES_MONTH: string;
-  SALES_DATE: string;
-  LOCAL_ITEM_CODE: string;
-  ITEM_CODE: string;
-  ITEM_CLS_CODE: string;
-  BU_LAYER_3: string;
-  LOCAL_ITEM_CLASS: string;
-  PROD_FACT_CODE: string;
-  LOCAL_CUSTOM_CODE: string;
-  INTER_TRAN_FIRST_PARTY_CODE: string;
-  DESTINATION_COUNTRY: string;
-  QUANTITY: number;
-  SALES_CURRENCY_TRAN: string;
-  SALES_AMNT_TRAN: number;
-  SALES_CURRENCY_BOOK: string;
-  SALES_AMNT_BOOK: number;
-  SALES_COST_BOOK: number;
-  RESERVE1: string;
-  RESERVE2: string;
-  RESERVE3: string;
-  DATA_CLS_TYPE: string;
+/** Single result row (snake_case fields as returned by the service). */
+interface SalesDataCorrectionApiRow {
+  system_id: string | null;
+  creation_date: string | null;
+  creation_datetime: string | null;
+  company_code: string | null;
+  sales_entity_code: string | null;
+  local_organization_code: string | null;
+  sales_month: string | null;
+  sales_date: string | null;
+  local_item_code: string | null;
+  item_code: string | null;
+  item_cls_code: string | null;
+  bu_layer_3: string | null;
+  local_item_class: string | null;
+  prod_fact_code: string | null;
+  local_custom_code: string | null;
+  inter_tran_first_party_code: string | null;
+  destination_country: string | null;
+  quantity: number | null;
+  sales_currency_tran: string | null;
+  sales_amnt_tran: number | null;
+  sales_currency_book: string | null;
+  sales_amnt_book: number | null;
+  sales_cost_book: number | null;
+  reserve1: string | null;
+  reserve2: string | null;
+  reserve3: string | null;
+  data_cls_type: string | null;
+  update_datetime: string | null;
 }
 
-const SALES_ERROR_CORRECTION_API_URL =
-  "/api/v1/databricks/sales/error-corrections";
-
-function stripDateDashes(isoDate: string): string {
-  return isoDate.replace(/-/g, "");
+interface SalesDataCorrectionSearchResponse {
+  total: number;
+  data: SalesDataCorrectionApiRow[];
 }
 
-function mapReserve(v: string | undefined): string {
+const SALES_DATA_CORRECTION_DELETE_API_URL =
+  "/api/v1/sales-data-correction/create-delete";
+
+const SALES_DATA_CORRECTION_CREATE_API_URL =
+  "/api/v1/sales-data-correction/create";
+
+// TODO: source these auth fields from the authenticated session once wired up.
+const DELETE_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
+const DELETE_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
+const DELETE_SCREEN_ID = "32fbcc76-3cb2-4fd3-8a7d-21c39464aabb";
+const DELETE_IP_ADDRESS = "192.168.1.101";
+
+/** Delete payload row mirrors the search row but without `update_datetime`. */
+type SalesDataCorrectionDeleteRow = Omit<
+  SalesDataCorrectionApiRow,
+  "update_datetime"
+>;
+
+interface SalesDataCorrectionDeletePayload {
+  rows: SalesDataCorrectionDeleteRow[];
+  user_id: string;
+  session_id: string;
+  screen_id: string;
+  ip_address: string;
+}
+
+/** Strip `update_datetime` from a stored search row to build a delete-payload row. */
+function toDeleteRow(
+  raw: SalesDataCorrectionApiRow,
+): SalesDataCorrectionDeleteRow {
+  const { update_datetime: _omit, ...rest } = raw;
+  void _omit;
+  return rest;
+}
+
+/**
+ * Take the original API row and overlay only the fields the user edited
+ * (expressed as ErrorData keys). Only editable columns need mapping here.
+ */
+function applyEditsToApiRow(
+  raw: SalesDataCorrectionApiRow,
+  rowEdits: Partial<Record<keyof ErrorData, string | number>>,
+): SalesDataCorrectionDeleteRow {
+  const base = toDeleteRow(raw);
+  if (rowEdits.localItemCode !== undefined) {
+    const val = String(rowEdits.localItemCode).trim();
+    base.local_item_code = val || null;
+  }
+  if (rowEdits.productionPlantCode !== undefined) {
+    const val = String(rowEdits.productionPlantCode).trim();
+    base.prod_fact_code = val || null;
+  }
+  return base;
+}
+
+/** Drop the YYYY-MM-DD dashes the API returns so dates match the table's compact format. */
+function stripDateDashes(isoDate: string | null): string {
+  return isoDate ? isoDate.replace(/-/g, "") : "";
+}
+
+/** The API sends the literal "NULL" (and JSON null) for empty optional fields. */
+function normalizeNullable(v: string | null | undefined): string {
   if (v === undefined || v === null || v === "NULL") return "";
   return String(v);
 }
 
 function mapApiRowToErrorData(
-  raw: SalesErrorCorrectionApiRow,
+  raw: SalesDataCorrectionApiRow,
   rowIndex: number,
 ): ErrorData {
   return {
     rowCode: `R${rowIndex + 1}`,
     fileName: "",
-    systemId: raw.SYSTEM_ID ?? "",
-    dataCreationDate: raw.CREATION_DATE
-      ? stripDateDashes(raw.CREATION_DATE)
-      : "",
-    dataCreationTime: raw.CREATION_DATETIME ?? "",
-    entityCode: raw.COMPANY_CODE ?? "",
-    salesEntityCode: raw.SALES_ENTITY_CODE ?? "",
-    localOrganizationCode: raw.LOCAL_ORGANIZATION_CODE ?? "",
-    salesMonth: String(raw.SALES_MONTH ?? ""),
-    salesDate: raw.SALES_DATE ? stripDateDashes(raw.SALES_DATE) : "",
-    localItemCode: raw.LOCAL_ITEM_CODE ?? "",
-    itemCode: raw.ITEM_CODE ?? "",
-    gpc: raw.ITEM_CLS_CODE ?? "",
-    bu3: raw.BU_LAYER_3 ?? "",
-    localProductCategory: raw.LOCAL_ITEM_CLASS ?? "",
-    productionPlantCode: raw.PROD_FACT_CODE ?? "",
-    localCustomerCode: raw.LOCAL_CUSTOM_CODE ?? "",
-    interCompanyEntityCode: raw.INTER_TRAN_FIRST_PARTY_CODE ?? "",
-    destinationCountry: raw.DESTINATION_COUNTRY ?? "",
-    quantity: raw.QUANTITY ?? 0,
-    salesCurrency: raw.SALES_CURRENCY_TRAN ?? "",
-    salesAmount: raw.SALES_AMNT_TRAN ?? 0,
-    salesCurrencyBook: raw.SALES_CURRENCY_BOOK ?? "",
-    salesAmountBookCurrency: raw.SALES_AMNT_BOOK ?? 0,
-    salesCost: raw.SALES_COST_BOOK ?? 0,
-    reserved1: mapReserve(raw.RESERVE1),
-    reserved2: mapReserve(raw.RESERVE2),
-    reserved3: mapReserve(raw.RESERVE3),
-    dataTypeCategory: raw.DATA_CLS_TYPE ?? "",
+    systemId: raw.system_id ?? "",
+    dataCreationDate: stripDateDashes(raw.creation_date),
+    dataCreationTime: raw.creation_datetime ?? "",
+    entityCode: raw.company_code ?? "",
+    salesEntityCode: raw.sales_entity_code ?? "",
+    localOrganizationCode: raw.local_organization_code ?? "",
+    salesMonth: raw.sales_month ?? "",
+    salesDate: stripDateDashes(raw.sales_date),
+    localItemCode: raw.local_item_code ?? "",
+    itemCode: raw.item_code ?? "",
+    gpc: raw.item_cls_code ?? "",
+    bu3: raw.bu_layer_3 ?? "",
+    localProductCategory: raw.local_item_class ?? "",
+    productionPlantCode: raw.prod_fact_code ?? "",
+    localCustomerCode: raw.local_custom_code ?? "",
+    interCompanyEntityCode: raw.inter_tran_first_party_code ?? "",
+    destinationCountry: raw.destination_country ?? "",
+    quantity: raw.quantity ?? 0,
+    salesCurrency: raw.sales_currency_tran ?? "",
+    salesAmount: raw.sales_amnt_tran ?? 0,
+    salesCurrencyBook: raw.sales_currency_book ?? "",
+    salesAmountBookCurrency: raw.sales_amnt_book ?? 0,
+    salesCost: raw.sales_cost_book ?? 0,
+    reserved1: normalizeNullable(raw.reserve1),
+    reserved2: normalizeNullable(raw.reserve2),
+    reserved3: normalizeNullable(raw.reserve3),
+    dataTypeCategory: normalizeNullable(raw.data_cls_type),
     correctionCategory: 0,
     errorCategory: "",
     summary: "",
   };
 }
-// AI Generated Code by Deloitte + Cursor (END)
 
 export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
 
-  // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
   useEffect(() => {
@@ -392,7 +459,20 @@ export default function SalesDataErrorCorrectionScreen() {
     ]);
     return () => setBreadcrumbItems([]);
   }, [t, setBreadcrumbItems]);
-  // AI Generated Code by Deloitte + Cursor (END)
+
+  // System Id dropdown options come from the shared context (fetched at most
+  // once per session, reused across pages) — mirrors GpcMaster's data contexts.
+  const {
+    systemIdOptions: systemIdAllOptions,
+    status: systemIdDataStatus,
+    ensureLoaded: ensureSystemIdData,
+  } = useSystemIdData();
+  const systemIdsLoading = systemIdDataStatus === "loading";
+
+  // Kick off the fetch on mount; ensureLoaded is idempotent.
+  useEffect(() => {
+    ensureSystemIdData();
+  }, [ensureSystemIdData]);
 
   // Search and filter state
   const [systemIdInput, setSystemIdInput] = useState("");
@@ -418,7 +498,28 @@ export default function SalesDataErrorCorrectionScreen() {
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    "success" | "error" | "info"
+  >("success");
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
+
+  // Row-selection + delete state. `selectedRowCodes` tracks the Delete-column
+  // checkboxes; `apiRowsByCodeRef` keeps the original API rows (keyed by the
+  // same rowCode) so the delete payload can echo them back unchanged.
+  const [selectedRowCodes, setSelectedRowCodes] = useState<Set<string>>(
+    new Set(),
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const apiRowsByCodeRef = useRef<Record<string, SalesDataCorrectionApiRow>>(
+    {},
+  );
+
+  const showSnackbar = (message: string, severity: "success" | "error" | "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   // Table sorting state
   const [orderBy, setOrderBy] = useState<keyof ErrorData | null>(null);
@@ -463,10 +564,19 @@ export default function SalesDataErrorCorrectionScreen() {
     useDebouncedSearch(systemIdInput);
 
   const systemIdOptions = systemIdDebounced
-    ? MOCK_SYSTEM_IDS.filter((id) =>
-        id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
-      )
-    : [];
+    ? systemIdAllOptions
+        .filter((id) =>
+          id.toLowerCase().includes(systemIdDebounced.toLowerCase()),
+        )
+        .slice(0, MAX_VISIBLE_OPTIONS)
+    : // Show the first chunk so options appear on click; type to narrow.
+      systemIdAllOptions.slice(0, MAX_VISIBLE_OPTIONS);
+
+  const paginatedListboxSlotProps = {
+    listbox: {
+      style: { maxHeight: 320, overflow: "auto" as const },
+    },
+  };
 
   const searchConditionsRef = useRef({
     systemIdInput: "",
@@ -500,557 +610,6 @@ export default function SalesDataErrorCorrectionScreen() {
     };
   }, [systemIdInput]);
 
-  // LEGACY: mock search-result rows (offline demo). Uncomment the block below to use without calling the API.
-  /*
-  const sampleErrorData: ErrorData[] = [
-    {
-      rowCode: "67045",
-      fileName: "GT001_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250225",
-      dataCreationTime: "010039",
-      entityCode: "C0013",
-      salesEntityCode: "TD",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202502",
-      salesDate: "20250213",
-      localItemCode: "9RMES6F105Q",
-      itemCode: "1798",
-      gpc: "0102008059",
-      bu3: "0102006951000",
-      localProductCategory: "",
-      productionPlantCode: "",
-      localCustomerCode: "",
-      interCompanyEntityCode: "",
-      destinationCountry: "DE",
-      quantity: 0,
-      salesCurrency: "EUR",
-      salesAmount: 621.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 621.0,
-      salesCost: 0,
-      reserved1: "089355221225647",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Automatic Transfer)",
-      summary: "Sales data import (Automatic Transfer)",
-    },
-    {
-      rowCode: "67055",
-      fileName: "GT001_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250225",
-      dataCreationTime: "010039",
-      entityCode: "C0013",
-      salesEntityCode: "TD",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202502",
-      salesDate: "20250213",
-      localItemCode: "Item9RMES6F105Q", // Contains "Item"
-      itemCode: "1798",
-      gpc: "0102008059",
-      bu3: "0102006951000",
-      localProductCategory: "",
-      productionPlantCode: "",
-      localCustomerCode: "",
-      interCompanyEntityCode: "",
-      destinationCountry: "DE",
-      quantity: 0,
-      salesCurrency: "EUR",
-      salesAmount: 663.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 663.0,
-      salesCost: 0,
-      reserved1: "089355221225647",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Automatic Transfer)",
-      summary: "Sales data import (Automatic Transfer)",
-    },
-    {
-      rowCode: "85972",
-      fileName: "GT001_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250225",
-      dataCreationTime: "010041",
-      entityCode: "C0013",
-      salesEntityCode: "TD",
-      localOrganizationCode: "ORG002",
-      salesMonth: "202502",
-      salesDate: "20250221",
-      localItemCode: "ItemMES6F105Q", // Contains "Item"
-      itemCode: "1896",
-      gpc: "0102007954",
-      bu3: "0102006951000",
-      localProductCategory: "",
-      productionPlantCode: "",
-      localCustomerCode: "",
-      interCompanyEntityCode: "",
-      destinationCountry: "DE",
-      quantity: 20.0,
-      salesCurrency: "EUR",
-      salesAmount: 414.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 414.0,
-      salesCost: 296.0,
-      reserved1: "089355221225649",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Automatic Transfer)",
-      summary: "Sales data import (Automatic Transfer)",
-    },
-    {
-      rowCode: "67123",
-      fileName: "GT002_TE.csv",
-      systemId: "TE",
-      dataCreationDate: "20250224",
-      dataCreationTime: "090015",
-      entityCode: "C0014",
-      salesEntityCode: "TE",
-      localOrganizationCode: "ORG002",
-      salesMonth: "202502",
-      salesDate: "20250214",
-      localItemCode: "MES7G205R",
-      itemCode: "1920",
-      gpc: "0102008060",
-      bu3: "0102006952000",
-      localProductCategory: "CAT01",
-      productionPlantCode: "PLT001",
-      localCustomerCode: "CUST001",
-      interCompanyEntityCode: "IC001",
-      destinationCountry: "FR",
-      quantity: 15.0,
-      salesCurrency: "EUR",
-      salesAmount: 875.5,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 875.5,
-      salesCost: 520.3,
-      reserved1: "089355221225650",
-      reserved2: "RES002",
-      reserved3: "RES003",
-      dataTypeCategory: 1,
-      correctionCategory: 2,
-      errorCategory: "Sales data import (Manual Transfer)",
-      summary: "Sales data import (Manual Transfer)",
-    },
-    {
-      rowCode: "67124",
-      fileName: "GT002_TE.csv",
-      systemId: "TE",
-      dataCreationDate: "20250224",
-      dataCreationTime: "090015",
-      entityCode: "C0014",
-      salesEntityCode: "TE",
-      localOrganizationCode: "ORG003",
-      salesMonth: "202502",
-      salesDate: "20250215",
-      localItemCode: "ItemHEL8X301P", // Contains "Item"
-      itemCode: "1921",
-      gpc: "0102008061",
-      bu3: "0102006953000",
-      localProductCategory: "CAT02",
-      productionPlantCode: "PLT002",
-      localCustomerCode: "CUST002",
-      interCompanyEntityCode: "IC002",
-      destinationCountry: "IT",
-      quantity: 25.0,
-      salesCurrency: "EUR",
-      salesAmount: 1250.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 1250.0,
-      salesCost: 750.0,
-      reserved1: "089355221225651",
-      reserved2: "RES004",
-      reserved3: "RES005",
-      dataTypeCategory: 2,
-      correctionCategory: 1,
-      errorCategory: "Data Validation Error",
-      summary: "Data Validation Error",
-    },
-    {
-      rowCode: "78901",
-      fileName: "GT003_TA.csv",
-      systemId: "TA",
-      dataCreationDate: "20250223",
-      dataCreationTime: "140030",
-      entityCode: "C0015",
-      salesEntityCode: "TA",
-      localOrganizationCode: "ORG003",
-      salesMonth: "202501",
-      salesDate: "20250128",
-      localItemCode: "XYZ9R405Q",
-      itemCode: "2001",
-      gpc: "0102008070",
-      bu3: "0102006954000",
-      localProductCategory: "CAT03",
-      productionPlantCode: "PLT003",
-      localCustomerCode: "CUST003",
-      interCompanyEntityCode: "IC003",
-      destinationCountry: "ES",
-      quantity: 30.0,
-      salesCurrency: "EUR",
-      salesAmount: 1800.75,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 1800.75,
-      salesCost: 1080.45,
-      reserved1: "089355221225652",
-      reserved2: "RES006",
-      reserved3: "RES007",
-      dataTypeCategory: 1,
-      correctionCategory: 3,
-      errorCategory: "Currency Conversion Error",
-      summary: "Currency Conversion Error",
-    },
-    {
-      rowCode: "67099",
-      fileName: "GT001_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250220",
-      dataCreationTime: "080025",
-      entityCode: "C0015",
-      salesEntityCode: "VAKD",
-      localOrganizationCode: "ORG003",
-      salesMonth: "202502",
-      salesDate: "20250219",
-      localItemCode: "ABC123XYZ",
-      itemCode: "2100",
-      gpc: "0102008080",
-      bu3: "0102006956000",
-      localProductCategory: "",
-      productionPlantCode: "",
-      localCustomerCode: "",
-      interCompanyEntityCode: "",
-      destinationCountry: "AT",
-      quantity: 8.0,
-      salesCurrency: "EUR",
-      salesAmount: 450.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 450.0,
-      salesCost: 0,
-      reserved1: "",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Success - Data imported",
-      summary: "Success - Data imported",
-    },
-    {
-      rowCode: "67100",
-      fileName: "GT001_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250218",
-      dataCreationTime: "120050",
-      entityCode: "C0013",
-      salesEntityCode: "TCVS",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202501",
-      salesDate: "20250115",
-      localItemCode: "WARN9R505Q",
-      itemCode: "2200",
-      gpc: "0102008081",
-      bu3: "0102006957000",
-      localProductCategory: "",
-      productionPlantCode: "",
-      localCustomerCode: "",
-      interCompanyEntityCode: "",
-      destinationCountry: "CH",
-      quantity: 5.0,
-      salesCurrency: "EUR",
-      salesAmount: 320.5,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 320.5,
-      salesCost: 0,
-      reserved1: "",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Caution - Review required",
-      summary: "Caution - Review required",
-    },
-    {
-      rowCode: "78902",
-      fileName: "GT003_TA.csv",
-      systemId: "TA",
-      dataCreationDate: "20250223",
-      dataCreationTime: "140030",
-      entityCode: "C0015",
-      salesEntityCode: "TA",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202501",
-      salesDate: "20250130",
-      localItemCode: "ItemQWE7T890U", // Contains "Item"
-      itemCode: "2002",
-      gpc: "0102008071",
-      bu3: "0102006955000",
-      localProductCategory: "CAT01",
-      productionPlantCode: "PLT001",
-      localCustomerCode: "CUST004",
-      interCompanyEntityCode: "IC001",
-      destinationCountry: "NL",
-      quantity: 12.0,
-      salesCurrency: "USD",
-      salesAmount: 960.25,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 825.4,
-      salesCost: 576.15,
-      reserved1: "089355221225653",
-      reserved2: "RES008",
-      reserved3: "RES009",
-      dataTypeCategory: 2,
-      correctionCategory: 2,
-      errorCategory: "Quantity Mismatch",
-      summary: "Quantity Mismatch Error",
-    },
-    {
-      rowCode: "91234",
-      fileName: "GT004_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250226",
-      dataCreationTime: "160045",
-      entityCode: "C0013",
-      salesEntityCode: "TD",
-      localOrganizationCode: "ORG002",
-      salesMonth: "202503",
-      salesDate: "20250301",
-      localItemCode: "ABC1D567H",
-      itemCode: "2100",
-      gpc: "0102008080",
-      bu3: "0102006956000",
-      localProductCategory: "CAT02",
-      productionPlantCode: "PLT002",
-      localCustomerCode: "CUST005",
-      interCompanyEntityCode: "IC004",
-      destinationCountry: "BE",
-      quantity: 8.0,
-      salesCurrency: "EUR",
-      salesAmount: 720.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 720.0,
-      salesCost: 432.0,
-      reserved1: "089355221225654",
-      reserved2: "RES010",
-      reserved3: "RES011",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Automatic Transfer)",
-      summary: "Sales data import (Automatic Transfer)",
-    },
-    {
-      rowCode: "91235",
-      fileName: "GT004_MVC.csv",
-      systemId: "MVC",
-      dataCreationDate: "20250226",
-      dataCreationTime: "160045",
-      entityCode: "C0014",
-      salesEntityCode: "TE",
-      localOrganizationCode: "ORG003",
-      salesMonth: "202503",
-      salesDate: "20250302",
-      localItemCode: "ItemDEF2G890K", // Contains "Item"
-      itemCode: "2101",
-      gpc: "0102008081",
-      bu3: "0102006957000",
-      localProductCategory: "CAT03",
-      productionPlantCode: "PLT003",
-      localCustomerCode: "CUST006",
-      interCompanyEntityCode: "IC005",
-      destinationCountry: "AT",
-      quantity: 18.0,
-      salesCurrency: "EUR",
-      salesAmount: 1440.6,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 1440.6,
-      salesCost: 864.36,
-      reserved1: "089355221225655",
-      reserved2: "RES012",
-      reserved3: "RES013",
-      dataTypeCategory: 2,
-      correctionCategory: 3,
-      errorCategory: "Price Validation Error",
-      summary: "Price Validation Error",
-    },
-    {
-      rowCode: "12345",
-      fileName: "GT005_TE.csv",
-      systemId: "TE",
-      dataCreationDate: "20250227",
-      dataCreationTime: "080020",
-      entityCode: "C0015",
-      salesEntityCode: "TA",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202503",
-      salesDate: "20250305",
-      localItemCode: "ZZZ5Y432X",
-      itemCode: "2200",
-      gpc: "0102008090",
-      bu3: "0102006958000",
-      localProductCategory: "CAT01",
-      productionPlantCode: "PLT001",
-      localCustomerCode: "CUST007",
-      interCompanyEntityCode: "IC006",
-      destinationCountry: "PT",
-      quantity: 22.0,
-      salesCurrency: "USD",
-      salesAmount: 1650.8,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 1420.3,
-      salesCost: 990.48,
-      reserved1: "089355221225656",
-      reserved2: "RES014",
-      reserved3: "RES015",
-      dataTypeCategory: 1,
-      correctionCategory: 2,
-      errorCategory: "Exchange Rate Error",
-      summary: "Exchange Rate Calculation Error",
-    },
-    // AI Generated Code by Deloitte + Cursor (BEGIN)
-    {
-      rowCode: "23456",
-      fileName: "GT006_SAP.csv",
-      systemId: "SAP",
-      dataCreationDate: "20250225",
-      dataCreationTime: "090012",
-      entityCode: "C0016",
-      salesEntityCode: "SAP",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202502",
-      salesDate: "20250210",
-      localItemCode: "SAPLOC001",
-      itemCode: "3001",
-      gpc: "0102008100",
-      bu3: "0102006960000",
-      localProductCategory: "CAT01",
-      productionPlantCode: "PLT001",
-      localCustomerCode: "CUST008",
-      interCompanyEntityCode: "IC007",
-      destinationCountry: "DE",
-      quantity: 10.0,
-      salesCurrency: "EUR",
-      salesAmount: 1200.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 1200.0,
-      salesCost: 720.0,
-      reserved1: "089355221225657",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Automatic Transfer)",
-      summary: "Sales data import (Automatic Transfer)",
-    },
-    {
-      rowCode: "23457",
-      fileName: "GT006_SAP.csv",
-      systemId: "SAP",
-      dataCreationDate: "20250225",
-      dataCreationTime: "090012",
-      entityCode: "C0016",
-      salesEntityCode: "SAP",
-      localOrganizationCode: "ORG002",
-      salesMonth: "202502",
-      salesDate: "20250215",
-      localItemCode: "SAPLOC002",
-      itemCode: "3002",
-      gpc: "0102008101",
-      bu3: "0102006961000",
-      localProductCategory: "CAT02",
-      productionPlantCode: "PLT002",
-      localCustomerCode: "CUST009",
-      interCompanyEntityCode: "IC008",
-      destinationCountry: "FR",
-      quantity: 18.0,
-      salesCurrency: "EUR",
-      salesAmount: 2100.5,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 2100.5,
-      salesCost: 1260.3,
-      reserved1: "089355221225658",
-      reserved2: "RES016",
-      reserved3: "",
-      dataTypeCategory: 2,
-      correctionCategory: 2,
-      errorCategory: "Data Validation Error",
-      summary: "Data Validation Error",
-    },
-    {
-      rowCode: "34567",
-      fileName: "GT007_ERP.csv",
-      systemId: "ERP",
-      dataCreationDate: "20250224",
-      dataCreationTime: "110025",
-      entityCode: "C0017",
-      salesEntityCode: "ERP",
-      localOrganizationCode: "ORG003",
-      salesMonth: "202502",
-      salesDate: "20250218",
-      localItemCode: "ERPLOC001",
-      itemCode: "4001",
-      gpc: "0102008102",
-      bu3: "0102006962000",
-      localProductCategory: "CAT03",
-      productionPlantCode: "PLT003",
-      localCustomerCode: "CUST010",
-      interCompanyEntityCode: "IC009",
-      destinationCountry: "IT",
-      quantity: 12.0,
-      salesCurrency: "EUR",
-      salesAmount: 980.0,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 980.0,
-      salesCost: 588.0,
-      reserved1: "089355221225659",
-      reserved2: "",
-      reserved3: "",
-      dataTypeCategory: 1,
-      correctionCategory: 1,
-      errorCategory: "Sales data import (Manual Transfer)",
-      summary: "Sales data import (Manual Transfer)",
-    },
-    {
-      rowCode: "34568",
-      fileName: "GT007_ERP.csv",
-      systemId: "ERP",
-      dataCreationDate: "20250224",
-      dataCreationTime: "110025",
-      entityCode: "C0017",
-      salesEntityCode: "ERP",
-      localOrganizationCode: "ORG001",
-      salesMonth: "202502",
-      salesDate: "20250222",
-      localItemCode: "ERPLOC002",
-      itemCode: "4002",
-      gpc: "0102008103",
-      bu3: "0102006963000",
-      localProductCategory: "CAT01",
-      productionPlantCode: "PLT001",
-      localCustomerCode: "CUST011",
-      interCompanyEntityCode: "IC010",
-      destinationCountry: "ES",
-      quantity: 8.0,
-      salesCurrency: "USD",
-      salesAmount: 750.25,
-      salesCurrencyBook: "EUR",
-      salesAmountBookCurrency: 685.4,
-      salesCost: 450.15,
-      reserved1: "089355221225660",
-      reserved2: "RES017",
-      reserved3: "RES018",
-      dataTypeCategory: 2,
-      correctionCategory: 3,
-      errorCategory: "Currency Conversion Error",
-      summary: "Currency Conversion Error",
-    },
-  ];
-  */
-
   const validateMandatoryFields = (): boolean => {
     const errors: Record<string, string> = {};
     const searchSystemId =
@@ -1078,86 +637,6 @@ export default function SalesDataErrorCorrectionScreen() {
     return Object.keys(errors).length === 0;
   };
 
-  // AI Generated Code by Deloitte + Cursor (BEGIN)
-  /** Additional filters applied after POST /api/v1/databricks/sales/error-corrections returns (same rules as legacy mock). */
-  const applyClientSideFilters = (items: ErrorData[]): ErrorData[] => {
-    const searchSystemId =
-      searchConditionsRef.current.systemIdInput.trim().length >=
-      SYSTEM_ID_MIN_CHARS
-        ? searchConditionsRef.current.systemIdInput.trim()
-        : searchConditionsRef.current.systemId;
-    return items.filter((item) => {
-      // Case-insensitive comparison for systemId
-      const matchesSystem = searchSystemId
-        ? item.systemId.toUpperCase() === searchSystemId.toUpperCase()
-        : true;
-      let matchesSalesDate = true;
-      if (salesDate) {
-        const searchMonth = `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`;
-        // Handle salesMonth as string (API may return number or string)
-        matchesSalesDate = String(item.salesMonth) === searchMonth;
-      }
-      let matchesRecordingDate = true;
-      if (salesRecordingDate) {
-        const searchYM = `${salesRecordingDate.getFullYear()}${String(salesRecordingDate.getMonth() + 1).padStart(2, "0")}`;
-        matchesRecordingDate = item.dataCreationDate.startsWith(searchYM);
-      }
-      const matchesCorporate =
-        !corporateCode || item.entityCode.includes(corporateCode);
-      const matchesSalesBase =
-        !salesBaseCode || item.salesEntityCode.includes(salesBaseCode);
-      const matchesLocalOrg =
-        !localOrganizationCode ||
-        item.localOrganizationCode.includes(localOrganizationCode);
-      const matchesLocalItem =
-        !localItemCode ||
-        (matchType === "prefix"
-          ? item.localItemCode.startsWith(localItemCode)
-          : item.localItemCode.includes(localItemCode));
-      let matchesErrorCategory = true;
-      if (errorCategory && errorCategory !== "All") {
-        const searchTerms: Record<string, string[]> = {
-          Normal: ["success", "normal"],
-          Caveat: ["caution", "caveat"],
-          "Sales Error": [
-            "sales error",
-            "sales data",
-            "data validation",
-            "currency conversion",
-          ],
-        };
-        const terms = searchTerms[errorCategory] || [
-          errorCategory.toLowerCase(),
-        ];
-        const itemCat = item.errorCategory.toLowerCase();
-        matchesErrorCategory = terms.some((term) => itemCat.includes(term));
-      }
-      return (
-        matchesSystem &&
-        matchesSalesDate &&
-        matchesRecordingDate &&
-        matchesCorporate &&
-        matchesSalesBase &&
-        matchesLocalOrg &&
-        matchesLocalItem &&
-        matchesErrorCategory
-      );
-    });
-  };
-
-  /*
-   * LEGACY: mock-only search (sampleErrorData + setTimeout). Kept for reference; uncomment when using the commented block above.
-   */
-  // const handleSearchLegacyMock = () => {
-  //   setTimeout(() => {
-  //     const filteredData = sampleErrorData.filter(...);
-  //     setErrorData(filteredData);
-  //     setFilteredData(filteredData);
-  //     setEdits({});
-  //     setLoading(false);
-  //   }, 1000);
-  // };
-
   const handleSearch = async () => {
     if (!validateMandatoryFields()) {
       return;
@@ -1167,55 +646,119 @@ export default function SalesDataErrorCorrectionScreen() {
     setSearchExecuted(true);
     setLoading(true);
     setEdits({});
+    setSelectedRowCodes(new Set());
+    apiRowsByCodeRef.current = {};
     try {
+      // Use the typed System Id when it meets the min length, otherwise the
+      // value picked from the autocomplete — so a typed-but-not-selected
+      // System Id is still sent in the payload.
       const searchSystemId =
         searchConditionsRef.current.systemIdInput.trim().length >=
         SYSTEM_ID_MIN_CHARS
           ? searchConditionsRef.current.systemIdInput.trim()
           : searchConditionsRef.current.systemId;
-      const salesMonth =
-        salesDate != null
-          ? Number(
-              `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`,
-            )
-          : 0;
-      const res = await fetch(SALES_ERROR_CORRECTION_API_URL, {
+      const salesMonth = salesDate
+        ? `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`
+        : "";
+      const payload: SalesDataCorrectionSearchPayload = {
+        system_id: searchSystemId,
+        sales_month: salesMonth,
+        company_code: corporateCode,
+        sales_entity_code: salesBaseCode,
+        local_organization_code: localOrganizationCode,
+        local_item_code: localItemCode,
+        local_item_code_match: matchType,
+        item_code: "",
+        item_cls_code: "",
+        bu_layer_3: "",
+        local_custom_code: "",
+      };
+      const res = await fetch(SALES_DATA_CORRECTION_SEARCH_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_id: searchSystemId,
-          sales_month: salesMonth,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
-      const json = (await res.json()) as SalesErrorCorrectionApiEnvelope;
-      // Handle flexible response structure - API may return 'response' or 'data' or array directly
-      const jsonAny = json as unknown as Record<string, unknown>;
-      const rows: SalesErrorCorrectionApiRow[] = Array.isArray(json)
-        ? (json as unknown as SalesErrorCorrectionApiRow[])
-        : Array.isArray(json.response)
-          ? json.response
-          : Array.isArray(jsonAny.data)
-            ? (jsonAny.data as SalesErrorCorrectionApiRow[])
-            : [];
+      const json = (await res.json()) as SalesDataCorrectionSearchResponse;
+      const rows = Array.isArray(json?.data) ? json.data : [];
       const mapped = rows.map((raw, i) => mapApiRowToErrorData(raw, i));
-      // Display API results directly - API already returns filtered data
+      // Keep the original API rows (keyed by rowCode) so the delete call can
+      // send them back in the exact shape the service returned.
+      const rawByCode: Record<string, SalesDataCorrectionApiRow> = {};
+      mapped.forEach((row, i) => {
+        rawByCode[row.rowCode] = rows[i];
+      });
+      apiRowsByCodeRef.current = rawByCode;
+      // The API already applies the search criteria, so display its rows directly.
       setErrorData(mapped);
       setFilteredData(mapped);
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("errorCorrection.searchApiError"));
-      setSnackbarOpen(true);
+      showSnackbar(t("errorCorrection.searchApiError"), "error");
       setErrorData([]);
       setFilteredData([]);
     } finally {
       setLoading(false);
     }
   };
-  // AI Generated Code by Deloitte + Cursor (END)
+
+  const handleToggleRow = (rowCode: string) => {
+    setSelectedRowCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowCode)) {
+        next.delete(rowCode);
+      } else {
+        next.add(rowCode);
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedRowCodes.size === 0) {
+      showSnackbar(t("errorCorrection.noRowsSelected"), "error");
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const rows: SalesDataCorrectionDeleteRow[] = Array.from(selectedRowCodes)
+        .map((code) => apiRowsByCodeRef.current[code])
+        .filter((raw): raw is SalesDataCorrectionApiRow => raw != null)
+        .map(toDeleteRow);
+      const payload: SalesDataCorrectionDeletePayload = {
+        rows,
+        user_id: DELETE_USER_ID,
+        session_id: DELETE_SESSION_ID,
+        screen_id: DELETE_SCREEN_ID,
+        ip_address: DELETE_IP_ADDRESS,
+      };
+      const deletedCount = rows.length;
+      const res = await fetch(SALES_DATA_CORRECTION_DELETE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      setSelectedRowCodes(new Set());
+      showSnackbar(
+        t("errorCorrection.deletedSuccess", { count: deletedCount }),
+        "success",
+      );
+      // Refresh the results once the delete has completed.
+      await handleSearch();
+    } catch (e) {
+      console.error(e);
+      showSnackbar(t("errorCorrection.deleteFailed"), "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Table sorting functions
   const handleRequestSort = (property: keyof ErrorData) => {
@@ -1293,11 +836,57 @@ export default function SalesDataErrorCorrectionScreen() {
   };
 
   const handleRegister = async () => {
-    setSnackbarMessage(t("errorCorrection.registerInProgress"));
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage(t("errorCorrection.registerSuccess"));
-    setSnackbarOpen(true);
+    // Find rows that have at least one cell value actually changed from the original
+    const editedRowCodes = Object.keys(edits).filter((rowCode) => {
+      const rawRow = apiRowsByCodeRef.current[rowCode];
+      if (!rawRow) return false;
+      const rowEdits = edits[rowCode];
+      if (!rowEdits) return false;
+      const original = mapApiRowToErrorData(rawRow, 0);
+      return Object.entries(rowEdits).some(
+        ([key, value]) =>
+          String(value) !== String(original[key as keyof ErrorData] ?? ""),
+      );
+    });
+
+    if (editedRowCodes.length === 0) {
+      showSnackbar(t("errorCorrection.noChangesToRegister"), "info");
+      return;
+    }
+
+    setIsRegistering(true);
+    try {
+      const rows: SalesDataCorrectionDeleteRow[] = editedRowCodes.map(
+        (rowCode) =>
+          applyEditsToApiRow(
+            apiRowsByCodeRef.current[rowCode],
+            edits[rowCode] ?? {},
+          ),
+      );
+      const payload: SalesDataCorrectionDeletePayload = {
+        rows,
+        user_id: DELETE_USER_ID,
+        session_id: DELETE_SESSION_ID,
+        screen_id: DELETE_SCREEN_ID,
+        ip_address: DELETE_IP_ADDRESS,
+      };
+      const res = await fetch(SALES_DATA_CORRECTION_CREATE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      await handleSearch();
+      showSnackbar(t("errorCorrection.registerSuccess"), "success");
+    } catch (e) {
+      console.error(e);
+      showSnackbar(t("errorCorrection.registerFailed"), "error");
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleDownload = () => {
@@ -1339,6 +928,8 @@ export default function SalesDataErrorCorrectionScreen() {
     setErrorData([]);
     setFilteredData([]);
     setEdits({});
+    setSelectedRowCodes(new Set());
+    apiRowsByCodeRef.current = {};
     setGlobalSearchTerm("");
     setOrder("asc");
     setOrderBy(null);
@@ -1395,7 +986,7 @@ export default function SalesDataErrorCorrectionScreen() {
           {searchConditionExpanded && (
             <StyledSearchContent>
               <Grid container spacing={3}>
-                {/* System Id - mandatory, Autocomplete with mock options, min 3 chars */}
+                {/* System Id - mandatory, Autocomplete sourced from the shared system-id context */}
                 <Grid size={{ xs: 12, md: 3 }}>
                   <Autocomplete
                     fullWidth
@@ -1415,12 +1006,12 @@ export default function SalesDataErrorCorrectionScreen() {
                       searchConditionsRef.current.systemIdInput = v;
                     }}
                     freeSolo
-                    ListboxProps={{
-                      style: {
-                        maxHeight: 176,
-                        overflow: "auto",
-                      },
-                    }}
+                    openOnFocus
+                    disabled={systemIdsLoading}
+                    loading={systemIdsLoading}
+                    filterOptions={(x) => x}
+                    ListboxComponent={PaginatedAutocompleteListbox}
+                    slotProps={paginatedListboxSlotProps}
                     renderInput={(params) => (
                       <StyledAutocompleteTextField
                         {...params}
@@ -1428,6 +1019,17 @@ export default function SalesDataErrorCorrectionScreen() {
                         placeholder={t("errorCorrection.enterCharsToSearch")}
                         error={!!fieldErrors.systemId}
                         required
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {systemIdsLoading ? (
+                                <CircularProgress size={18} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
                       />
                     )}
                   />
@@ -1460,22 +1062,6 @@ export default function SalesDataErrorCorrectionScreen() {
                           error: !!fieldErrors.salesDate,
                           helperText: fieldErrors.salesDate,
                           required: true,
-                          onClick: () => setSalesDatePickerOpen(true),
-                          inputProps: {
-                            readOnly: true,
-                            style: {
-                              cursor: "pointer",
-                              userSelect: "none",
-                              caretColor: "transparent",
-                            },
-                          },
-                          sx: {
-                            cursor: "pointer",
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
-                            "& input::selection": {
-                              backgroundColor: "transparent",
-                            },
-                          },
                         },
                       }}
                     />
@@ -1556,7 +1142,7 @@ export default function SalesDataErrorCorrectionScreen() {
                   />
                 </Grid>
 
-                {/* Local Item Code */}
+                {/* Local Item Code (with its associated prefix/partial match type) */}
                 <Grid size={{ xs: 12, md: 3 }}>
                   <StyledInputTextField
                     fullWidth
@@ -1565,6 +1151,42 @@ export default function SalesDataErrorCorrectionScreen() {
                     value={localItemCode}
                     onChange={(e) => setLocalItemCode(e.target.value)}
                   />
+                  {/* Prefix Match / Partial Match - mandatory, radio buttons */}
+                  <Box sx={{ mt: 1 }}>
+                    <StyledFormLabel component="legend" required>
+                      {t("errorCorrection.matchType")}
+                    </StyledFormLabel>
+                    <RadioGroup
+                      row
+                      value={matchType}
+                      onChange={(e) =>
+                        setMatchType(e.target.value as "prefix" | "partial")
+                      }
+                      sx={{
+                        gap: 2,
+                        "& .MuiFormControlLabel-label": {
+                          fontSize: "0.875rem",
+                        },
+                      }}
+                    >
+                      <StyledFormControlLabel
+                        value="prefix"
+                        control={<Radio size="small" />}
+                        label={t("errorCorrection.prefixMatch")}
+                        sx={{ marginRight: 0 }}
+                      />
+                      <StyledFormControlLabel
+                        value="partial"
+                        control={<Radio size="small" />}
+                        label={t("errorCorrection.partialMatch")}
+                      />
+                    </RadioGroup>
+                    {fieldErrors.matchType && (
+                      <StyledFormHelperText error>
+                        {fieldErrors.matchType}
+                      </StyledFormHelperText>
+                    )}
+                  </Box>
                 </Grid>
 
                 {/* Error Classification - dropdown */}
@@ -1594,50 +1216,8 @@ export default function SalesDataErrorCorrectionScreen() {
                     </Select>
                   </StyledFormControl>
                 </Grid>
-
-                {/* Prefix Match / Partial Match - mandatory, radio buttons */}
-                <Grid size={12}>
-                  <Box>
-                    <StyledFormLabel component="legend" required>
-                      {t("errorCorrection.matchType")}
-                    </StyledFormLabel>
-                    {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
-                    <RadioGroup
-                      row
-                      value={matchType}
-                      onChange={(e) =>
-                        setMatchType(e.target.value as "prefix" | "partial")
-                      }
-                      sx={{
-                        gap: 2,
-                        "& .MuiFormControlLabel-label": {
-                          fontSize: "0.875rem",
-                        },
-                      }}
-                    >
-                      <StyledFormControlLabel
-                        value="prefix"
-                        control={<Radio size="small" />}
-                        label={t("errorCorrection.prefixMatch")}
-                        sx={{ marginRight: 0 }}
-                      />
-                      <StyledFormControlLabel
-                        value="partial"
-                        control={<Radio size="small" />}
-                        label={t("errorCorrection.partialMatch")}
-                      />
-                    </RadioGroup>
-                    {/* AI Generated Code by Deloitte + Cursor (END) */}
-                    {fieldErrors.matchType && (
-                      <StyledFormHelperText error>
-                        {fieldErrors.matchType}
-                      </StyledFormHelperText>
-                    )}
-                  </Box>
-                </Grid>
               </Grid>
 
-              {/* AI Generated Code by Deloitte + Cursor (BEGIN) */}
               <StyledSearchActionsBox sx={{ justifyContent: "flex-end" }}>
                 <StyledSearchButton
                   variant="contained"
@@ -1650,7 +1230,6 @@ export default function SalesDataErrorCorrectionScreen() {
                   {t("errorCorrection.search")}
                 </StyledSearchButton>
               </StyledSearchActionsBox>
-              {/* AI Generated Code by Deloitte + Cursor (END) */}
             </StyledSearchContent>
           )}
         </StyledSearchSection>
@@ -1687,7 +1266,7 @@ export default function SalesDataErrorCorrectionScreen() {
                     size="small"
                     startIcon={<AppRegistrationIcon />}
                     onClick={handleRegister}
-                    disabled={sortedData.length === 0}
+                    disabled={sortedData.length === 0 || isRegistering}
                   >
                     {t("errorCorrection.register")}
                   </StyledRegisterButton>
@@ -1736,7 +1315,11 @@ export default function SalesDataErrorCorrectionScreen() {
                 </StyledSearchBarInnerBox>
               </StyledSearchBarBox>
 
-              {sortedData.length === 0 ? (
+              {loading ? (
+                <StyledEmptyStateBox>
+                  <CircularProgress />
+                </StyledEmptyStateBox>
+              ) : sortedData.length === 0 ? (
                 <StyledEmptyStateBox>
                   <StyledEmptyStateTitle variant="h6">
                     {t("errorCorrection.noResults")}
@@ -1791,6 +1374,9 @@ export default function SalesDataErrorCorrectionScreen() {
                               </StyledTableSortLabel>
                             </StyledTableHeaderCellSortable>
                           ))}
+                          <StyledTableHeaderCell>
+                            {t("errorCorrection.delete")}
+                          </StyledTableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1842,6 +1428,16 @@ export default function SalesDataErrorCorrectionScreen() {
                                 </StyledBodyCell>
                               );
                             })}
+                            <StyledBodyCell $rowIndex={index}>
+                              <Checkbox
+                                size="small"
+                                checked={selectedRowCodes.has(row.rowCode)}
+                                onChange={() => handleToggleRow(row.rowCode)}
+                                inputProps={{
+                                  "aria-label": t("errorCorrection.delete"),
+                                }}
+                              />
+                            </StyledBodyCell>
                           </StyledTableBodyRow>
                         ))}
                       </TableBody>
@@ -1855,6 +1451,23 @@ export default function SalesDataErrorCorrectionScreen() {
                     onRowsPerPageChange={onRowsPerPageChange}
                     rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
                   />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      p: 2,
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={handleDeleteSelected}
+                      disabled={selectedRowCodes.size === 0 || isDeleting}
+                    >
+                      {t("errorCorrection.delete")}
+                    </Button>
+                  </Box>
                 </>
               )}
             </StyledResultsPaper>
@@ -1871,11 +1484,19 @@ export default function SalesDataErrorCorrectionScreen() {
       >
         <StyledSnackbarAlert
           onClose={() => setSnackbarOpen(false)}
-          severity={snackbarMessage.includes("Error") ? "error" : "success"}
+          severity={snackbarSeverity}
         >
           {snackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
+
+      {isDeleting && (
+        <ResultsLoader fullScreen label={t("errorCorrection.deleteInProgress")} />
+      )}
+
+      {isRegistering && (
+        <ResultsLoader fullScreen label={t("errorCorrection.registerInProgress")} />
+      )}
     </>
   );
 }
