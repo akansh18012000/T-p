@@ -273,6 +273,7 @@ interface ErrorData {
   reserved3: string;
   /** API `DATA_CLS_TYPE` (string); legacy mock rows used numeric codes */
   dataTypeCategory: string | number;
+  description: string;
 }
 
 const SALES_DATA_CORRECTION_SEARCH_API_URL =
@@ -319,6 +320,7 @@ interface SalesDataCorrectionApiRow {
   reserve2: string | null;
   reserve3: string | null;
   data_cls_type: string | null;
+  description: string | null;
   update_datetime: string | null;
 }
 
@@ -426,6 +428,7 @@ function mapApiRowToErrorData(
     reserved2: normalizeNullable(raw.reserve2),
     reserved3: normalizeNullable(raw.reserve3),
     dataTypeCategory: normalizeNullable(raw.data_cls_type),
+    description: raw.description ?? "",
   };
 }
 

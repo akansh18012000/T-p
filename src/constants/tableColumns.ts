@@ -141,6 +141,11 @@ export const SALES_DATA_ERROR_CORRECTION_COLUMNS: I18nColumnConfig[] = [
     labelKey: "errorCorrection.dataTypeClassification",
     editable: false,
   },
+  {
+    key: "description",
+    labelKey: "errorCorrection.abstract",
+    editable: false,
+  },
 ];
 
 /*
@@ -300,8 +305,9 @@ export const SALES_DATA_ERROR_CORRECTION_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 26, labelKey: "errorCorrection.reserve2" },
   { index: 27, labelKey: "errorCorrection.reserve3" },
   { index: 28, labelKey: "errorCorrection.dataTypeClassification" },
+  { index: 29, labelKey: "errorCorrection.abstract" },
   {
-    index: 29,
+    index: 30,
     labelKey: "errorCorrection.delete",
     width: 80,
     isDeletionFlag: true,
