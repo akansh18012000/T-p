@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -10,7 +9,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
-  Button,
   Grid,
   Table,
   TableBody,
@@ -28,9 +26,7 @@ import {
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
   Clear as ClearIcon,
-  CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
-  Close as CloseIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
@@ -40,8 +36,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
-import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_HEADERS_JA, GLOBAL_DAD_MASTER_COLUMNS, GLOBAL_DAD_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
-import { SCREEN_IDS } from "../constants/screenIds.js";
+import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_COLUMNS, GLOBAL_DAD_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -50,13 +45,11 @@ import {
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
-import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useLocalCustomerData } from "../context/LocalCustomerDataContext.js";
 import { useProductClassificationData } from "../context/ProductClassificationDataContext.js";
 import { useBu3CodeData } from "../context/Bu3CodeDataContext.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
-import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import { stringifyCsv, type CsvData } from "../utils/csvUtils.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -107,22 +100,6 @@ import {
   StyledResultTableContainer,
   StyledResultTable,
   StyledTablePagination,
-  StyledDragDropZone,
-  StyledUploadIconCircle,
-  StyledCloudUploadIcon,
-  StyledDragDropTitle,
-  StyledDragDropSubtitle,
-  StyledBrowseFilesButton,
-  StyledSupportedFormatText,
-  StyledSelectedFileBox,
-  StyledFileInfoBox,
-  StyledFileInfoInner,
-  StyledDescriptionIcon,
-  StyledFileNameText,
-  StyledFileSizeText,
-  StyledUploadButton,
-  StyledViewButton,
-  StyledUploadSectionContent,
 } from "../components/shared/StyledComponents.js";
 
 // Cap how many options are handed to MUI's Autocomplete; it eagerly builds one
@@ -306,11 +283,6 @@ const ScrollableTableDataCell = styled(StyledTableDataCell)(
 export default function GlobalDadMasterScreen() {
   const { t, i18n } = useTranslation();
   const { closeSidebar } = useSidebar();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile } = useUploadContext();
-  const { selectedFile } = getUploadState(screenKey);
 
   // Dropdown option data comes from shared contexts (each fetched at most once
   // per session, reused across pages) — mirrors GpcMaster's manufacturer/GPC data.
@@ -384,14 +356,6 @@ export default function GlobalDadMasterScreen() {
   const [expirationDatePickerOpen, setExpirationDatePickerOpen] = useState(false);
   const [deletionFlag, setDeletionFlag] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
-  const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
-
-  // Upload file state (selectedFile lives in UploadContext)
-  const [uploadStatus, setUploadStatus] = useState<
-    "idle" | "uploading" | "completed"
-  >("idle");
-  const [dragActive, setDragActive] = useState(false);
-  const uploadFileInputRef = useRef<HTMLInputElement>(null);
 
   // Search inputs and debounced (min 3 chars, 1s debounce)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
@@ -968,139 +932,6 @@ export default function GlobalDadMasterScreen() {
       return updated;
     });
     setCsvData({ ...csvData, rows: newRows });
-  };
-
-  const handleUploadDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
-    else if (e.type === "dragleave") setDragActive(false);
-  };
-
-  const handleUploadDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    const dropped = Array.from(e.dataTransfer.files);
-    const files = dropped.filter((f) =>
-      f.name.toLowerCase().endsWith(".csv"),
-    );
-    if (files.length > 0) {
-      setSelectedFile(screenKey, files[0]);
-    } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleUploadFileSelect = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const selected = event.target.files
-      ? Array.from(event.target.files)
-      : [];
-    const files = selected.filter((f) =>
-      f.name.toLowerCase().endsWith(".csv"),
-    );
-    if (files.length > 0) {
-      setSelectedFile(screenKey, files[0]);
-    } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    }
-    if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-  };
-
-  const handleUploadBrowseClick = () => uploadFileInputRef.current?.click();
-
-  const handleUploadClick = async () => {
-    if (!selectedFile) return;
-    setUploadStatus("uploading");
-
-    let parsed: CsvData;
-    try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string) || "");
-        reader.onerror = reject;
-        reader.readAsText(selectedFile, "UTF-8");
-      });
-      parsed = await parseCsv(text);
-    } catch {
-      setUploadStatus("idle");
-      setSnackbarMessage(t("globalDadMaster.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-      return;
-    }
-
-    // Accept a CSV whose headers match either the English or Japanese column set.
-    const enValidation = validateCsvColumns(
-      parsed.headers,
-      GLOBAL_DAD_MASTER_HEADERS,
-    );
-    const jaValidation = validateCsvColumns(
-      parsed.headers,
-      GLOBAL_DAD_MASTER_HEADERS_JA,
-    );
-    if (!enValidation.isValid && !jaValidation.isValid) {
-      setUploadStatus("idle");
-      const missing =
-        enValidation.missingColumns.length <=
-        jaValidation.missingColumns.length
-          ? enValidation.missingColumns
-          : jaValidation.missingColumns;
-      setSnackbarMessage(
-        t("globalDadMaster.missingColumnsError", {
-          columns: missing.join(", "),
-        }),
-      );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("requested_by", SEARCH_USER_ID);
-      formData.append("session_id", SEARCH_SESSION_ID);
-      formData.append("screen_id", SCREEN_IDS.GLOBAL_DD.id);
-      formData.append("user_id", SEARCH_USER_ID);
-      formData.append("ip_address", SEARCH_IP_ADDRESS);
-      formData.append("files", selectedFile);
-
-      const response = await fetch("/api/v1/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error(`Upload API responded ${response.status}`);
-      }
-
-      setSelectedFile(screenKey, null);
-      setUploadStatus("idle");
-      if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("globalDadMaster.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-    } catch (error) {
-      console.error("Upload API error:", error);
-      setUploadStatus("idle");
-      setSnackbarMessage(t("globalDadMaster.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    }
-  };
-
-  const handleUploadCancel = () => {
-    setSelectedFile(screenKey, null);
-    setUploadStatus("idle");
-    if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("globalDadMaster.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
   };
 
   const handleDeleteMarkedRows = () => {
@@ -1805,118 +1636,6 @@ export default function GlobalDadMasterScreen() {
                 </StyledResultBorderBox>
               )}
             </StyledSectionContent>
-          )}
-        </StyledSectionWrapper>
-
-        <StyledSectionWrapper>
-          <StyledSectionHeader
-            $expanded={uploadSectionExpanded}
-            onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
-          >
-            <StyledSectionTitle variant="h6">
-              {t("globalDadMaster.uploadFile")}
-            </StyledSectionTitle>
-            {uploadSectionExpanded ? (
-              <StyledExpandIcon />
-            ) : (
-              <StyledExpandMoreIcon />
-            )}
-          </StyledSectionHeader>
-          {uploadSectionExpanded && (
-            <StyledUploadSectionContent>
-              <StyledDragDropZone
-                $dragActive={dragActive}
-                onDragEnter={handleUploadDrag}
-                onDragLeave={handleUploadDrag}
-                onDragOver={handleUploadDrag}
-                onDrop={handleUploadDrop}
-                onClick={handleUploadBrowseClick}
-              >
-                <input
-                  ref={uploadFileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleUploadFileSelect}
-                  style={{ display: "none" }}
-                />
-                <StyledUploadIconCircle $dragActive={dragActive}>
-                  <StyledCloudUploadIcon $dragActive={dragActive} />
-                </StyledUploadIconCircle>
-                <StyledDragDropTitle variant="h6">
-                  {dragActive
-                    ? t("globalDadMaster.dropFileHere")
-                    : t("globalDadMaster.dragDropFile")}
-                </StyledDragDropTitle>
-                <StyledDragDropSubtitle variant="body2">
-                  {t("globalDadMaster.orClickToBrowse")}
-                </StyledDragDropSubtitle>
-                <StyledBrowseFilesButton
-                  variant="contained"
-                  startIcon={<CloudUploadOutlinedIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUploadBrowseClick();
-                  }}
-                >
-                  {t("globalDadMaster.browseFiles")}
-                </StyledBrowseFilesButton>
-                <StyledSupportedFormatText variant="caption">
-                  {t("globalDadMaster.supportedFormatCsv")}
-                </StyledSupportedFormatText>
-              </StyledDragDropZone>
-
-              {selectedFile && (
-                <StyledSelectedFileBox>
-                  <StyledFileInfoBox>
-                    <StyledFileInfoInner>
-                      <StyledDescriptionIcon />
-                      <Box>
-                        <StyledFileNameText variant="body2">
-                          {selectedFile.name}
-                        </StyledFileNameText>
-                        <StyledFileSizeText variant="caption">
-                          {(selectedFile.size / 1024).toFixed(1)} KB
-                        </StyledFileSizeText>
-                      </Box>
-                    </StyledFileInfoInner>
-                    <StyledUploadButton
-                      variant="contained"
-                      size="small"
-                      onClick={handleUploadClick}
-                      disabled={uploadStatus === "uploading"}
-                    >
-                      {t("globalDadMaster.upload")}
-                    </StyledUploadButton>
-                    <StyledViewButton
-                      variant="outlined"
-                      size="small"
-                      onClick={() =>
-                        selectedFile &&
-                        navigateToCsvView(
-                          selectedFile,
-                          navigate,
-                          location.pathname,
-                          t("home.globalDandDMaster"),
-                        )
-                      }
-                      disabled={!selectedFile || uploadStatus === "uploading"}
-                    >
-                      {t("upload.view")}
-                    </StyledViewButton>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<CloseIcon />}
-                      onClick={handleUploadCancel}
-                      disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
-                    >
-                      {t("globalDadMaster.cancelUpload")}
-                    </Button>
-                  </StyledFileInfoBox>
-                </StyledSelectedFileBox>
-              )}
-            </StyledUploadSectionContent>
           )}
         </StyledSectionWrapper>
       </StyledMainPaper>
