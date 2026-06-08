@@ -128,23 +128,29 @@ export const ADMIN_ITEMS: MenuItem[] = [
   },
 ];
 
-// Helper function to create menu sections with translations
+// Helper function to create menu sections with translations.
+// The admin section is only included when `showAdmin` is true (IT Admin only).
 export const createMenuSections = (
   t: (key: string) => string,
   dataInputExpanded: boolean,
   masterMaintenanceExpanded: boolean,
   adminExpanded: boolean,
+  showAdmin: boolean,
 ): MenuSection[] => [
-  {
-    id: "admin-pages",
-    label: t("home.adminPages"),
-    icon: AdminPanelSettingsIcon,
-    items: ADMIN_ITEMS.map((item) => ({
-      ...item,
-      label: t(item.label),
-    })),
-    expanded: adminExpanded,
-  },
+  ...(showAdmin
+    ? [
+        {
+          id: "admin-pages",
+          label: t("home.adminPages"),
+          icon: AdminPanelSettingsIcon,
+          items: ADMIN_ITEMS.map((item) => ({
+            ...item,
+            label: t(item.label),
+          })),
+          expanded: adminExpanded,
+        },
+      ]
+    : []),
   {
     id: "data-input",
     label: t("home.dataInput"),

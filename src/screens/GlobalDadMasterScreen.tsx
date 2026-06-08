@@ -35,6 +35,7 @@ import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_COLUMNS, GLOBAL_DAD_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
@@ -283,6 +284,7 @@ const ScrollableTableDataCell = styled(StyledTableDataCell)(
 export default function GlobalDadMasterScreen() {
   const { t, i18n } = useTranslation();
   const { closeSidebar } = useSidebar();
+  const { canEdit, canAdd } = usePermissions();
 
   // Dropdown option data comes from shared contexts (each fetched at most once
   // per session, reused across pages) — mirrors GpcMaster's manufacturer/GPC data.
@@ -1373,6 +1375,7 @@ export default function GlobalDadMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1396,7 +1399,7 @@ export default function GlobalDadMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering}
+                          disabled={!hasRows || isRegistering || !canEdit}
                         >
                           {t("globalDadMaster.registration")}
                         </StyledPrimaryContainedButton>

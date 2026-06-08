@@ -1,4 +1,11 @@
 {
+  "roles": {
+    "itAdmin": "IT Admin",
+    "itMember": "IT Member",
+    "operationsStaff": "Operations Staff",
+    "businessPlanning": "Business Planning",
+    "noRoleAssigned": "You do not have a role assigned. Please reach out to IT Admin."
+  },
   "login": {
     "title": "Terumo Performance Management System",
     "subtitle": "Sign in with your Microsoft account",
@@ -10,7 +17,7 @@
   "home": {
     "title": "Performance Management",
     "home": "Home",
-    "welcome": "Welcome User",
+    "welcome": "Welcome {{name}}",
     "manageItems": "Manage your data inputs and master maintenance items",
     "dataInput": "Data Input",
     "masterMaintenance": "Master Maintenance",
@@ -55,8 +62,36 @@
     "plDataApproval": "P&L Data Approval",
     "adminPages": "Admin Pages",
     "createUser": "Create a User",
-    "updateRoles": "Update Roles",
+    "updateRoles": "Update User Role",
     "logout": "Logout"
+  },
+  "createUserForm": {
+    "email": "Email",
+    "username": "Username",
+    "role": "Role",
+    "submit": "Submit",
+    "emailRequired": "Email is required.",
+    "emailInvalid": "Please enter a valid email address.",
+    "usernameRequired": "Username is required.",
+    "roleRequired": "Please select a role.",
+    "creatingUser": "Creating user…",
+    "userCreatedSuccess": "User created successfully.",
+    "userCreationFailed": "Failed to create user. Please try again."
+  },
+  "updateRoleForm": {
+    "email": "Email",
+    "role": "Role",
+    "updateRole": "Update Role",
+    "emailRequired": "Please select an email.",
+    "roleRequired": "Please select a role.",
+    "loading": "Loading…",
+    "roleUpdatedSuccess": "Role updated successfully.",
+    "roleUpdateFailed": "Failed to update role. Please try again.",
+    "currentUsersTitle": "Current Users and Roles",
+    "colUsername": "Username",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "noUsers": "No users found."
   },
   "upload": {
     "title": "Performance Management",
@@ -440,7 +475,13 @@
     "title": "Stravis COA Hierarchy Upload",
     "fileType": "File type",
     "selectFileType": "Select file type",
-    "success": "File uploaded successfully!"
+    "success": "File uploaded successfully!",
+    "templateInfo": "We have provided a template file which can be used for all 7 types of COA Upload. Please do not remove any columns from the template while uploading the file.",
+    "downloadTemplate": "Download Template CSV",
+    "fileNameFormatHint": "File name must end with the file type, for example PBI_STRAVIS_ACCOUNT_FA_BS.csv",
+    "cancelUpload": "Cancel Upload",
+    "invalidFileTypeInfo": "This file name does not end with a valid COA file type. Please rename it to end with one of FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL, MA_MEMO, MA_BS (e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv) before uploading.",
+    "duplicateFileType": "A file for type {{type}} is already added: {{file}}. Each COA file type can only be uploaded once."
   },
   "plDataApproval": {
     "title": "P&L Data Approval",

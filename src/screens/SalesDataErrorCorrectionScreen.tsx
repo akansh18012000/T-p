@@ -46,6 +46,7 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
@@ -444,6 +445,11 @@ export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
+
+  // View-only roles (IT Admin, IT Member) can't mutate data — Register and
+  // Delete are disabled for them at all times, regardless of selection/edit
+  // state.
+  const { canEdit } = usePermissions();
 
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -1247,7 +1253,9 @@ export default function SalesDataErrorCorrectionScreen() {
                     size="small"
                     startIcon={<AppRegistrationIcon />}
                     onClick={handleRegister}
-                    disabled={sortedData.length === 0 || isRegistering}
+                    disabled={
+                      sortedData.length === 0 || isRegistering || !canEdit
+                    }
                   >
                     {t("errorCorrection.register")}
                   </StyledRegisterButton>
@@ -1444,7 +1452,9 @@ export default function SalesDataErrorCorrectionScreen() {
                       color="error"
                       startIcon={<DeleteIcon />}
                       onClick={handleDeleteSelected}
-                      disabled={selectedRowCodes.size === 0 || isDeleting}
+                      disabled={
+                        selectedRowCodes.size === 0 || isDeleting || !canEdit
+                      }
                     >
                       {t("errorCorrection.delete")}
                     </Button>

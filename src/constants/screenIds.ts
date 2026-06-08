@@ -105,6 +105,14 @@ export const SCREEN_IDS = {
     displayName: "Adjustment Data (Consolidated) Upload",
     active: true,
   },
+  // TODO: replace `id` with the real backend screen id for the Stravis COA
+  // Hierarchy Upload screen — this is a placeholder.
+  STRAVIS_COA_UPLOAD: {
+    id: "00000000-0000-0000-0000-000000000000",
+    screenName: "STRAVIS_COA_UPLOAD_SCREEN",
+    displayName: "Stravis COA Hierarchy Upload",
+    active: true,
+  },
 } as const satisfies Record<string, ScreenInfo>;
 
 export type ScreenKey = keyof typeof SCREEN_IDS;

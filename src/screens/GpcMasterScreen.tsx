@@ -110,6 +110,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { useManufacturerData } from "../context/ManufacturerDataContext.js";
 import { useGpcData } from "../context/GpcDataContext.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
@@ -275,6 +276,9 @@ export default function GpcMasterScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
+
+  // View-only roles (IT Admin, IT Member) can browse but not add/edit/upload.
+  const { canEdit, canAdd, canUpload } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -1578,6 +1582,7 @@ export default function GpcMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1601,7 +1606,7 @@ export default function GpcMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering}
+                          disabled={!hasRows || isRegistering || !canEdit}
                         >
                           {t("gpcMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1861,6 +1866,7 @@ export default function GpcMasterScreen() {
             <StyledUploadSectionContent>
               <StyledDragDropZone
                 $dragActive={dragActive}
+                $disabled={!canUpload}
                 onDragEnter={handleUploadDrag}
                 onDragLeave={handleUploadDrag}
                 onDragOver={handleUploadDrag}

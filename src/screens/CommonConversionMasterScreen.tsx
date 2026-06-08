@@ -116,6 +116,7 @@ import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../uti
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
@@ -248,6 +249,7 @@ export default function CommonConversionMasterScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
+  const { canEdit, canAdd, canUpload } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -1289,6 +1291,7 @@ export default function CommonConversionMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1312,7 +1315,7 @@ export default function CommonConversionMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering}
+                          disabled={!hasRows || isRegistering || !canEdit}
                         >
                           {t("commonConversionMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1589,6 +1592,7 @@ export default function CommonConversionMasterScreen() {
             <StyledUploadSectionContent>
               <StyledDragDropZone
                 $dragActive={dragActive}
+                $disabled={!canUpload}
                 onDragEnter={handleUploadDrag}
                 onDragLeave={handleUploadDrag}
                 onDragOver={handleUploadDrag}

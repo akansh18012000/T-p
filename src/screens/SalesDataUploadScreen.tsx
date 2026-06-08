@@ -49,6 +49,7 @@ import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { useViewFileCache } from "../context/ViewFileCacheContext.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 
 const MAX_UPLOAD_FILES = 12;
 const SALES_DATA_TEMPLATE_FILE = "Sales_Data_Template.csv";
@@ -158,7 +159,8 @@ const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
 const StyledDragDropZone = styled(Box)<{
   $dragActive: boolean;
   $hasFiles: boolean;
-}>(({ $dragActive, $hasFiles, theme }) => ({
+  $disabled?: boolean;
+}>(({ $dragActive, $hasFiles, $disabled, theme }) => ({
   border: $dragActive
     ? `3px dashed ${theme.palette.primary.main}`
     : `2px dashed ${theme.palette.grey![300]}`,
@@ -169,17 +171,26 @@ const StyledDragDropZone = styled(Box)<{
     ? alpha(theme.palette.primary.main, 0.05)
     : theme.palette.background.default,
   transition: "all 0.3s ease",
-  cursor: "pointer",
+  cursor: $disabled ? "not-allowed" : "pointer",
   position: "relative",
   overflow: "hidden",
   minHeight: $hasFiles ? "400px" : "auto",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: alpha(theme.palette.primary.main, 0.02),
-  },
+  // When disabled (e.g. view-only roles: IT Admin, IT Member), block both
+  // browse-click and drag-and-drop by removing pointer events, and dim the zone.
+  ...($disabled
+    ? {
+        opacity: 0.5,
+        pointerEvents: "none" as const,
+      }
+    : {
+        "&:hover": {
+          borderColor: theme.palette.primary.main,
+          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+        },
+      }),
 }));
 
 const StyledDragDropInner = styled(Box)({
@@ -635,6 +646,8 @@ export default function SalesDataUploadScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setEntries, addEntries, removeEntry, updateEntry } =
     useUploadContext();
+  // View-only roles (IT Admin, IT Member) can browse but not upload.
+  const { canUpload } = usePermissions();
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -1131,6 +1144,7 @@ export default function SalesDataUploadScreen() {
                   <StyledDragDropZone
                     $dragActive={dragActive}
                     $hasFiles={fileUploads.length > 0}
+                    $disabled={!canUpload}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}

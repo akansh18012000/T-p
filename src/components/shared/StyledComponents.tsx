@@ -686,25 +686,35 @@ export const StyledCellTextField = styled(TextField)({
 // Drag & drop / file upload
 // ---------------------------------------------------------------------------
 
-export const StyledDragDropZone = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    border: $dragActive
-      ? `3px dashed ${theme.palette.primary.main}`
-      : `2px dashed ${theme.palette.grey![300]}`,
-    borderRadius: "16px",
-    padding: theme.spacing(4),
-    textAlign: "center",
-    backgroundColor: $dragActive
-      ? alpha(theme.palette.primary.main, 0.05)
-      : theme.palette.background.paper,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      borderColor: theme.palette.primary.main,
-      backgroundColor: alpha(theme.palette.primary.main, 0.02),
-    },
-  }),
-);
+export const StyledDragDropZone = styled(Box)<{
+  $dragActive: boolean;
+  $disabled?: boolean;
+}>(({ $dragActive, $disabled, theme }) => ({
+  border: $dragActive
+    ? `3px dashed ${theme.palette.primary.main}`
+    : `2px dashed ${theme.palette.grey![300]}`,
+  borderRadius: "16px",
+  padding: theme.spacing(4),
+  textAlign: "center",
+  backgroundColor: $dragActive
+    ? alpha(theme.palette.primary.main, 0.05)
+    : theme.palette.background.paper,
+  cursor: $disabled ? "not-allowed" : "pointer",
+  transition: "all 0.3s ease",
+  // When disabled (e.g. view-only roles), block both browse-click and
+  // drag-and-drop by removing pointer events, and dim the zone.
+  ...($disabled
+    ? {
+        opacity: 0.5,
+        pointerEvents: "none" as const,
+      }
+    : {
+        "&:hover": {
+          borderColor: theme.palette.primary.main,
+          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+        },
+      }),
+}));
 
 export const StyledCloudUploadIcon = styled(CloudUploadOutlinedIcon)<{
   $dragActive: boolean;

@@ -1,4 +1,11 @@
 {
+  "roles": {
+    "itAdmin": "IT管理者",
+    "itMember": "ITメンバー",
+    "operationsStaff": "オペレーションスタッフ",
+    "businessPlanning": "事業企画",
+    "noRoleAssigned": "ロールが割り当てられていません。IT管理者にお問い合わせください。"
+  },
   "login": {
     "title": "Terumo パフォーマンス管理システム",
     "subtitle": "Microsoftアカウントでサインインしてください",
@@ -10,7 +17,7 @@
   "home": {
     "title": "パフォーマンス管理",
     "home": "ホーム",
-    "welcome": "Abhickさん、ようこそ",
+    "welcome": "{{name}}さん、ようこそ",
     "manageItems": "データ入力とマスター保守項目を管理します",
     "dataInput": "データ入力",
     "masterMaintenance": "マスター保守",
@@ -55,8 +62,36 @@
     "plDataApproval": "P&L データ承認",
     "adminPages": "管理ページ",
     "createUser": "ユーザー作成",
-    "updateRoles": "ロール更新",
+    "updateRoles": "ユーザーロール更新",
     "logout": "ログアウト"
+  },
+  "createUserForm": {
+    "email": "メールアドレス",
+    "username": "ユーザー名",
+    "role": "ロール",
+    "submit": "送信",
+    "emailRequired": "メールアドレスは必須です。",
+    "emailInvalid": "有効なメールアドレスを入力してください。",
+    "usernameRequired": "ユーザー名は必須です。",
+    "roleRequired": "ロールを選択してください。",
+    "creatingUser": "ユーザーを作成しています…",
+    "userCreatedSuccess": "ユーザーが正常に作成されました。",
+    "userCreationFailed": "ユーザーの作成に失敗しました。もう一度お試しください。"
+  },
+  "updateRoleForm": {
+    "email": "メールアドレス",
+    "role": "ロール",
+    "updateRole": "ロールを更新",
+    "emailRequired": "メールアドレスを選択してください。",
+    "roleRequired": "ロールを選択してください。",
+    "loading": "読み込んでいます…",
+    "roleUpdatedSuccess": "ロールが正常に更新されました。",
+    "roleUpdateFailed": "ロールの更新に失敗しました。もう一度お試しください。",
+    "currentUsersTitle": "現在のユーザーとロール",
+    "colUsername": "ユーザー名",
+    "colEmail": "メールアドレス",
+    "colRole": "ロール",
+    "noUsers": "ユーザーが見つかりません。"
   },
   "upload": {
     "title": "パフォーマンス管理",
@@ -440,7 +475,13 @@
     "title": "Stravis COA階層アップロード",
     "fileType": "ファイル種別",
     "selectFileType": "ファイル種別を選択",
-    "success": "ファイルが正常にアップロードされました！"
+    "success": "ファイルが正常にアップロードされました！",
+    "templateInfo": "7種類すべてのCOAアップロードに使用できるテンプレートファイルを用意しています。ファイルをアップロードする際は、テンプレートから列を削除しないでください。",
+    "downloadTemplate": "テンプレートCSVをダウンロード",
+    "fileNameFormatHint": "ファイル名はファイル種別で終わる必要があります。例: PBI_STRAVIS_ACCOUNT_FA_BS.csv",
+    "cancelUpload": "アップロードをキャンセル",
+    "invalidFileTypeInfo": "このファイル名は有効なCOAファイル種別で終わっていません。アップロードする前に、FA_BS、FA_INC、FA_MEMO、FA_PL、MA_PL、MA_MEMO、MA_BS のいずれかで終わるように名前を変更してください（例: PBI_STRAVIS_ACCOUNT_FA_BS.csv）。",
+    "duplicateFileType": "種別 {{type}} のファイルは既に追加されています: {{file}}。各COAファイル種別は一度だけアップロードできます。"
   },
   "plDataApproval": {
     "title": "P&L データ承認",

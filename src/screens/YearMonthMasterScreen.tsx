@@ -70,6 +70,7 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 
 const YearMonthContentBox = styled(StyledContentBox)({
   maxWidth: "100%",
@@ -152,6 +153,8 @@ function createNewRow(): string[] {
 
 function YearMonthMasterScreen() {
   const { t, i18n } = useTranslation();
+  // View-only roles (IT Admin, IT Member) can browse but not add/edit.
+  const { canEdit, canAdd } = usePermissions();
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -532,6 +535,7 @@ function YearMonthMasterScreen() {
                 <AddRowMenuButton
                   onAddEmptyRow={handleAddEmptyRow}
                   onAddExistingRows={handleEnterSelectionMode}
+                  disabled={!canAdd}
                 />
                 <StyledSecondaryButton
                   variant="outlined"
@@ -546,7 +550,7 @@ function YearMonthMasterScreen() {
                   size="small"
                   startIcon={<AppRegistrationIcon />}
                   onClick={handleRegistration}
-                  disabled={!hasRows}
+                  disabled={!hasRows || !canEdit}
                 >
                   {t("yearMonthMaster.registration")}
                 </StyledPrimaryContainedButton>

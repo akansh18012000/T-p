@@ -27,6 +27,9 @@ import { ViewFileCacheProvider } from "./context/ViewFileCacheContext.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
+import { UserProvider, useUser } from "./context/UserContext.js";
+import { hasAssignedRole, isItAdmin } from "./constants/roles.js";
+import { ResultsLoader } from "./components/shared/ResultsLoader.js";
 import { AppLayout } from "./components/AppLayout.js";
 import {
   createMenuSections,
@@ -65,10 +68,14 @@ const theme = createTheme(terumoTheme);
 /** Routes WITH layout but NO sidebar: /, /csv-viewer/*, /uploaded-csv-preview */
 const NO_SIDEBAR_PREFIX_PATHS = ["/csv-viewer", "/uploaded-csv-preview"];
 
+/** Admin-only routes — reachable only by the IT Admin role. */
+const ADMIN_PATHS = ["/create-user", "/update-roles"];
+
 function ConditionalLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useUser();
   const pathname = location.pathname;
   const {
     dataInputExpanded,
@@ -80,6 +87,19 @@ function ConditionalLayout() {
     currentScreenId,
   } = useSidebar();
 
+  // A user without a recognized role may only stay on the home page. Any other
+  // route is redirected to `/`, where HomeScreen surfaces the "no role assigned"
+  // message.
+  if (!hasAssignedRole(user?.role_name) && pathname !== "/") {
+    return <Navigate to="/" replace />;
+  }
+
+  // Admin pages are IT-Admin-only; redirect anyone else away from them.
+  const userIsItAdmin = isItAdmin(user?.role_name);
+  if (!userIsItAdmin && ADMIN_PATHS.includes(pathname)) {
+    return <Navigate to="/" replace />;
+  }
+
   const showSidebar =
     pathname !== "/" &&
     !NO_SIDEBAR_PREFIX_PATHS.some((p) => pathname.startsWith(p));
@@ -88,6 +108,7 @@ function ConditionalLayout() {
     dataInputExpanded,
     masterMaintenanceExpanded,
     adminExpanded,
+    userIsItAdmin,
   );
 
   const handleSectionToggle = (sectionId: string) => {
@@ -116,12 +137,9 @@ function ConditionalLayout() {
   );
 }
 
-export default function App() {
+function AppRoutes() {
   return (
-    <MsalProvider instance={msalInstance}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
+    <Router>
           <ManufacturerDataProvider>
           <GpcDataProvider>
           <SystemIdDataProvider>
@@ -239,6 +257,31 @@ export default function App() {
           </GpcDataProvider>
           </ManufacturerDataProvider>
         </Router>
+  );
+}
+
+/**
+ * Gates the app behind the one-time `/api/v1/user/me` fetch: a page-wide loader
+ * is shown while the call is in flight, then the routed app is rendered. The
+ * call lives in `UserProvider` (above the Router), so it fires once on site
+ * load and is not repeated as the user navigates.
+ */
+function AppContent() {
+  const { status } = useUser();
+  if (status === "idle" || status === "loading") {
+    return <ResultsLoader fullScreen />;
+  }
+  return <AppRoutes />;
+}
+
+export default function App() {
+  return (
+    <MsalProvider instance={msalInstance}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <UserProvider>
+          <AppContent />
+        </UserProvider>
       </ThemeProvider>
     </MsalProvider>
   );

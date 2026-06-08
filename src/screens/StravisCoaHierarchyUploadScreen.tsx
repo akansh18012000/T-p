@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
@@ -8,30 +8,33 @@ import {
   Typography,
   Button,
   Paper,
-  Divider,
-  Table,
-  TableBody,
-  TableHead,
-  TableRow,
-  LinearProgress,
   Snackbar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem as MuiMenuItem,
+  Alert,
+  Divider,
+  type AlertColor,
 } from "@mui/material";
 import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
   Visibility as VisibilityIcon,
-  AppRegistration as AppRegistrationIcon,
+  GetApp as GetAppIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { useUploadContext } from "../context/UploadContext.js";
-import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
-import { parseCsv, type CsvData as CsvDataType } from "../utils/csvUtils.js";
+import {
+  useUploadContext,
+  type UploadEntry,
+} from "../context/UploadContext.js";
+import {
+  navigateToCsvView,
+  isCsvFile,
+  filterCsvFiles,
+} from "../utils/csvViewNavigation.js";
+import { parseCsv, validateCsvColumns } from "../utils/csvUtils.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
   StyledHeaderBox,
   StyledHeaderTitle,
@@ -48,28 +51,33 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
-  StyledProgressText,
-  StyledProgressBox,
   StyledSelectedFileBox,
-  StyledPreviewTableContainer,
-  StyledPreviewTableHeaderCell,
-  StyledPreviewTableBodyRow,
-  StyledPreviewTableDataCell,
-  StyledActionButtonsBox,
-  StyledRegisterButton,
+  StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
 
-const FILE_TYPE_OPTIONS = [
+// Stravis COA upload supports the 7 COA file types in a single batch.
+const MAX_UPLOAD_FILES = 7;
+const STRAVIS_COA_TEMPLATE_FILE = "PBI_STRAVIS_ACCOUNT_Template.csv";
+
+// A file name (before its extension) must end with one of these COA file
+// types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
+const COA_FILE_TYPES = [
   "FA_BS",
   "FA_INC",
   "FA_MEMO",
   "FA_PL",
-  "MA_BS",
-  "MA_INC",
   "MA_PL",
   "MA_MEMO",
+  "MA_BS",
 ] as const;
-type FileType = (typeof FILE_TYPE_OPTIONS)[number];
+type CoaFileType = (typeof COA_FILE_TYPES)[number];
+
+// Returns the COA file type the file name ends with (ignoring the extension),
+// or null when it doesn't end with any recognized type.
+function getCoaFileType(fileName: string): CoaFileType | null {
+  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+  return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
+}
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -79,52 +87,6 @@ const StyledMainPaper = styled(Paper)(({ theme }) => ({
   maxWidth: 1800,
   marginLeft: "auto",
   marginRight: "auto",
-}));
-
-const StyledFormControl = styled(FormControl)(({ theme }) => ({
-  minWidth: 280,
-  "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: theme.palette.grey![200],
-    borderWidth: "1.5px",
-  },
-  "&:hover .MuiOutlinedInput-notchedOutline": {
-    borderColor: theme.palette.primary.main,
-  },
-  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-    borderColor: theme.palette.primary.main,
-    borderWidth: "2px",
-  },
-  "& .MuiInputLabel-shrink": { color: theme.palette.primary.main },
-  "& .MuiOutlinedInput-root": {
-    display: "flex",
-    alignItems: "center",
-    borderRadius: "10px",
-    backgroundColor: theme.palette.background.paper,
-  },
-  "& .MuiSelect-select": {
-    paddingTop: theme.spacing(1.25),
-    paddingBottom: theme.spacing(1.25),
-    fontSize: "1rem",
-    fontWeight: 500,
-    display: "flex",
-    alignItems: "center",
-    boxSizing: "border-box",
-  },
-}));
-
-const StyledInputLabel = styled(InputLabel)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  fontWeight: 600,
-  fontSize: "1rem",
-  "&.Mui-focused": { color: theme.palette.primary.main },
-}));
-
-const StyledSectionBox = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-}));
-
-const StyledDivider = styled(Divider)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
 }));
 
 const StyledUploadSectionBox = styled(Box)(({ theme }) => ({
@@ -165,23 +127,42 @@ const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(0.5),
 }));
 
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  height: 6,
-  borderRadius: 4,
-  backgroundColor: theme.palette.grey![200],
-  "& .MuiLinearProgress-bar": {
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: 4,
+const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
+  borderColor: theme.palette.primary.main,
+  color: theme.palette.primary.main,
+  borderRadius: "8px",
+  fontWeight: 600,
+  textTransform: "none",
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+    borderColor: theme.palette.primary.dark,
   },
 }));
 
-const StyledCancelButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.grey![500],
-  color: theme.palette.grey![500],
+// Per-row "Cancel Upload" button, pushed to the right edge of each file row.
+const StyledCancelUploadButton = styled(Button)(({ theme }) => ({
+  marginLeft: "auto",
+  textTransform: "none",
+  fontWeight: 600,
+  borderColor: theme.palette.primary.main,
+  color: theme.palette.primary.main,
   "&:hover": {
-    borderColor: theme.palette.grey![600],
-    backgroundColor: alpha(theme.palette.grey![500], 0.04),
+    borderColor: theme.palette.primary.dark,
+    backgroundColor: alpha(theme.palette.primary.main, 0.08),
   },
+}));
+
+const StyledBottomActionBox = styled(Box)(({ theme }) => ({
+  display: "flex",
+  justifyContent: "flex-end",
+  marginTop: theme.spacing(3),
+}));
+
+// Horizontal separator with vertical spacing, used between the info boxes,
+// the download button and the upload zone.
+const StyledSectionDivider = styled(Divider)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+  marginBottom: theme.spacing(3),
 }));
 
 export default function StravisCoaHierarchyUploadScreen() {
@@ -189,10 +170,10 @@ export default function StravisCoaHierarchyUploadScreen() {
   const location = useLocation();
   const { t } = useTranslation();
   const screenKey = location.pathname;
-  const { getUploadState, setSelectedFile, setUploadedCsvData } =
+  const { getUploadState, addEntries, removeEntry, setEntries } =
     useUploadContext();
 
-  const { selectedFile, uploadedCsvData } = getUploadState(screenKey);
+  const fileUploads = getUploadState(screenKey).entries;
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -206,16 +187,29 @@ export default function StravisCoaHierarchyUploadScreen() {
   }, [t, setBreadcrumbItems]);
   // AI Generated Code by Deloitte + Cursor (END)
 
-  const [fileType, setFileType] = useState<FileType | "">("");
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<
-    "idle" | "uploading" | "completed"
-  >("idle");
+  const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
+  const [snackbarSeverity, setSnackbarSeverity] =
+    useState<AlertColor>("success");
+
+  const showSnackbar = (
+    message: ReactNode,
+    severity: AlertColor = "success",
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  // Any queued file whose name doesn't end with a valid COA file type blocks
+  // the upload (and shows a rename info box under its row).
+  const hasInvalidFileType = fileUploads.some(
+    (entry) => getCoaFileType(entry.file.name) === null,
+  );
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -236,8 +230,57 @@ export default function StravisCoaHierarchyUploadScreen() {
   };
 
   const addFiles = (files: File[]) => {
-    const csvFile = files.find((f) => isCsvFile(f.name));
-    if (csvFile) setSelectedFile(screenKey, csvFile);
+    // CSV-only filter + snackbar (mirrors Sales Data Upload).
+    const csvFiles = filterCsvFiles(files);
+    if (csvFiles.length === 0) {
+      if (files.length > 0) {
+        showSnackbar(t("common.invalidFileTypeCsvOnly"), "error");
+      }
+      return;
+    }
+    if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
+      showSnackbar(
+        t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
+        "error",
+      );
+      return;
+    }
+
+    // Track which valid COA types are already taken so a second file of the
+    // same type is rejected with the name of the file already added.
+    const takenTypeToName = new Map<CoaFileType, string>();
+    for (const entry of fileUploads) {
+      const ft = getCoaFileType(entry.file.name);
+      if (ft) takenTypeToName.set(ft, entry.file.name);
+    }
+
+    const accepted: UploadEntry[] = [];
+    for (const file of csvFiles) {
+      const ft = getCoaFileType(file.name);
+      if (ft) {
+        const existingName = takenTypeToName.get(ft);
+        if (existingName) {
+          showSnackbar(
+            t("stravisCoaHierarchyUpload.duplicateFileType", {
+              type: ft,
+              file: existingName,
+            }),
+            "error",
+          );
+          continue;
+        }
+        takenTypeToName.set(ft, file.name);
+      }
+      // Files with an unrecognized type are still added so the row can show a
+      // rename info box; they keep the Upload button disabled until renamed.
+      accepted.push({
+        id: `${Date.now()}-${Math.random()}`,
+        file,
+        uploadedAt: new Date(),
+        uploadStatus: "pending" as const,
+      });
+    }
+    if (accepted.length > 0) addEntries(screenKey, accepted);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,42 +289,127 @@ export default function StravisCoaHierarchyUploadScreen() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleUploadClick = async () => {
-    if (!selectedFile) return;
-    setUploadStatus("uploading");
-    setUploadProgress(0);
-    for (let p = 0; p <= 100; p += 10) {
-      await new Promise((r) => setTimeout(r, 100));
-      setUploadProgress(p);
-    }
-    try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string) || "");
-        reader.onerror = reject;
-        reader.readAsText(selectedFile, "UTF-8");
-      });
-      const parsed = (await parseCsv(text)) as CsvDataType;
-      setUploadedCsvData(screenKey, parsed);
-      setUploadStatus("completed");
-      setSnackbarMessage(t("stravisCoaHierarchyUpload.success"));
-      setSnackbarOpen(true);
-    } catch {
-      setUploadStatus("idle");
-      setUploadProgress(0);
-      setSnackbarMessage(t("adjustmentData.errorParsingCsv"));
-      setSnackbarOpen(true);
-    }
+  const handleRemoveFile = (id: string) => {
+    removeEntry(screenKey, id);
   };
 
-  const handleUploadCancel = () => {
-    setSelectedFile(screenKey, null);
-    setUploadedCsvData(screenKey, null);
-    setUploadProgress(0);
-    setUploadStatus("idle");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setSnackbarMessage("Upload cancelled.");
-    setSnackbarOpen(true);
+  const readFileAsText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string) || "");
+      reader.onerror = reject;
+      reader.readAsText(file, "UTF-8");
+    });
+
+  const handleUploadClick = async () => {
+    const uploads = getUploadState(screenKey).entries;
+    if (uploads.length === 0 || hasInvalidFileType) return;
+
+    setUploading(true);
+
+    // 1. Load the template once and parse its headers.
+    let templateHeaders: string[];
+    try {
+      const templateResponse = await fetch(
+        `/templates/${STRAVIS_COA_TEMPLATE_FILE}`,
+      );
+      if (!templateResponse.ok) throw new Error("Template fetch failed");
+      const templateText = await templateResponse.text();
+      const templateParsed = await parseCsv(templateText);
+      templateHeaders = templateParsed.headers;
+    } catch {
+      setUploading(false);
+      showSnackbar(t("upload.templateLoadError"), "error");
+      return;
+    }
+
+    // 2. Validate every file's columns against the template — collect ALL
+    //    failures so the user sees every problem at once.
+    const failures: string[] = [];
+    for (const upload of uploads) {
+      try {
+        const text = await readFileAsText(upload.file);
+        const parsed = await parseCsv(text);
+        const validation = validateCsvColumns(parsed.headers, templateHeaders);
+        if (!validation.isValid) {
+          failures.push(
+            t("upload.fileMissingColumns", {
+              file: upload.file.name,
+              columns: validation.missingColumns.join(", "),
+            }),
+          );
+        }
+      } catch {
+        failures.push(t("upload.fileParseError", { file: upload.file.name }));
+      }
+    }
+
+    // 3. If anything failed, surface every failure and do NOT call the API.
+    if (failures.length > 0) {
+      setUploading(false);
+      showSnackbar(
+        failures.length === 1 ? (
+          failures[0]
+        ) : (
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, marginBottom: 0.5 }}
+            >
+              {t("upload.validationFailedHeader")}
+            </Typography>
+            <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
+              {failures.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </Box>
+          </Box>
+        ),
+        "error",
+      );
+      return;
+    }
+
+    // 4. All files passed — POST them in a single multipart request.
+    try {
+      const metadata = {
+        requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
+        screen_id: SCREEN_IDS.STRAVIS_COA_UPLOAD.id,
+        user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
+        entity_id: "",
+        ip_address: "192.168.1.100",
+      };
+
+      const formData = new FormData();
+      formData.append("requested_by", metadata.requested_by);
+      formData.append("session_id", metadata.session_id);
+      formData.append("screen_id", metadata.screen_id);
+      formData.append("user_id", metadata.user_id);
+      if (metadata.entity_id) formData.append("entity_id", metadata.entity_id);
+      if (metadata.ip_address)
+        formData.append("ip_address", metadata.ip_address);
+      for (const upload of uploads) {
+        formData.append("files", upload.file);
+      }
+
+      const response = await fetch("/api/v1/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload API responded ${response.status}`);
+      }
+
+      setEntries(screenKey, []);
+      showSnackbar(t("upload.uploadSuccess"), "success");
+    } catch (error) {
+      console.error("Upload API error:", error);
+      showSnackbar(t("upload.uploadError"), "error");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleViewCsv = (file: File) => {
@@ -308,16 +436,15 @@ export default function StravisCoaHierarchyUploadScreen() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleUploadRegister = async () => {
-    setSnackbarMessage("Registration in progress...");
-    setSnackbarOpen(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSnackbarMessage("Registration completed successfully.");
-    setSnackbarOpen(true);
-  };
-
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDownloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = `/templates/${STRAVIS_COA_TEMPLATE_FILE}`;
+    link.download = STRAVIS_COA_TEMPLATE_FILE;
+    link.click();
   };
 
   const theme = useTheme();
@@ -367,199 +494,160 @@ export default function StravisCoaHierarchyUploadScreen() {
         </StyledHeaderBox>
 
         <StyledContentBox>
-          <StyledSectionBox>
-            <StyledFormControl size="small">
-              <StyledInputLabel>
-                {t("stravisCoaHierarchyUpload.fileType")}
-              </StyledInputLabel>
-              <Select
-                value={fileType}
-                onChange={(e) => setFileType(e.target.value as FileType | "")}
-                label={t("stravisCoaHierarchyUpload.fileType")}
+          <StyledUploadSectionBox>
+            <StyledUploadFlexBox>
+              <Alert severity="info">
+                {t("stravisCoaHierarchyUpload.templateInfo")}
+              </Alert>
+
+              <StyledSectionDivider />
+
+              <Box>
+                <StyledDownloadTemplateButton
+                  variant="outlined"
+                  startIcon={<GetAppIcon />}
+                  onClick={handleDownloadTemplate}
+                >
+                  {t("stravisCoaHierarchyUpload.downloadTemplate")}
+                </StyledDownloadTemplateButton>
+              </Box>
+
+              <StyledSectionDivider />
+
+              <Alert severity="info">
+                {t("stravisCoaHierarchyUpload.fileNameFormatHint")}
+              </Alert>
+
+              <StyledSectionDivider />
+
+              <StyledDragDropZone
+                $dragActive={dragActive}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={handleBrowseClick}
               >
-                <MuiMenuItem value="">
-                  <em>{t("stravisCoaHierarchyUpload.selectFileType")}</em>
-                </MuiMenuItem>
-                {FILE_TYPE_OPTIONS.map((option) => (
-                  <MuiMenuItem key={option} value={option}>
-                    {option}
-                  </MuiMenuItem>
-                ))}
-              </Select>
-            </StyledFormControl>
-          </StyledSectionBox>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  style={{ display: "none" }}
+                  aria-hidden="true"
+                />
+                <StyledUploadIconCircle $dragActive={dragActive}>
+                  <StyledCloudUploadIcon $dragActive={dragActive} />
+                </StyledUploadIconCircle>
+                <StyledDragDropTitle variant="h6">
+                  {dragActive
+                    ? t("upload.dropFilesHere")
+                    : t("upload.dragDropHere")}
+                </StyledDragDropTitle>
+                <StyledDragDropSubtitle variant="body2">
+                  {t("upload.orClickToBrowse")}
+                </StyledDragDropSubtitle>
+                <StyledBrowseFilesButton
+                  variant="contained"
+                  startIcon={<CloudUploadOutlinedIcon />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleBrowseClick();
+                  }}
+                >
+                  {t("upload.browseFiles")}
+                </StyledBrowseFilesButton>
+                <StyledSupportedFormatText variant="caption">
+                  {t("upload.maxFilesHint", { max: MAX_UPLOAD_FILES })}
+                </StyledSupportedFormatText>
+              </StyledDragDropZone>
 
-          {fileType && (
-            <>
-              <StyledDivider />
-
-              <StyledUploadSectionBox>
-                <StyledUploadFlexBox>
-                  {!uploadedCsvData ? (
-                    <>
-                      <StyledDragDropZone
-                        $dragActive={dragActive}
-                        onDragEnter={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDragOver={handleDrag}
-                        onDrop={handleDrop}
-                        onClick={handleBrowseClick}
-                      >
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          multiple
-                          accept=".csv"
-                          onChange={handleFileSelect}
-                          style={{ display: "none" }}
-                          aria-hidden="true"
-                        />
-                        <StyledUploadIconCircle $dragActive={dragActive}>
-                          <StyledCloudUploadIcon $dragActive={dragActive} />
-                        </StyledUploadIconCircle>
-                        <StyledDragDropTitle variant="h6">
-                          {dragActive
-                            ? t("upload.dropFilesHere")
-                            : t("upload.dragDropHere")}
-                        </StyledDragDropTitle>
-                        <StyledDragDropSubtitle variant="body2">
-                          {t("upload.orClickToBrowse")}
-                        </StyledDragDropSubtitle>
-                        <StyledBrowseFilesButton
-                          variant="contained"
-                          startIcon={<CloudUploadOutlinedIcon />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleBrowseClick();
-                          }}
+              {/* One row per queued file: info + View + Cancel Upload. A file
+                  whose name doesn't end with a valid COA type shows a rename
+                  info box below its row. */}
+              {fileUploads.map((entry) => {
+                const invalidType = getCoaFileType(entry.file.name) === null;
+                return (
+                  <StyledSelectedFileBox key={entry.id}>
+                    <StyledFileInfoBox>
+                      <StyledFileInfoInner>
+                        <StyledFileIcon
+                          $color={getFileIcon(entry.file.name).color}
                         >
-                          {t("upload.browseFiles")}
-                        </StyledBrowseFilesButton>
-                        <StyledSupportedFormatText variant="caption">
-                          {t("upload.supportedFormats")}
-                        </StyledSupportedFormatText>
-                      </StyledDragDropZone>
-
-                      {selectedFile && (
-                        <StyledSelectedFileBox>
-                          <StyledFileInfoBox>
-                            <StyledFileInfoInner>
-                              <StyledFileIcon
-                                $color={getFileIcon(selectedFile.name).color}
-                              >
-                                <DescriptionOutlinedIcon />
-                              </StyledFileIcon>
-                              <Box>
-                                <StyledFileNameText variant="body2">
-                                  {selectedFile.name}
-                                </StyledFileNameText>
-                                <StyledFileSizeText variant="caption">
-                                  {formatFileSize(
-                                    selectedFile.size,
-                                    selectedFile.name,
-                                  )}
-                                </StyledFileSizeText>
-                              </Box>
-                            </StyledFileInfoInner>
-                            <StyledUploadButton
-                              variant="contained"
-                              size="small"
-                              onClick={handleUploadClick}
-                              disabled={uploadStatus === "uploading"}
-                            >
-                              {t("upload.upload")}
-                            </StyledUploadButton>
-                            {isCsvFile(selectedFile.name) && (
-                              <StyledViewButton
-                                variant="outlined"
-                                size="small"
-                                startIcon={<VisibilityIcon />}
-                                onClick={() => handleViewCsv(selectedFile)}
-                                disabled={uploadStatus === "uploading"}
-                              >
-                                {t("upload.view")}
-                              </StyledViewButton>
-                            )}
-                          </StyledFileInfoBox>
-                          {uploadStatus === "uploading" && (
-                            <StyledProgressBox>
-                              <StyledLinearProgress
-                                variant="determinate"
-                                value={uploadProgress}
-                              />
-                              <StyledProgressText variant="caption">
-                                {uploadProgress}%
-                              </StyledProgressText>
-                            </StyledProgressBox>
-                          )}
-                        </StyledSelectedFileBox>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <StyledDragDropTitle variant="subtitle1">
-                        {selectedFile?.name}
-                      </StyledDragDropTitle>
-                      <StyledPreviewTableContainer>
-                        <Table stickyHeader size="small">
-                          <TableHead>
-                            <TableRow>
-                              {uploadedCsvData.headers.map(
-                                (header, colIndex) => (
-                                  <StyledPreviewTableHeaderCell key={colIndex}>
-                                    {header}
-                                  </StyledPreviewTableHeaderCell>
-                                ),
-                              )}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {uploadedCsvData.rows.map((row, rowIndex) => (
-                              <StyledPreviewTableBodyRow
-                                key={rowIndex}
-                                $index={rowIndex}
-                              >
-                                {row.map((cell, colIndex) => (
-                                  <StyledPreviewTableDataCell key={colIndex}>
-                                    {cell}
-                                  </StyledPreviewTableDataCell>
-                                ))}
-                              </StyledPreviewTableBodyRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </StyledPreviewTableContainer>
-                      <StyledActionButtonsBox>
-                        <StyledCancelButton
+                          <DescriptionOutlinedIcon />
+                        </StyledFileIcon>
+                        <Box>
+                          <StyledFileNameText variant="body2">
+                            {entry.file.name}
+                          </StyledFileNameText>
+                          <StyledFileSizeText variant="caption">
+                            {formatFileSize(entry.file.size, entry.file.name)}
+                          </StyledFileSizeText>
+                        </Box>
+                      </StyledFileInfoInner>
+                      {isCsvFile(entry.file.name) && (
+                        <StyledViewButton
                           variant="outlined"
-                          onClick={handleUploadCancel}
+                          size="small"
+                          startIcon={<VisibilityIcon />}
+                          onClick={() => handleViewCsv(entry.file)}
+                          disabled={uploading}
                         >
-                          Cancel
-                        </StyledCancelButton>
-                        <StyledRegisterButton
-                          variant="contained"
-                          onClick={handleUploadRegister}
-                          startIcon={<AppRegistrationIcon />}
-                        >
-                          Register
-                        </StyledRegisterButton>
-                      </StyledActionButtonsBox>
-                    </>
-                  )}
-                </StyledUploadFlexBox>
-              </StyledUploadSectionBox>
-            </>
-          )}
+                          {t("upload.view")}
+                        </StyledViewButton>
+                      )}
+                      <StyledCancelUploadButton
+                        variant="outlined"
+                        size="small"
+                        startIcon={<CloseIcon />}
+                        onClick={() => handleRemoveFile(entry.id)}
+                        disabled={uploading}
+                      >
+                        {t("stravisCoaHierarchyUpload.cancelUpload")}
+                      </StyledCancelUploadButton>
+                    </StyledFileInfoBox>
+                    {invalidType && (
+                      <Alert severity="warning" sx={{ marginTop: 1 }}>
+                        {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
+                      </Alert>
+                    )}
+                  </StyledSelectedFileBox>
+                );
+              })}
+
+              {/* Single Upload button for the whole batch, bottom-right. */}
+              {fileUploads.length > 0 && (
+                <StyledBottomActionBox>
+                  <StyledUploadButton
+                    variant="contained"
+                    onClick={handleUploadClick}
+                    disabled={uploading || hasInvalidFileType}
+                  >
+                    {t("upload.upload")}
+                  </StyledUploadButton>
+                </StyledBottomActionBox>
+              )}
+            </StyledUploadFlexBox>
+          </StyledUploadSectionBox>
         </StyledContentBox>
       </StyledMainPaper>
+
+      {uploading && <ResultsLoader fullScreen label={t("upload.uploading")} />}
 
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      />
+      >
+        <StyledSnackbarAlert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+        >
+          {snackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
     </>
   );
 }

@@ -33,6 +33,7 @@ import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAuto
 import { COMMON_MASTER_HEADERS, COMMON_MASTER_COLUMNS, COMMON_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -193,6 +194,7 @@ const paginatedListboxSlotProps = {
 export default function CommonMasterScreen() {
   const { t, i18n } = useTranslation();
   const { closeSidebar } = useSidebar();
+  const { canEdit, canAdd } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -1043,6 +1045,7 @@ export default function CommonMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1066,7 +1069,7 @@ export default function CommonMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || !canEdit}
                         >
                           {t("commonMaster.registration")}
                         </StyledPrimaryContainedButton>

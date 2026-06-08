@@ -114,6 +114,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -212,6 +213,9 @@ export default function KitItemClassificationMasterScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
+
+  // View-only roles (IT Admin, IT Member) can browse but not add/edit/upload.
+  const { canEdit, canAdd, canUpload } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -1078,6 +1082,7 @@ export default function KitItemClassificationMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1101,7 +1106,7 @@ export default function KitItemClassificationMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || !canEdit}
                         >
                           {t("kitItemClassification.registration")}
                         </StyledPrimaryContainedButton>
@@ -1351,6 +1356,7 @@ export default function KitItemClassificationMasterScreen() {
             <StyledUploadSectionContent>
               <StyledDragDropZone
                 $dragActive={dragActive}
+                $disabled={!canUpload}
                 onDragEnter={handleUploadDrag}
                 onDragLeave={handleUploadDrag}
                 onDragOver={handleUploadDrag}

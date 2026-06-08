@@ -12,6 +12,7 @@ import {
   IconButton,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import { useUser } from "../context/UserContext.js";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -77,8 +78,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   showLanguageSelector = true,
 }) => {
   const { t, i18n } = useTranslation();
+  const { user } = useUser();
 
-  const userDisplayName = "User";
+  const userDisplayName = user?.username || "User";
+
+  // Build initials from the username: first letter of the first name + first
+  // letter of the last name (e.g. "Akansh Omar" -> "AO"). Falls back to the
+  // single leading character when only one name part is present.
+  const nameParts = userDisplayName.trim().split(/\s+/).filter(Boolean);
+  const userInitials = (
+    nameParts.length > 1
+      ? nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+      : userDisplayName.charAt(0)
+  ).toUpperCase();
 
   const handleLanguageChange = (language: string) => {
     i18n.changeLanguage(language);
@@ -104,9 +116,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <StyledControlsBox>
           {showUserInfo && (
             <>
-              <StyledAvatar>
-                {userDisplayName.charAt(0).toUpperCase()}
-              </StyledAvatar>
+              <StyledAvatar>{userInitials}</StyledAvatar>
               <StyledUserText variant="body2">{userDisplayName}</StyledUserText>
             </>
           )}

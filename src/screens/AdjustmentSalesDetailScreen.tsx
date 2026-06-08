@@ -59,6 +59,7 @@ import {
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
 import { getAdjustmentUploadScreenId } from "../constants/screenIds.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -533,6 +534,11 @@ export default function AdjustmentSalesDetailScreen() {
     ? FILENAME_YYYYMM_PATTERN.test(selectedFile.name)
     : true;
 
+  // View-only roles (IT Admin, IT Member) can browse but not upload, so the
+  // Type of Upload dropdown is disabled for them — which keeps the entire
+  // upload section (gated behind `uploadType`) from ever appearing.
+  const { canUpload } = usePermissions();
+
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -993,6 +999,7 @@ export default function AdjustmentSalesDetailScreen() {
                 value={uploadType}
                 onChange={(e) => setUploadType(screenKey, e.target.value)}
                 label={t("adjustmentSalesDetail.uploadType")}
+                disabled={!canUpload}
               >
                 <MuiMenuItem value="">
                   <em>{t("adjustmentSalesDetail.selectUploadType")}</em>

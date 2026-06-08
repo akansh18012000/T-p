@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled, alpha } from "@mui/material/styles";
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Alert, Box, Grid, Paper, Typography } from "@mui/material";
 import {
   DATA_INPUT_ITEMS,
   MASTER_MAINTENANCE_ITEMS,
@@ -9,6 +9,8 @@ import {
   handleMenuItemNavigation,
   type MenuItem as MenuItemType,
 } from "../config/menuConfig.js";
+import { useUser } from "../context/UserContext.js";
+import { hasAssignedRole, isItAdmin } from "../constants/roles.js";
 
 /* Local styled components - Home uses AppLayout (header, no sidebar) from App.tsx */
 const StyledContentInnerBox = styled(Box)(({ theme }) => ({
@@ -200,6 +202,9 @@ const StyledGridContainer = styled(Grid)({
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useUser();
+  const roleAssigned = hasAssignedRole(user?.role_name);
+  const showAdminSection = isItAdmin(user?.role_name);
 
   const handleMenuItemClick = (item: MenuItemType) => {
     handleMenuItemNavigation(item, navigate, "home");
@@ -271,26 +276,37 @@ export default function HomeScreen() {
     );
   };
 
+  // Users without a recognized role only see the message — no navigation cards.
+  if (!roleAssigned) {
+    return (
+      <StyledContentInnerBox>
+        <Alert severity="warning">{t("roles.noRoleAssigned")}</Alert>
+      </StyledContentInnerBox>
+    );
+  }
+
   return (
     <StyledContentInnerBox>
       <StyledWelcomeBox>
         <StyledWelcomeTitle variant="h4">
-          {t("home.welcome")}
+          {t("home.welcome", { name: user?.username ?? "" })}
         </StyledWelcomeTitle>
         <StyledWelcomeSubtitle variant="body1">
           {t("home.manageItems")}
         </StyledWelcomeSubtitle>
       </StyledWelcomeBox>
 
-      <StyledAdminSectionBox>
-        <StyledSectionHeaderBox>
-          <StyledSectionTitle variant="h6">
-            {t("home.adminPages")}
-          </StyledSectionTitle>
-          <StyledSectionAccent />
-        </StyledSectionHeaderBox>
-        {renderAdminCards()}
-      </StyledAdminSectionBox>
+      {showAdminSection && (
+        <StyledAdminSectionBox>
+          <StyledSectionHeaderBox>
+            <StyledSectionTitle variant="h6">
+              {t("home.adminPages")}
+            </StyledSectionTitle>
+            <StyledSectionAccent />
+          </StyledSectionHeaderBox>
+          {renderAdminCards()}
+        </StyledAdminSectionBox>
+      )}
 
       <StyledTwoColumnBox>
         <StyledSectionBox>

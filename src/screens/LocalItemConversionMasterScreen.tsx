@@ -109,6 +109,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import {
@@ -288,6 +289,7 @@ function LocalItemConversionMasterScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
+  const { canEdit, canAdd, canUpload } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -1402,6 +1404,7 @@ function LocalItemConversionMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -1425,7 +1428,7 @@ function LocalItemConversionMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering}
+                          disabled={!hasRows || isRegistering || !canEdit}
                         >
                           {t("localItemConversion.registration")}
                         </StyledPrimaryContainedButton>
@@ -1795,6 +1798,7 @@ function LocalItemConversionMasterScreen() {
             <StyledUploadSectionContent>
               <StyledDragDropZone
                 $dragActive={dragActive}
+                $disabled={!canUpload}
                 onDragEnter={handleUploadDrag}
                 onDragLeave={handleUploadDrag}
                 onDragOver={handleUploadDrag}

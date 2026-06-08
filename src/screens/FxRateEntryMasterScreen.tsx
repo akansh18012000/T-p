@@ -97,6 +97,7 @@ import {
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
@@ -156,6 +157,7 @@ function FxRateEntryMasterScreen() {
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
+  const { canEdit, canAdd, canUpload } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -901,6 +903,7 @@ function FxRateEntryMasterScreen() {
                         <AddRowMenuButton
                           onAddEmptyRow={handleAddEmptyRow}
                           onAddExistingRows={handleEnterSelectionMode}
+                          disabled={!canAdd}
                         />
                         <StyledSecondaryButton
                           variant="outlined"
@@ -924,7 +927,7 @@ function FxRateEntryMasterScreen() {
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows}
+                          disabled={!hasRows || !canEdit}
                         >
                           {t("fxRateEntryMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1173,6 +1176,7 @@ function FxRateEntryMasterScreen() {
             <StyledUploadSectionContent>
               <StyledDragDropZone
                 $dragActive={dragActive}
+                $disabled={!canUpload}
                 onDragEnter={handleUploadDrag}
                 onDragLeave={handleUploadDrag}
                 onDragOver={handleUploadDrag}

@@ -78,6 +78,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
 import { formatDateTimeForDisplay, formatYearMonthForPayload } from "../utils/commonUtils.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 
 // Screen-specific table components (delete column, white borders)
 // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -268,6 +269,9 @@ function mapApiRowToResultRow(
 function AdjustmentDataFileDeletionScreen() {
   const { t } = useTranslation();
   const { closeSidebar } = useSidebar();
+  // View-only roles (IT Admin, IT Member) have canEdit=false, so the Delete
+  // button stays disabled at all times for them.
+  const { canEdit } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
@@ -775,7 +779,7 @@ function AdjustmentDataFileDeletionScreen() {
                             variant="contained"
                             startIcon={<DeleteIcon />}
                             onClick={handleDeleteSelected}
-                            disabled={selectedCount === 0 || deleting}
+                            disabled={selectedCount === 0 || deleting || !canEdit}
                           >
                             {t("adjustmentDataFileDeletion.delete")}{" "}
                             {selectedCount > 0 ? `(${selectedCount})` : ""}
