@@ -19,6 +19,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
+import { canAccessMenuItem } from "../constants/roles.js";
 
 export interface MenuItem {
   id: string;
@@ -130,48 +131,65 @@ export const ADMIN_ITEMS: MenuItem[] = [
 
 // Helper function to create menu sections with translations.
 // The admin section is only included when `showAdmin` is true (IT Admin only).
+// Items are filtered by the user's role (e.g. Business Planning only sees the
+// adjustment upload/deletion screens), and any section left empty is dropped.
 export const createMenuSections = (
   t: (key: string) => string,
   dataInputExpanded: boolean,
   masterMaintenanceExpanded: boolean,
   adminExpanded: boolean,
   showAdmin: boolean,
-): MenuSection[] => [
-  ...(showAdmin
-    ? [
-        {
-          id: "admin-pages",
-          label: t("home.adminPages"),
-          icon: AdminPanelSettingsIcon,
-          items: ADMIN_ITEMS.map((item) => ({
-            ...item,
-            label: t(item.label),
-          })),
-          expanded: adminExpanded,
-        },
-      ]
-    : []),
-  {
-    id: "data-input",
-    label: t("home.dataInput"),
-    icon: InputIcon,
-    items: DATA_INPUT_ITEMS.map((item) => ({
-      ...item,
-      label: t(item.label),
-    })),
-    expanded: dataInputExpanded,
-  },
-  {
-    id: "master-maintenance",
-    label: t("home.masterMaintenance"),
-    icon: StorageIcon,
-    items: MASTER_MAINTENANCE_ITEMS.map((item) => ({
-      ...item,
-      label: t(item.label),
-    })),
-    expanded: masterMaintenanceExpanded,
-  },
-];
+  roleName?: string | null,
+): MenuSection[] => {
+  const toTranslatedItems = (items: MenuItem[]) =>
+    items
+      .filter((item) => canAccessMenuItem(roleName, item.id))
+      .map((item) => ({ ...item, label: t(item.label) }));
+
+  const sections: MenuSection[] = [
+    ...(showAdmin
+      ? [
+          {
+            id: "admin-pages",
+            label: t("home.adminPages"),
+            icon: AdminPanelSettingsIcon,
+            items: toTranslatedItems(ADMIN_ITEMS),
+            expanded: adminExpanded,
+          },
+        ]
+      : []),
+    {
+      id: "data-input",
+      label: t("home.dataInput"),
+      icon: InputIcon,
+      items: toTranslatedItems(DATA_INPUT_ITEMS),
+      expanded: dataInputExpanded,
+    },
+    {
+      id: "master-maintenance",
+      label: t("home.masterMaintenance"),
+      icon: StorageIcon,
+      items: toTranslatedItems(MASTER_MAINTENANCE_ITEMS),
+      expanded: masterMaintenanceExpanded,
+    },
+  ];
+
+  return sections.filter((section) => section.items.length > 0);
+};
+
+// All ids that correspond to a menu item (vs. utility/sub-flow routes such as
+// the CSV viewer). Route guards use this so role-based menu gating only applies
+// to actual menu screens.
+const ALL_MENU_ITEM_IDS = new Set(
+  [...DATA_INPUT_ITEMS, ...MASTER_MAINTENANCE_ITEMS, ...ADMIN_ITEMS].map(
+    (item) => item.id,
+  ),
+);
+
+/** Whether `screenId` corresponds to a navigable menu item. */
+export function isMenuItemScreen(screenId: string): boolean {
+  return ALL_MENU_ITEM_IDS.has(screenId);
+}
 
 // Helper: initial sidebar section expansion based on current screen (so the correct dropdown stays open)
 export function getInitialSidebarExpanded(screenId: string): {

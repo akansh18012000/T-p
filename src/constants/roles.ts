@@ -55,24 +55,24 @@ export interface RoleInfo {
 
 export const USER_ROLES = {
   IT_ADMIN: {
-    roleName: "IT Admin",
+    roleName: "IT ADMIN",
     labelKey: "roles.itAdmin",
     // View-only: IT Admin can browse all pages but cannot edit/add/upload.
     permissions: VIEW_ONLY_PERMISSIONS,
   },
   IT_MEMBER: {
-    roleName: "IT Member",
+    roleName: "IT MEMBER",
     labelKey: "roles.itMember",
     // View-only: IT Member can browse all pages but cannot edit/add/upload.
     permissions: VIEW_ONLY_PERMISSIONS,
   },
   OPERATIONS_STAFF: {
-    roleName: "Operations Staff",
+    roleName: "OPERATION STAFF",
     labelKey: "roles.operationsStaff",
     permissions: FULL_ACCESS_PERMISSIONS,
   },
   BUSINESS_PLANNING: {
-    roleName: "Business Planning",
+    roleName: "BUSINESS PLANNING",
     labelKey: "roles.businessPlanning",
     permissions: FULL_ACCESS_PERMISSIONS,
   },
@@ -80,6 +80,32 @@ export const USER_ROLES = {
 
 export type UserRoleKey = keyof typeof USER_ROLES;
 export type UserRoleName = (typeof USER_ROLES)[UserRoleKey]["roleName"];
+
+/**
+ * Menu item / screen ids the Business Planning role is allowed to reach. This
+ * role only works with adjustment data, so the home page, the sidebar, and the
+ * route guard all hide/deny every other screen.
+ */
+export const BUSINESS_PLANNING_ALLOWED_ITEM_IDS: readonly string[] = [
+  "adjustment-data-upload",
+  "adjustment-file-deletion",
+];
+
+/**
+ * Whether a user with `roleName` may access the menu item / screen `itemId`.
+ * Business Planning is restricted to the adjustment upload + deletion screens;
+ * every other recognized role can access all menu items (admin items remain
+ * gated separately to IT Admin via `createMenuSections` / route guards).
+ */
+export function canAccessMenuItem(
+  roleName: string | null | undefined,
+  itemId: string,
+): boolean {
+  if (roleName === USER_ROLES.BUSINESS_PLANNING.roleName) {
+    return BUSINESS_PLANNING_ALLOWED_ITEM_IDS.includes(itemId);
+  }
+  return true;
+}
 
 /** Resolve the i18n label key for a backend role name (e.g. "IT Admin"). */
 export function getRoleLabelKey(roleName: string): string | undefined {

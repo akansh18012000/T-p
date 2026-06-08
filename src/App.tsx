@@ -28,12 +28,18 @@ import { ViewFileCacheProvider } from "./context/ViewFileCacheContext.js";
 import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { UserProvider, useUser } from "./context/UserContext.js";
-import { hasAssignedRole, isItAdmin } from "./constants/roles.js";
+import {
+  hasAssignedRole,
+  isItAdmin,
+  canAccessMenuItem,
+} from "./constants/roles.js";
 import { ResultsLoader } from "./components/shared/ResultsLoader.js";
 import { AppLayout } from "./components/AppLayout.js";
 import {
   createMenuSections,
   handleMenuItemNavigation,
+  getScreenIdFromPathname,
+  isMenuItemScreen,
   type MenuItem,
 } from "./config/menuConfig.js";
 import { useSidebar } from "./context/SidebarContext.js";
@@ -100,6 +106,19 @@ function ConditionalLayout() {
     return <Navigate to="/" replace />;
   }
 
+  // Role-restricted menu screens: redirect away from any menu screen the user's
+  // role cannot access (e.g. Business Planning may only open the adjustment
+  // upload/deletion screens). Utility/sub-flow routes are not menu screens and
+  // are left alone here.
+  const pathScreenId = getScreenIdFromPathname(pathname);
+  if (
+    pathScreenId &&
+    isMenuItemScreen(pathScreenId) &&
+    !canAccessMenuItem(user?.role_name, pathScreenId)
+  ) {
+    return <Navigate to="/" replace />;
+  }
+
   const showSidebar =
     pathname !== "/" &&
     !NO_SIDEBAR_PREFIX_PATHS.some((p) => pathname.startsWith(p));
@@ -109,6 +128,7 @@ function ConditionalLayout() {
     masterMaintenanceExpanded,
     adminExpanded,
     userIsItAdmin,
+    user?.role_name,
   );
 
   const handleSectionToggle = (sectionId: string) => {

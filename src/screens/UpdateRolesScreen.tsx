@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -18,7 +18,6 @@ import {
 } from "@mui/material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { useUser } from "../context/UserContext.js";
-import { USER_ROLES } from "../constants/roles.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
   StyledSnackbarAlert,
@@ -27,6 +26,7 @@ import {
   StyledFileListTableHeaderCell,
 } from "../components/shared/StyledComponents.js";
 
+const ROLES_API_URL = "/api/v1/roles";
 const USERS_ALL_API_URL = "/api/v1/users/all";
 const UPDATE_ROLE_API_URL = "/api/v1/user/update-role";
 
@@ -39,6 +39,12 @@ interface UserRow {
 interface UsersAllResponse {
   users: UserRow[];
   total_count: number;
+}
+
+interface Role {
+  role_id: string;
+  role_name: string;
+  description: string;
 }
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -106,6 +112,7 @@ export default function UpdateRolesScreen() {
   }, [t, setBreadcrumbItems]);
 
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [selectedEmail, setSelectedEmail] = useState("");
@@ -118,7 +125,16 @@ export default function UpdateRolesScreen() {
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<SnackbarSeverity>("success");
 
-  const roleOptions = useMemo(() => Object.values(USER_ROLES), []);
+  // Fetches the available roles and updates state. Callers own the page-wide
+  // loader and any error surfacing — this never raises a snackbar of its own.
+  const fetchRoles = async () => {
+    const res = await fetch(ROLES_API_URL);
+    if (!res.ok) {
+      throw new Error(`Roles HTTP ${res.status}`);
+    }
+    const json = (await res.json()) as Role[];
+    setRoles(json ?? []);
+  };
 
   // Fetches the user list and updates state. Callers own the page-wide loader
   // and any error surfacing — this never raises a snackbar of its own.
@@ -135,10 +151,13 @@ export default function UpdateRolesScreen() {
     void (async () => {
       setLoading(true);
       try {
+        // Load roles first (for the dropdown), then the user list — both run
+        // under the same page-wide loader.
+        await fetchRoles();
         await fetchUsers();
       } catch (e) {
-        // No snackbar for the get-users call, per requirements.
-        console.error("Failed to load users:", e);
+        // No snackbar for the initial load calls, per requirements.
+        console.error("Failed to load roles/users:", e);
       } finally {
         setLoading(false);
       }
@@ -234,9 +253,9 @@ export default function UpdateRolesScreen() {
             helperText={roleError}
             disabled={loading}
           >
-            {roleOptions.map((role) => (
-              <MenuItem key={role.roleName} value={role.roleName}>
-                {t(role.labelKey)}
+            {roles.map((role) => (
+              <MenuItem key={role.role_id} value={role.role_name}>
+                {role.role_name}
               </MenuItem>
             ))}
           </StyledSelectField>

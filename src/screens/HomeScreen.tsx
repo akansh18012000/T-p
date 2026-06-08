@@ -10,7 +10,11 @@ import {
   type MenuItem as MenuItemType,
 } from "../config/menuConfig.js";
 import { useUser } from "../context/UserContext.js";
-import { hasAssignedRole, isItAdmin } from "../constants/roles.js";
+import {
+  hasAssignedRole,
+  isItAdmin,
+  canAccessMenuItem,
+} from "../constants/roles.js";
 
 /* Local styled components - Home uses AppLayout (header, no sidebar) from App.tsx */
 const StyledContentInnerBox = styled(Box)(({ theme }) => ({
@@ -206,6 +210,15 @@ export default function HomeScreen() {
   const roleAssigned = hasAssignedRole(user?.role_name);
   const showAdminSection = isItAdmin(user?.role_name);
 
+  // Filter the menu cards by the user's role (e.g. Business Planning only sees
+  // the adjustment upload/deletion screens). Empty sections are hidden below.
+  const dataInputItems = DATA_INPUT_ITEMS.filter((item) =>
+    canAccessMenuItem(user?.role_name, item.id),
+  );
+  const masterMaintenanceItems = MASTER_MAINTENANCE_ITEMS.filter((item) =>
+    canAccessMenuItem(user?.role_name, item.id),
+  );
+
   const handleMenuItemClick = (item: MenuItemType) => {
     handleMenuItemNavigation(item, navigate, "home");
   };
@@ -213,7 +226,7 @@ export default function HomeScreen() {
   const renderDataInputCards = () => {
     return (
       <StyledGridContainer container spacing={2}>
-        {DATA_INPUT_ITEMS.map((item: MenuItemType) => {
+        {dataInputItems.map((item: MenuItemType) => {
           const IconComponent = item.icon;
           return (
             <Grid key={item.id}>
@@ -235,7 +248,7 @@ export default function HomeScreen() {
   const renderMasterMaintenanceCards = () => {
     return (
       <StyledGridContainer container spacing={2}>
-        {MASTER_MAINTENANCE_ITEMS.map((item: MenuItemType) => {
+        {masterMaintenanceItems.map((item: MenuItemType) => {
           const IconComponent = item.icon;
           return (
             <Grid key={item.id}>
@@ -309,27 +322,33 @@ export default function HomeScreen() {
       )}
 
       <StyledTwoColumnBox>
-        <StyledSectionBox>
-          <StyledSectionHeaderBox>
-            <StyledSectionTitle variant="h6">
-              {t("home.dataInput")}
-            </StyledSectionTitle>
-            <StyledSectionAccent />
-          </StyledSectionHeaderBox>
-          <StyledScrollBox>{renderDataInputCards()}</StyledScrollBox>
-        </StyledSectionBox>
+        {dataInputItems.length > 0 && (
+          <StyledSectionBox>
+            <StyledSectionHeaderBox>
+              <StyledSectionTitle variant="h6">
+                {t("home.dataInput")}
+              </StyledSectionTitle>
+              <StyledSectionAccent />
+            </StyledSectionHeaderBox>
+            <StyledScrollBox>{renderDataInputCards()}</StyledScrollBox>
+          </StyledSectionBox>
+        )}
 
-        <StyledDivider />
+        {dataInputItems.length > 0 && masterMaintenanceItems.length > 0 && (
+          <StyledDivider />
+        )}
 
-        <StyledSectionBox>
-          <StyledSectionHeaderBox>
-            <StyledSectionTitle variant="h6">
-              {t("home.masterMaintenance")}
-            </StyledSectionTitle>
-            <StyledSectionAccent />
-          </StyledSectionHeaderBox>
-          <StyledScrollBox>{renderMasterMaintenanceCards()}</StyledScrollBox>
-        </StyledSectionBox>
+        {masterMaintenanceItems.length > 0 && (
+          <StyledSectionBox>
+            <StyledSectionHeaderBox>
+              <StyledSectionTitle variant="h6">
+                {t("home.masterMaintenance")}
+              </StyledSectionTitle>
+              <StyledSectionAccent />
+            </StyledSectionHeaderBox>
+            <StyledScrollBox>{renderMasterMaintenanceCards()}</StyledScrollBox>
+          </StyledSectionBox>
+        )}
       </StyledTwoColumnBox>
     </StyledContentInnerBox>
   );
