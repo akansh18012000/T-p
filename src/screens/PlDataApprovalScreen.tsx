@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { CheckCircleOutline as CheckCircleOutlineIcon } from "@mui/icons-material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+import { useUser } from "../context/UserContext.js";
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -143,9 +144,19 @@ interface ApprovalHistoryRow {
   approvalDateTime: string;
 }
 
+// Formats a Date as "YYYY-MM-DD HH:MM:SS" in 24-hour local time.
+const formatApprovalDateTime = (date: Date): string => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+};
+
 export default function PlDataApprovalScreen() {
   const { t } = useTranslation();
   const { setBreadcrumbItems } = useBreadcrumbItems();
+  const { user } = useUser();
 
   useEffect(() => {
     setBreadcrumbItems([
@@ -155,12 +166,19 @@ export default function PlDataApprovalScreen() {
     return () => setBreadcrumbItems([]);
   }, [t, setBreadcrumbItems]);
 
-  // Approval history is empty for now; will be populated once the approval
-  // API is wired up.
-  const approvalHistory: ApprovalHistoryRow[] = [];
+  const [approvalHistory, setApprovalHistory] = useState<ApprovalHistoryRow[]>(
+    [],
+  );
 
   const handleApprove = () => {
-    // TODO: wire up the approval API; on success, refresh the approval history.
+    setApprovalHistory((prev) => [
+      ...prev,
+      {
+        approver: user?.username || "User",
+        status: "Pending",
+        approvalDateTime: formatApprovalDateTime(new Date()),
+      },
+    ]);
   };
 
   return (
