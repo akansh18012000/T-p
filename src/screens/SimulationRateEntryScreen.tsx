@@ -86,7 +86,6 @@ import {
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { useSidebar } from "../context/SidebarContext.js";
 import {
   useUploadContext,
   type UploadEntry,
@@ -366,8 +365,6 @@ const SimulationRateEntryScreen = () => {
     },
   ]);
 
-  const { closeSidebar } = useSidebar();
-
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const { setBreadcrumbItems } = useBreadcrumbItems();
 
@@ -635,10 +632,7 @@ TEST,GBP,JPY,185.75`;
               <StyledSearchEndBox>
                 <StyledPrimaryContainedButton
                   variant="contained"
-                  onClick={() => {
-                    closeSidebar();
-                    handleSearch();
-                  }}
+                  onClick={handleSearch}
                 >
                   Search
                 </StyledPrimaryContainedButton>

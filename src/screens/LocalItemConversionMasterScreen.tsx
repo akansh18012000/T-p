@@ -128,7 +128,6 @@ import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
-import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useManufacturerData } from "../context/ManufacturerDataContext.js";
@@ -285,7 +284,6 @@ function LocalItemConversionMasterScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { closeSidebar } = useSidebar();
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
@@ -1372,10 +1370,7 @@ function LocalItemConversionMasterScreen() {
                     />
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={handleSearch}
                       startIcon={<SearchIcon />}
                     >
                       {t("localItemConversion.search")}

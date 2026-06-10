@@ -71,7 +71,6 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
-import { useSidebar } from "../context/SidebarContext.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -268,7 +267,6 @@ function mapApiRowToResultRow(
 
 function AdjustmentDataFileDeletionScreen() {
   const { t } = useTranslation();
-  const { closeSidebar } = useSidebar();
   // View-only roles (IT Admin, IT Member) have canEdit=false, so the Delete
   // button stays disabled at all times for them.
   const { canEdit } = usePermissions();
@@ -588,10 +586,7 @@ function AdjustmentDataFileDeletionScreen() {
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={handleSearch}
                       startIcon={<SearchIcon />}
                     >
                       {t("adjustmentDataFileDeletion.search")}

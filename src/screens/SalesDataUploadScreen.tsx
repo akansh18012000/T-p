@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import {
   Button,
   Paper,
   IconButton,
+  InputAdornment,
   Chip,
   Link,
   Snackbar,
@@ -19,6 +20,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tabs,
   Tab,
   type AlertColor,
@@ -30,6 +32,7 @@ import {
   CheckCircleOutline,
   GetApp as GetAppIcon,
   Visibility as VisibilityIcon,
+  Clear as ClearIcon,
 } from "@mui/icons-material";
 import {
   useUploadContext,
@@ -45,7 +48,15 @@ import {
   type CsvViewNavigationState,
 } from "../utils/csvViewNavigation.js";
 import { parseCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
-import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
+import {
+  StyledSnackbarAlert,
+  StyledSearchBarBox,
+  StyledSearchBarInnerBox,
+  StyledSearchTextField,
+  StyledSearchIcon,
+  StyledSpacer,
+  StyledSearchResultCount,
+} from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { useViewFileCache } from "../context/ViewFileCacheContext.js";
@@ -63,6 +74,20 @@ const StyledHeaderCell = styled(TableCell)(({ theme }) => ({
   color: theme.palette.common.white,
   fontWeight: 600,
   border: `1px solid ${theme.palette.common.white}`,
+}));
+
+// Sort label sized for the white-on-color header: keeps label and arrow white
+// in every state (default arrow only appears on hover/active per MUI).
+const StyledHeaderSortLabel = styled(TableSortLabel)(({ theme }) => ({
+  color: theme.palette.common.white,
+  "&:hover": { color: theme.palette.common.white },
+  "&.Mui-active": { color: theme.palette.common.white },
+  "&.Mui-active .MuiTableSortLabel-icon": {
+    color: theme.palette.common.white,
+  },
+  "& .MuiTableSortLabel-icon": {
+    color: alpha(theme.palette.common.white, 0.7),
+  },
 }));
 
 const StyledBodyRow = styled(TableRow)<{ index: number }>(
@@ -638,6 +663,35 @@ function formatUploadTime(time: string): string {
   return dotIdx === -1 ? time : time.substring(0, dotIdx);
 }
 
+// Human-readable file size (e.g. "12.5 KB").
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+}
+
+// Sortable columns of the uploaded-files table (Actions is excluded).
+type UploadedFilesSortKey =
+  | "file_name"
+  | "file_size"
+  | "file_status"
+  | "uploaded_by"
+  | "upload_time";
+
+// Comparable value for a column. File name sorts by its displayed (stripped,
+// case-insensitive) form so ordering matches what the user sees.
+function getUploadedFileSortValue(
+  file: FetchedFile,
+  key: UploadedFilesSortKey,
+): string | number {
+  if (key === "file_name") {
+    return stripUploadIdSuffix(file.file_name).toLowerCase();
+  }
+  return file[key];
+}
+
 export default function SalesDataUploadScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -673,10 +727,52 @@ export default function SalesDataUploadScreen() {
     useState<AlertColor>("success");
   const [uploadedFiles, setUploadedFiles] = useState<FetchedFile[]>([]);
   const [loadingUploadedFiles, setLoadingUploadedFiles] = useState(false);
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [orderBy, setOrderBy] = useState<UploadedFilesSortKey | null>(null);
+  const [uploadedFilesSearch, setUploadedFilesSearch] = useState("");
   const [viewingFile, setViewingFile] = useState(false);
   const [downloadingFile, setDownloadingFile] = useState(false);
   const viewFileCache = useViewFileCache();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toggle sort direction when re-clicking the active column, else sort the
+  // newly selected column ascending.
+  const handleRequestSort = (property: UploadedFilesSortKey) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  // Search across the displayed columns, then sort. Matching the displayed
+  // (formatted) values keeps results consistent with what the user sees.
+  const visibleUploadedFiles = useMemo(() => {
+    const term = uploadedFilesSearch.trim().toLowerCase();
+    const filtered = term
+      ? uploadedFiles.filter((file) =>
+          [
+            stripUploadIdSuffix(file.file_name),
+            formatFileSize(file.file_size),
+            file.file_status,
+            file.uploaded_by,
+            formatUploadTime(file.upload_time),
+          ].some((field) => String(field).toLowerCase().includes(term)),
+        )
+      : uploadedFiles;
+
+    if (orderBy === null) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aValue = getUploadedFileSortValue(a, orderBy);
+      const bValue = getUploadedFileSortValue(b, orderBy);
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return order === "asc" ? aValue - bValue : bValue - aValue;
+      }
+      const as = String(aValue);
+      const bs = String(bValue);
+      return order === "asc"
+        ? as.localeCompare(bs, "ja-JP")
+        : bs.localeCompare(as, "ja-JP");
+    });
+  }, [uploadedFiles, uploadedFilesSearch, order, orderBy]);
 
   // Fetch the uploaded-files list every time the user opens the View tab.
   // Abort any in-flight request when the tab is left or the screen unmounts.
@@ -901,14 +997,6 @@ export default function SalesDataUploadScreen() {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       setDownloadingFile(false);
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const readFileAsText = (file: File): Promise<string> =>
@@ -1335,33 +1423,114 @@ export default function SalesDataUploadScreen() {
               {loadingUploadedFiles ? (
                 <ResultsLoader label={t("upload.loadingFiles")} />
               ) : uploadedFiles.length > 0 ? (
-                <StyledTableContainerViewTabWrapper>
+                <>
+                  <StyledSearchBarBox>
+                    <StyledSearchBarInnerBox>
+                      <StyledSearchTextField
+                        size="small"
+                        placeholder={t("upload.searchFilesPlaceholder")}
+                        value={uploadedFilesSearch}
+                        onChange={(e) =>
+                          setUploadedFilesSearch(e.target.value)
+                        }
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <StyledSearchIcon />
+                            </InputAdornment>
+                          ),
+                          endAdornment: uploadedFilesSearch && (
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                onClick={() => setUploadedFilesSearch("")}
+                              >
+                                <ClearIcon />
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <StyledSpacer />
+                      {uploadedFilesSearch && (
+                        <StyledSearchResultCount variant="body2">
+                          {t("upload.showingFilesFiltered", {
+                            filtered: visibleUploadedFiles.length,
+                            total: uploadedFiles.length,
+                          })}
+                        </StyledSearchResultCount>
+                      )}
+                    </StyledSearchBarInnerBox>
+                  </StyledSearchBarBox>
+                  {visibleUploadedFiles.length > 0 ? (
+                    <StyledTableContainerViewTabWrapper>
                   <TableContainer component={Paper} elevation={0}>
                     <Table stickyHeader>
                       <TableHead>
                         <TableRow>
                           <StyledHeaderCell>
-                            {t("upload.fileName")}
+                            <StyledHeaderSortLabel
+                              active={orderBy === "file_name"}
+                              direction={
+                                orderBy === "file_name" ? order : "asc"
+                              }
+                              onClick={() => handleRequestSort("file_name")}
+                            >
+                              {t("upload.fileName")}
+                            </StyledHeaderSortLabel>
                           </StyledHeaderCell>
                           <StyledHeaderCell>
-                            {t("upload.size")}
+                            <StyledHeaderSortLabel
+                              active={orderBy === "file_size"}
+                              direction={
+                                orderBy === "file_size" ? order : "asc"
+                              }
+                              onClick={() => handleRequestSort("file_size")}
+                            >
+                              {t("upload.size")}
+                            </StyledHeaderSortLabel>
                           </StyledHeaderCell>
                           <StyledHeaderCell>
-                            {t("upload.status")}
+                            <StyledHeaderSortLabel
+                              active={orderBy === "file_status"}
+                              direction={
+                                orderBy === "file_status" ? order : "asc"
+                              }
+                              onClick={() => handleRequestSort("file_status")}
+                            >
+                              {t("upload.status")}
+                            </StyledHeaderSortLabel>
                           </StyledHeaderCell>
                           <StyledHeaderCell>
-                            {t("upload.uploadedBy")}
+                            <StyledHeaderSortLabel
+                              active={orderBy === "uploaded_by"}
+                              direction={
+                                orderBy === "uploaded_by" ? order : "asc"
+                              }
+                              onClick={() => handleRequestSort("uploaded_by")}
+                            >
+                              {t("upload.uploadedBy")}
+                            </StyledHeaderSortLabel>
                           </StyledHeaderCell>
                           <StyledHeaderCell>
-                            {t("upload.uploadDate")}
+                            <StyledHeaderSortLabel
+                              active={orderBy === "upload_time"}
+                              direction={
+                                orderBy === "upload_time" ? order : "asc"
+                              }
+                              onClick={() => handleRequestSort("upload_time")}
+                            >
+                              {t("upload.uploadDate")}
+                            </StyledHeaderSortLabel>
                           </StyledHeaderCell>
+                          {/* Actions column is intentionally not sortable. */}
                           <StyledHeaderCell align="center">
                             {t("upload.actions")}
                           </StyledHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {uploadedFiles.map((file, index) => {
+                        {visibleUploadedFiles.map((file, index) => {
                           const fileInfo = getFileIcon(file.file_name);
                           const IconComponent = fileInfo.icon;
                           const displayName = stripUploadIdSuffix(
@@ -1442,7 +1611,16 @@ export default function SalesDataUploadScreen() {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                </StyledTableContainerViewTabWrapper>
+                  </StyledTableContainerViewTabWrapper>
+                  ) : (
+                    <StyledEmptyStateBox>
+                      <StyledEmptyStateIcon />
+                      <StyledEmptyStateTitle variant="h6">
+                        {t("upload.noMatchingFiles")}
+                      </StyledEmptyStateTitle>
+                    </StyledEmptyStateBox>
+                  )}
+                </>
               ) : (
                 <StyledEmptyStateBox>
                   <StyledEmptyStateIcon />

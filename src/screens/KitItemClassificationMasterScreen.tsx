@@ -112,7 +112,6 @@ import {
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
-import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { usePermissions } from "../hooks/usePermissions.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
@@ -209,7 +208,6 @@ export default function KitItemClassificationMasterScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { closeSidebar } = useSidebar();
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
   const { selectedFile } = getUploadState(screenKey);
@@ -1050,10 +1048,7 @@ export default function KitItemClassificationMasterScreen() {
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={() => handleSearch()}
                       startIcon={<SearchIcon />}
                     >
                       {t("kitItemClassification.search")}

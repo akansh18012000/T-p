@@ -104,7 +104,6 @@ import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
-import { useSidebar } from "../context/SidebarContext.js";
 
 // Screen-specific table components (white borders for this screen)
 const StyledTableHeaderCell = styled(TableCell)<{
@@ -444,7 +443,6 @@ function defaultSalesDate(): Date {
 export default function SalesDataErrorCorrectionScreen() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { closeSidebar } = useSidebar();
 
   // View-only roles (IT Admin, IT Member) can't mutate data — Register and
   // Delete are disabled for them at all times, regardless of selection/edit
@@ -639,7 +637,6 @@ export default function SalesDataErrorCorrectionScreen() {
     if (!validateMandatoryFields()) {
       return;
     }
-    closeSidebar();
     setFieldErrors({});
     setSearchExecuted(true);
     setLoading(true);

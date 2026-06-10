@@ -45,7 +45,6 @@ import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
-import { useSidebar } from "../context/SidebarContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useLocalCustomerData } from "../context/LocalCustomerDataContext.js";
 import { useProductClassificationData } from "../context/ProductClassificationDataContext.js";
@@ -283,7 +282,6 @@ const ScrollableTableDataCell = styled(StyledTableDataCell)(
 
 export default function GlobalDadMasterScreen() {
   const { t, i18n } = useTranslation();
-  const { closeSidebar } = useSidebar();
   const { canEdit, canAdd } = usePermissions();
 
   // Dropdown option data comes from shared contexts (each fetched at most once
@@ -1343,10 +1341,7 @@ export default function GlobalDadMasterScreen() {
                     />
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={() => handleSearch()}
                       startIcon={<SearchIcon />}
                     >
                       {t("globalDadMaster.search")}

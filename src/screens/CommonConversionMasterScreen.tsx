@@ -109,7 +109,6 @@ import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
-import { useSidebar } from "../context/SidebarContext.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
@@ -244,7 +243,6 @@ function getEmptyCsvData(): CsvData {
 export default function CommonConversionMasterScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { closeSidebar } = useSidebar();
   const location = useLocation();
   const screenKey = location.pathname;
   const { getUploadState, setSelectedFile } = useUploadContext();
@@ -1259,10 +1257,7 @@ export default function CommonConversionMasterScreen() {
                     />
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={() => handleSearch()}
                       startIcon={<SearchIcon />}
                     >
                       {t("commonConversionMaster.search")}

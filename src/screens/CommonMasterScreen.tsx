@@ -38,7 +38,6 @@ import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
-import { useSidebar } from "../context/SidebarContext.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -193,7 +192,6 @@ const paginatedListboxSlotProps = {
 
 export default function CommonMasterScreen() {
   const { t, i18n } = useTranslation();
-  const { closeSidebar } = useSidebar();
   const { canEdit, canAdd } = usePermissions();
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -1013,10 +1011,7 @@ export default function CommonMasterScreen() {
                     />
                     <StyledSearchButton
                       variant="contained"
-                      onClick={() => {
-                        closeSidebar();
-                        handleSearch();
-                      }}
+                      onClick={handleSearch}
                       startIcon={<SearchIcon />}
                     >
                       {t("commonMaster.search")}
