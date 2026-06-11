@@ -382,7 +382,8 @@
     "yearMonthHeader": "年月",
     "fileNameHeader": "ファイル名",
     "usernameHeader": "ユーザー名",
-    "dateTimeHeader": "日時"
+    "dateTimeHeader": "日時",
+    "numberOfRecordsHeader": "レコード数"
   },
   "localItemConversion": {
     "searchCondition": "検索条件",

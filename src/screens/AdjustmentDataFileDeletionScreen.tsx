@@ -223,6 +223,7 @@ interface ResultRow {
   fileName: string;
   username: string;
   dateTime: string;
+  numberOfRecords: number | null;
   selected: boolean;
 }
 
@@ -237,6 +238,7 @@ interface AdjustmentDataDeletionSearchRow {
   username: string;
   date_and_time: string;
   year_and_month: string | null;
+  total_rows: number | null;
 }
 
 const ADJUSTMENT_DATA_DELETION_SEARCH_API_URL =
@@ -260,6 +262,7 @@ function mapApiRowToResultRow(
     fileName: raw.file_name ?? "",
     username: raw.username ?? "",
     dateTime: raw.date_and_time ?? "",
+    numberOfRecords: raw.total_rows ?? null,
     selected: false,
   };
 }
@@ -720,20 +723,25 @@ function AdjustmentDataFileDeletionScreen() {
                                   </StyledTableBodyIndexCell>
                                   {ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS.map(
                                     (col) => {
-                                      const rawValue =
-                                        row[
-                                          col.key as keyof Pick<
-                                            ResultRow,
-                                            | "yearMonth"
-                                            | "fileName"
-                                            | "username"
-                                            | "dateTime"
-                                          >
-                                        ];
-                                      const cellValue =
-                                        col.key === "dateTime"
-                                          ? formatDateTimeForDisplay(rawValue)
-                                          : rawValue;
+                                      let cellValue: string | number;
+                                      if (col.key === "dateTime") {
+                                        cellValue = formatDateTimeForDisplay(
+                                          row.dateTime,
+                                        );
+                                      } else if (
+                                        col.key === "numberOfRecords"
+                                      ) {
+                                        // null → render an empty cell
+                                        cellValue = row.numberOfRecords ?? "";
+                                      } else {
+                                        cellValue =
+                                          row[
+                                            col.key as keyof Pick<
+                                              ResultRow,
+                                              "yearMonth" | "fileName" | "username"
+                                            >
+                                          ];
+                                      }
                                       return (
                                         <StyledTableDataCell key={col.key}>
                                           <StyledTableCellTypography variant="body2">

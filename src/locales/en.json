@@ -382,7 +382,8 @@
     "yearMonthHeader": "Year and Month",
     "fileNameHeader": "File Name",
     "usernameHeader": "Username",
-    "dateTimeHeader": "Date and Time"
+    "dateTimeHeader": "Date and Time",
+    "numberOfRecordsHeader": "Number of Records"
   },
   "localItemConversion": {
     "searchCondition": "Search Condition",
