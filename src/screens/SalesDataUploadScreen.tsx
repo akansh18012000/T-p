@@ -81,6 +81,10 @@ const StyledHeaderCell = styled(TableCell)(({ theme }) => ({
 const StyledHeaderSortLabel = styled(TableSortLabel)(({ theme }) => ({
   color: theme.palette.common.white,
   "&:hover": { color: theme.palette.common.white },
+  "&:hover .MuiTableSortLabel-icon": {
+    color: theme.palette.common.white,
+    opacity: 1,
+  },
   "&.Mui-active": { color: theme.palette.common.white },
   "&.Mui-active .MuiTableSortLabel-icon": {
     color: theme.palette.common.white,
@@ -750,9 +754,6 @@ export default function SalesDataUploadScreen() {
     const filtered = term
       ? uploadedFiles.filter((file) =>
           [
-            stripUploadIdSuffix(file.file_name),
-            formatFileSize(file.file_size),
-            file.file_status,
             file.uploaded_by,
             formatUploadTime(file.upload_time),
           ].some((field) => String(field).toLowerCase().includes(term)),
