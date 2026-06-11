@@ -386,6 +386,11 @@ export const ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS: I18nColumnConfig[] =
       labelKey: "adjustmentDataFileDeletion.dateTimeHeader",
       editable: false,
     },
+    {
+      key: "numberOfRecords",
+      labelKey: "adjustmentDataFileDeletion.numberOfRecordsHeader",
+      editable: false,
+    },
   ];
 // AI Generated Code by Deloitte + Cursor (END)
 
