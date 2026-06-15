@@ -1,7 +1,11 @@
 /**
  * Utility for navigating to CSV Upload Confirmation screen
  */
-import { parseCsv, type CsvData } from "./csvUtils.js";
+import {
+  parseCsv,
+  readFileWithDetectedEncoding,
+  type CsvData,
+} from "./csvUtils.js";
 
 export interface CsvViewNavigationState {
   csvData: CsvData;
@@ -37,12 +41,11 @@ export async function navigateToCsvView(
   }
 
   try {
-    const text = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(file, "UTF-8");
-    });
+    // Detect the file's encoding (UTF-8 / UTF-16 / CP932) before parsing so
+    // Shift-JIS Japanese files render correctly in the viewer instead of being
+    // forced through UTF-8. Mirrors the upload-time detection.
+    const { text, encoding } = await readFileWithDetectedEncoding(file);
+    console.log(`File: ${file.name} | Using encoding: ${encoding}`);
 
     const parsed = await parseCsv(text);
     navigate("/uploaded-csv-preview", {
