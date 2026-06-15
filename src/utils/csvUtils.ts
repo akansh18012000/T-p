@@ -61,6 +61,72 @@ export async function parseCsv(
   }
 }
 
+export interface DecodedFile {
+  /** The file contents decoded to a JS string. */
+  text: string;
+  /** The encoding that was used to decode (for logging/diagnostics). */
+  encoding: string;
+}
+
+/**
+ * Read a file and decode it to text, detecting its character encoding first.
+ *
+ * Browser port of the backend ingestion logic (chardet → normalize → decode).
+ * The data is predominantly Japanese, so the realistic choice is between
+ * UTF-8 (with/without BOM) and Shift-JIS / CP932. Instead of shipping a
+ * statistical detector we decide deterministically — which is actually more
+ * reliable than chardet for this binary choice:
+ *
+ *   1. Honor a leading BOM (UTF-8 / UTF-16 LE / UTF-16 BE).
+ *   2. Otherwise try a *strict* UTF-8 decode. If every byte is valid UTF-8 we
+ *      use it (plain ASCII is a subset, so ASCII files take this path too).
+ *   3. Fall back to Shift-JIS. The browser's TextDecoder maps the "shift-jis"
+ *      label to Windows-31J (CP932) — the same superset the backend uses, so
+ *      it handles vendor-specific / full-width characters Shift-JIS misses.
+ */
+export async function readFileWithDetectedEncoding(
+  file: Blob,
+): Promise<DecodedFile> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  // 1. BOM sniffing. TextDecoder strips a leading BOM from the output.
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xef &&
+    bytes[1] === 0xbb &&
+    bytes[2] === 0xbf
+  ) {
+    return { text: new TextDecoder('utf-8').decode(bytes), encoding: 'UTF-8' };
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return {
+      text: new TextDecoder('utf-16le').decode(bytes),
+      encoding: 'UTF-16LE',
+    };
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return {
+      text: new TextDecoder('utf-16be').decode(bytes),
+      encoding: 'UTF-16BE',
+    };
+  }
+
+  // 2. Strict UTF-8 attempt (also covers pure ASCII). `fatal: true` throws on
+  // the first byte that isn't valid UTF-8, which is our signal to fall back.
+  // We validate the whole buffer (not just a 10KB sample) so a multibyte
+  // character straddling the sample boundary can't trigger a false negative.
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return { text, encoding: 'UTF-8' };
+  } catch {
+    // 3. Fall back to Shift-JIS → CP932 (Windows-31J).
+    return {
+      text: new TextDecoder('shift-jis').decode(bytes),
+      encoding: 'CP932',
+    };
+  }
+}
+
 /**
  * Split CSV text into logical record lines, treating newlines inside
  * quoted fields as part of the field (not as record separators).

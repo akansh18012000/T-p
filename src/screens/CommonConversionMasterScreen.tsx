@@ -1509,8 +1509,7 @@ export default function CommonConversionMasterScreen() {
                                             searchOptions={systemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.systemId")}
                                           />
-                                        ) : colIndex === itemNameColIndex ||
-                                          colIndex === abstractColIndex ? (
+                                        ) : colIndex === itemNameColIndex ? (
                                           <SearchableCell
                                             value={cell}
                                             onChange={() => {}}

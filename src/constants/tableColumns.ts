@@ -882,7 +882,7 @@ export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "preConversionName2", labelKey: "commonConversionMaster.preConversionName2", editable: true },
   { key: "convertedCode", labelKey: "commonConversionMaster.convertedCode", editable: true },
   { key: "convertedName", labelKey: "commonConversionMaster.convertedName", editable: true },
-  { key: "abstract", labelKey: "commonConversionMaster.abstract", editable: false },
+  { key: "abstract", labelKey: "commonConversionMaster.abstract", editable: true },
   { key: "reserve1", labelKey: "commonConversionMaster.reserve1", editable: true },
   { key: "reserve2", labelKey: "commonConversionMaster.reserve2", editable: true },
   { key: "reserve3", labelKey: "commonConversionMaster.reserve3", editable: true },
