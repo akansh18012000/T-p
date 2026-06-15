@@ -217,7 +217,7 @@ function FxRateEntryMasterScreen() {
   const originalRowsRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -445,11 +445,45 @@ function FxRateEntryMasterScreen() {
       return;
     }
 
-    const hasEmptyField = rowsToSubmit.some((row) =>
-      row.some((cell) => cell === undefined || cell === null || String(cell).trim() === ""),
-    );
-    if (hasEmptyField) {
-      setSnackbarMessage(t("fxRateEntryMaster.validationEmptyFields"));
+    // Every column is required. Collect, per row, the names of the empty
+    // columns so the error can list them.
+    const missingByRow: { row: number; fields: string[] }[] = [];
+    [...createdRowIndices, ...updatedRowIndices].forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (!row) return;
+      const missingFields = FX_RATE_ENTRY_MASTER_COLUMNS
+        .filter((_col, ci) => String(row[ci] ?? "").trim() === "")
+        .map((col) => t(col.labelKey));
+      if (missingFields.length > 0) {
+        missingByRow.push({ row: idx + 1, fields: missingFields });
+      }
+    });
+    if (missingByRow.length > 0) {
+      missingByRow.sort((a, b) => a.row - b.row);
+      if (missingByRow.length === 1) {
+        setSnackbarMessage(
+          t("fxRateEntryMaster.requiredFieldsMissingSingle", {
+            row: missingByRow[0].row,
+            fields: missingByRow[0].fields.join(", "),
+          }),
+        );
+      } else {
+        setSnackbarMessage(
+          <Box component="span">
+            {t("fxRateEntryMaster.requiredFieldsMissingMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {missingByRow.map((m) => (
+                <li key={m.row}>
+                  {t("fxRateEntryMaster.requiredFieldsMissingRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+        );
+      }
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

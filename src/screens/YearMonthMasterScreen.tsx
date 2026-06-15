@@ -7,6 +7,7 @@ import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import {
+  Box,
   TableBody,
   TableHead,
   TableRow,
@@ -170,7 +171,7 @@ function YearMonthMasterScreen() {
   const [rows, setRows] = useState<string[][]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -365,12 +366,43 @@ function YearMonthMasterScreen() {
     }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
-    const missingRequired = targetIndices.some((idx) => {
+    const missingByRow: { row: number; fields: string[] }[] = [];
+    targetIndices.forEach((idx) => {
       const r = rows[idx];
-      return EDITABLE_COL_INDICES.some((c) => !r[c].trim());
+      if (!r) return;
+      const missingFields = EDITABLE_COL_INDICES.filter(
+        (c) => !(r[c] ?? "").trim(),
+      ).map((c) => t(YEAR_MONTH_MASTER_COLUMNS[c].labelKey));
+      if (missingFields.length > 0) {
+        missingByRow.push({ row: idx + 1, fields: missingFields });
+      }
     });
-    if (missingRequired) {
-      setSnackbarMessage(t("yearMonthMaster.requiredFieldsError"));
+    if (missingByRow.length > 0) {
+      missingByRow.sort((a, b) => a.row - b.row);
+      if (missingByRow.length === 1) {
+        setSnackbarMessage(
+          t("yearMonthMaster.requiredFieldsMissingSingle", {
+            row: missingByRow[0].row,
+            fields: missingByRow[0].fields.join(", "),
+          }),
+        );
+      } else {
+        setSnackbarMessage(
+          <Box component="span">
+            {t("yearMonthMaster.requiredFieldsMissingMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {missingByRow.map((m) => (
+                <li key={m.row}>
+                  {t("yearMonthMaster.requiredFieldsMissingRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+        );
+      }
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

@@ -760,7 +760,7 @@ export default function StandardCostMasterScreen() {
   const searchSnapshotRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -1014,20 +1014,43 @@ export default function StandardCostMasterScreen() {
     const rows = csvData.rows;
 
     // 2. Required-field validation.
-    const missingRequiredRows: number[] = [];
+    const missingByRow: { row: number; fields: string[] }[] = [];
     targetIndices.forEach((idx) => {
       const row = rows[idx];
       if (!row) return;
-      const missing = REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
-      if (missing) missingRequiredRows.push(idx + 1);
+      const missingFields = REQUIRED_COL_INDICES.filter(
+        (c) => !(row[c] ?? "").trim(),
+      ).map((c) => t(STANDARD_COST_MASTER_COLUMNS[c].labelKey));
+      if (missingFields.length > 0) {
+        missingByRow.push({ row: idx + 1, fields: missingFields });
+      }
     });
-    if (missingRequiredRows.length > 0) {
-      missingRequiredRows.sort((a, b) => a - b);
-      setSnackbarMessage(
-        t("standardCostMaster.requiredFieldsMissing", {
-          rows: formatRowList(missingRequiredRows),
-        }),
-      );
+    if (missingByRow.length > 0) {
+      missingByRow.sort((a, b) => a.row - b.row);
+      if (missingByRow.length === 1) {
+        setSnackbarMessage(
+          t("standardCostMaster.requiredFieldsMissingSingle", {
+            row: missingByRow[0].row,
+            fields: missingByRow[0].fields.join(", "),
+          }),
+        );
+      } else {
+        setSnackbarMessage(
+          <Box component="span">
+            {t("standardCostMaster.requiredFieldsMissingMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {missingByRow.map((m) => (
+                <li key={m.row}>
+                  {t("standardCostMaster.requiredFieldsMissingRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+        );
+      }
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

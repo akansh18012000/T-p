@@ -374,7 +374,7 @@ export default function CommonMasterScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -629,12 +629,43 @@ export default function CommonMasterScreen() {
     }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
-    if (
-      targetIndices.some(
-        (idx) => !csvData.rows[idx][groupIdColIndex].trim(),
-      )
-    ) {
-      setSnackbarMessage(t("commonMaster.groupIdRequired"));
+    const missingByRow: { row: number; fields: string[] }[] = [];
+    targetIndices.forEach((idx) => {
+      const row = csvData.rows[idx];
+      if (!row) return;
+      if (!(row[groupIdColIndex] ?? "").trim()) {
+        missingByRow.push({
+          row: idx + 1,
+          fields: [t(COMMON_MASTER_COLUMNS[groupIdColIndex].labelKey)],
+        });
+      }
+    });
+    if (missingByRow.length > 0) {
+      missingByRow.sort((a, b) => a.row - b.row);
+      if (missingByRow.length === 1) {
+        setSnackbarMessage(
+          t("commonMaster.requiredFieldsMissingSingle", {
+            row: missingByRow[0].row,
+            fields: missingByRow[0].fields.join(", "),
+          }),
+        );
+      } else {
+        setSnackbarMessage(
+          <Box component="span">
+            {t("commonMaster.requiredFieldsMissingMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {missingByRow.map((m) => (
+                <li key={m.row}>
+                  {t("commonMaster.requiredFieldsMissingRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+        );
+      }
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;

@@ -500,7 +500,7 @@ function LocalItemConversionMasterScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -750,20 +750,43 @@ function LocalItemConversionMasterScreen() {
 
     // 2. Required-field validation. All fields are required except Global Item
     // Type, Location Code and Location Name.
-    const missingRequiredRows: number[] = [];
+    const missingByRow: { row: number; fields: string[] }[] = [];
     targetIndices.forEach((idx) => {
       const row = csvData.rows[idx];
       if (!row) return;
-      const missing = REQUIRED_COL_INDICES.some((c) => !(row[c] ?? "").trim());
-      if (missing) missingRequiredRows.push(idx + 1);
+      const missingFields = REQUIRED_COL_INDICES.filter(
+        (c) => !(row[c] ?? "").trim(),
+      ).map((c) => t(LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[c].labelKey));
+      if (missingFields.length > 0) {
+        missingByRow.push({ row: idx + 1, fields: missingFields });
+      }
     });
-    if (missingRequiredRows.length > 0) {
-      missingRequiredRows.sort((a, b) => a - b);
-      setSnackbarMessage(
-        t("localItemConversion.requiredFieldsMissing", {
-          rows: formatRowList(missingRequiredRows),
-        }),
-      );
+    if (missingByRow.length > 0) {
+      missingByRow.sort((a, b) => a.row - b.row);
+      if (missingByRow.length === 1) {
+        setSnackbarMessage(
+          t("localItemConversion.requiredFieldsMissingSingle", {
+            row: missingByRow[0].row,
+            fields: missingByRow[0].fields.join(", "),
+          }),
+        );
+      } else {
+        setSnackbarMessage(
+          <Box component="span">
+            {t("localItemConversion.requiredFieldsMissingMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {missingByRow.map((m) => (
+                <li key={m.row}>
+                  {t("localItemConversion.requiredFieldsMissingRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+        );
+      }
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;
