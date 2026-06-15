@@ -138,6 +138,7 @@ import {
   parseCsv,
   stringifyCsv,
   validateCsvColumns,
+  readFileWithDetectedEncoding,
   type CsvData,
 } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
@@ -984,12 +985,8 @@ function LocalItemConversionMasterScreen() {
 
     let parsed: CsvData;
     try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string) || "");
-        reader.onerror = reject;
-        reader.readAsText(selectedFile, "UTF-8");
-      });
+      const { text, encoding } = await readFileWithDetectedEncoding(selectedFile);
+      console.log(`File: ${selectedFile.name} | Using encoding: ${encoding}`);
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");

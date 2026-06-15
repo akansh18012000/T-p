@@ -32,7 +32,11 @@ import {
   isCsvFile,
   filterCsvFiles,
 } from "../utils/csvViewNavigation.js";
-import { parseCsv, validateCsvColumns } from "../utils/csvUtils.js";
+import {
+  parseCsv,
+  validateCsvColumns,
+  readFileWithDetectedEncoding,
+} from "../utils/csvUtils.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
@@ -293,13 +297,13 @@ export default function StravisCoaHierarchyUploadScreen() {
     removeEntry(screenKey, id);
   };
 
-  const readFileAsText = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || "");
-      reader.onerror = reject;
-      reader.readAsText(file, "UTF-8");
-    });
+  // Read a file as text, auto-detecting its encoding (UTF-8 / UTF-16 / CP932)
+  // so Shift-JIS Japanese files validate correctly. Mirrors the other screens.
+  const readFileAsText = async (file: File): Promise<string> => {
+    const { text, encoding } = await readFileWithDetectedEncoding(file);
+    console.log(`File: ${file.name} | Using encoding: ${encoding}`);
+    return text;
+  };
 
   const handleUploadClick = async () => {
     const uploads = getUploadState(screenKey).entries;

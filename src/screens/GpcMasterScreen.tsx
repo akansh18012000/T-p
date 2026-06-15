@@ -114,7 +114,7 @@ import { useManufacturerData } from "../context/ManufacturerDataContext.js";
 import { useGpcData } from "../context/GpcDataContext.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 
 const GPC_MASTER_SEARCH_API_URL = "/api/v1/item-cls-linkage/search";
@@ -1213,12 +1213,8 @@ export default function GpcMasterScreen() {
 
     let parsed: CsvData;
     try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string) || "");
-        reader.onerror = reject;
-        reader.readAsText(selectedFile, "UTF-8");
-      });
+      const { text, encoding } = await readFileWithDetectedEncoding(selectedFile);
+      console.log(`File: ${selectedFile.name} | Using encoding: ${encoding}`);
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");

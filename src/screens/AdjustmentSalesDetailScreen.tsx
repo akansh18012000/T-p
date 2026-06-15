@@ -52,6 +52,7 @@ import { navigateToCsvView, isCsvFile } from "../utils/csvViewNavigation.js";
 import {
   parseCsv,
   validateCsvColumns,
+  readFileWithDetectedEncoding,
   type CsvData as CsvDataType,
 } from "../utils/csvUtils.js";
 import {
@@ -627,12 +628,8 @@ export default function AdjustmentSalesDetailScreen() {
 
     let parsed: CsvDataType;
     try {
-      const text = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string) || "");
-        reader.onerror = reject;
-        reader.readAsText(selectedFile, "UTF-8");
-      });
+      const { text, encoding } = await readFileWithDetectedEncoding(selectedFile);
+      console.log(`File: ${selectedFile.name} | Using encoding: ${encoding}`);
       parsed = (await parseCsv(text)) as CsvDataType;
     } catch {
       setUploadStatus("idle");
