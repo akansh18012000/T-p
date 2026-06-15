@@ -128,8 +128,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               size="small"
               variant="outlined"
             >
-              <MenuItem value="en">EN</MenuItem>
-              <MenuItem value="ja">JP</MenuItem>
+              <MenuItem value="en">{t("login.languageEnglish")}</MenuItem>
+              <MenuItem value="ja">{t("login.languageJapanese")}</MenuItem>
             </StyledLanguageSelect>
           )}
         </StyledControlsBox>

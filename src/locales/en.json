@@ -12,7 +12,9 @@
     "signIn": "Sign In",
     "signingIn": "Signing in...",
     "error": "Failed to sign in. Please try again.",
-    "language": "Language"
+    "language": "Language",
+    "languageEnglish": "English",
+    "languageJapanese": "日本語"
   },
   "home": {
     "title": "Performance Management",

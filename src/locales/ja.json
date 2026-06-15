@@ -12,7 +12,9 @@
     "signIn": "サインイン",
     "signingIn": "サインイン中...",
     "error": "サインインに失敗しました。もう一度お試しください。",
-    "language": "言語"
+    "language": "言語",
+    "languageEnglish": "English",
+    "languageJapanese": "日本語"
   },
   "home": {
     "title": "パフォーマンス管理",
