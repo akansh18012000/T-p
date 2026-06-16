@@ -656,6 +656,31 @@ interface FetchFilesResponse {
   files?: FetchedFile[];
 }
 
+// Per-file result returned by /api/v1/upload. `file_status` is "DUPLICATE" when
+// the backend rejected the file because identical content already exists; in
+// that case `duplicate_file_name` carries the stored name of the existing file.
+interface UploadResultFile {
+  upload_id: string;
+  file_id: string | null;
+  file_name: string;
+  file_size: number;
+  file_status: string;
+  file_path: string;
+  file_hash: string;
+  total_rows: number | null;
+  duplicate_file_name?: string | null;
+  error_message?: string | null;
+}
+
+interface UploadApiResponse {
+  transaction_id: string;
+  total_files: number;
+  upload_status: string;
+  files?: UploadResultFile[];
+}
+
+const DUPLICATE_FILE_STATUS = "DUPLICATE";
+
 // Strip the trailing `_<upload-id>` segment the backend appends to stored
 // filenames so the UI shows the user-supplied name. Removes the last
 // underscore and everything after it.
@@ -734,6 +759,12 @@ export default function SalesDataUploadScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<AlertColor>("success");
+  // A second, independent snackbar dedicated to duplicate-file errors so it can
+  // be shown at the same time as the success snackbar when an upload contains a
+  // mix of new and duplicate files.
+  const [duplicateSnackbarOpen, setDuplicateSnackbarOpen] = useState(false);
+  const [duplicateSnackbarMessage, setDuplicateSnackbarMessage] =
+    useState<ReactNode>("");
   const [uploadedFiles, setUploadedFiles] = useState<FetchedFile[]>([]);
   const [loadingUploadedFiles, setLoadingUploadedFiles] = useState(false);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
@@ -821,6 +852,11 @@ export default function SalesDataUploadScreen() {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
+  };
+
+  const showDuplicateSnackbar = (message: ReactNode) => {
+    setDuplicateSnackbarMessage(message);
+    setDuplicateSnackbarOpen(true);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -1116,12 +1152,95 @@ export default function SalesDataUploadScreen() {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error(`Upload API responded ${response.status}`);
+      // The backend reports per-file outcomes in the JSON body even when the
+      // overall upload_status is FAILED (e.g. every file was a duplicate), so
+      // parse the body before deciding how to react to the HTTP status.
+      let json: UploadApiResponse | null = null;
+      try {
+        json = (await response.json()) as UploadApiResponse;
+      } catch {
+        json = null;
       }
 
+      const resultFiles =
+        json && Array.isArray(json.files) ? json.files : [];
+
+      // No per-file details to act on: fall back to the HTTP status.
+      if (resultFiles.length === 0) {
+        if (!response.ok) {
+          throw new Error(`Upload API responded ${response.status}`);
+        }
+        setEntries(screenKey, []);
+        showSnackbar(t("upload.uploadSuccess"), "success");
+        return;
+      }
+
+      const duplicates = resultFiles.filter(
+        (f) => f.file_status === DUPLICATE_FILE_STATUS,
+      );
+      const successful = resultFiles.filter(
+        (f) => f.file_status !== DUPLICATE_FILE_STATUS,
+      );
+
       setEntries(screenKey, []);
-      showSnackbar(t("upload.uploadSuccess"), "success");
+
+      if (duplicates.length === 0) {
+        // Every file uploaded — keep the existing single success message.
+        showSnackbar(t("upload.uploadSuccess"), "success");
+      } else {
+        // Mixed (or all-duplicate): a success snackbar listing the files that
+        // went through (if any), plus an error snackbar for the duplicates.
+        if (successful.length > 0) {
+          showSnackbar(
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, marginBottom: 0.5 }}
+              >
+                {t("upload.uploadSuccessHeader")}
+              </Typography>
+              <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
+                {successful.map((f) => (
+                  <li key={f.upload_id}>{f.file_name}</li>
+                ))}
+              </Box>
+            </Box>,
+            "success",
+          );
+        }
+
+        showDuplicateSnackbar(
+          duplicates.length === 1 ? (
+            t("upload.duplicateFileMessage", {
+              file: duplicates[0].file_name,
+              duplicate: stripUploadIdSuffix(
+                duplicates[0].duplicate_file_name ?? "",
+              ),
+            })
+          ) : (
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, marginBottom: 0.5 }}
+              >
+                {t("upload.duplicateFilesHeader")}
+              </Typography>
+              <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
+                {duplicates.map((f) => (
+                  <li key={f.upload_id}>
+                    {t("upload.duplicateFileLine", {
+                      file: f.file_name,
+                      duplicate: stripUploadIdSuffix(
+                        f.duplicate_file_name ?? "",
+                      ),
+                    })}
+                  </li>
+                ))}
+              </Box>
+            </Box>
+          ),
+        );
+      }
     } catch (error) {
       console.error("Upload API error:", error);
       uploads.forEach((upload) =>
@@ -1651,8 +1770,6 @@ export default function SalesDataUploadScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert
@@ -1660,6 +1777,21 @@ export default function SalesDataUploadScreen() {
           severity={snackbarSeverity}
         >
           {snackbarMessage}
+        </StyledSnackbarAlert>
+      </Snackbar>
+
+      {/* Dedicated duplicate-file error snackbar. Offset downward so it stacks
+          below the success snackbar when both are shown for a mixed upload. */}
+      <Snackbar
+        open={duplicateSnackbarOpen}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        sx={{ marginTop: 9 }}
+      >
+        <StyledSnackbarAlert
+          onClose={() => setDuplicateSnackbarOpen(false)}
+          severity="error"
+        >
+          {duplicateSnackbarMessage}
         </StyledSnackbarAlert>
       </Snackbar>
     </>
