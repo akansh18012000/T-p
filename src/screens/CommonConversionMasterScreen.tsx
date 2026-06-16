@@ -1124,10 +1124,10 @@ export default function CommonConversionMasterScreen() {
                     {itemSelected && (
                       <StyledItemDetailsBox>
                         <StyledPrimaryCaption variant="caption" fontSize={16}>
-                          Name: {itemSelected.name}
+                          {t("commonConversionMaster.name")}: {itemSelected.name}
                         </StyledPrimaryCaption>
                         <StyledPrimaryCaption variant="caption" fontSize={16}>
-                          Abstract: {itemSelected.abstract}
+                          {t("commonConversionMaster.abstract")}: {itemSelected.abstract}
                         </StyledPrimaryCaption>
                       </StyledItemDetailsBox>
                     )}

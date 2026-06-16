@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
@@ -384,6 +384,18 @@ function applyEditsToApiRow(
   return base;
 }
 
+/**
+ * Editable columns that must hold a value before a row can be registered.
+ * Keys mirror ErrorData; label keys mirror SALES_DATA_ERROR_CORRECTION_COLUMNS.
+ */
+const REGISTER_REQUIRED_FIELDS: { key: keyof ErrorData; labelKey: string }[] = [
+  { key: "localItemCode", labelKey: "errorCorrection.localItemCode" },
+  {
+    key: "productionPlantCode",
+    labelKey: "errorCorrection.productionFactoryCode",
+  },
+];
+
 /** Drop the YYYY-MM-DD dashes the API returns so dates match the table's compact format. */
 function stripDateDashes(isoDate: string | null): string {
   return isoDate ? isoDate.replace(/-/g, "") : "";
@@ -495,7 +507,7 @@ export default function SalesDataErrorCorrectionScreen() {
   const [filteredData, setFilteredData] = useState<ErrorData[]>([]);
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
@@ -513,7 +525,7 @@ export default function SalesDataErrorCorrectionScreen() {
     {},
   );
 
-  const showSnackbar = (message: string, severity: "success" | "error" | "info") => {
+  const showSnackbar = (message: ReactNode, severity: "success" | "error" | "info") => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
@@ -846,6 +858,53 @@ export default function SalesDataErrorCorrectionScreen() {
 
     if (editedRowCodes.length === 0) {
       showSnackbar(t("errorCorrection.noChangesToRegister"), "info");
+      return;
+    }
+
+    // The editable columns (Local Item Code, Production Factory Code) are
+    // mandatory: block registration if any row being submitted left one empty,
+    // and surface the offending row numbers + field names in the snackbar.
+    const emptyByRow: { row: number; fields: string[] }[] = [];
+    editedRowCodes.forEach((rowCode) => {
+      const rowIndex = errorData.findIndex((r) => r.rowCode === rowCode);
+      if (rowIndex === -1) return;
+      const row = errorData[rowIndex];
+      const emptyFields = REGISTER_REQUIRED_FIELDS.filter(({ key }) => {
+        const value = String(getDisplayValue(row, key) ?? "").trim();
+        return !value;
+      }).map(({ labelKey }) => t(labelKey));
+      if (emptyFields.length > 0) {
+        emptyByRow.push({ row: rowIndex + 1, fields: emptyFields });
+      }
+    });
+    if (emptyByRow.length > 0) {
+      emptyByRow.sort((a, b) => a.row - b.row);
+      if (emptyByRow.length === 1) {
+        showSnackbar(
+          t("errorCorrection.requiredFieldsEmptySingle", {
+            row: emptyByRow[0].row,
+            fields: emptyByRow[0].fields.join(", "),
+          }),
+          "error",
+        );
+      } else {
+        showSnackbar(
+          <Box component="span">
+            {t("errorCorrection.requiredFieldsEmptyMultiple")}
+            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+              {emptyByRow.map((m) => (
+                <li key={m.row}>
+                  {t("errorCorrection.requiredFieldsEmptyRowItem", {
+                    row: m.row,
+                    fields: m.fields.join(", "),
+                  })}
+                </li>
+              ))}
+            </Box>
+          </Box>,
+          "error",
+        );
+      }
       return;
     }
 
