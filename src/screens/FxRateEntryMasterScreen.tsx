@@ -1319,6 +1319,10 @@ function FxRateEntryMasterScreen() {
           label={t("fxRateEntryMaster.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }

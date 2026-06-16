@@ -1496,6 +1496,10 @@ export default function KitItemClassificationMasterScreen() {
           label={t("kitItemClassification.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }

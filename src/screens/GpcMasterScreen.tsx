@@ -1996,6 +1996,10 @@ export default function GpcMasterScreen() {
           label={t("gpcMaster.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }

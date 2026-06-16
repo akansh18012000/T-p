@@ -1722,6 +1722,10 @@ export default function CommonConversionMasterScreen() {
           label={t("commonConversionMaster.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }

@@ -1929,6 +1929,10 @@ function LocalItemConversionMasterScreen() {
           label={t("localItemConversion.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }

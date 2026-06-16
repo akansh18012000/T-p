@@ -59,6 +59,7 @@ import {
   StyledTablePagination,
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
+import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { getAdjustmentUploadScreenId } from "../constants/screenIds.js";
 import { usePermissions } from "../hooks/usePermissions.js";
 
@@ -1365,6 +1366,10 @@ export default function AdjustmentSalesDetailScreen() {
           </StyledUploadChangesButton>
         </StyledDialogActions>
       </Dialog>
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("adjustmentSalesDetail.uploading")} />
+      )}
 
       {/* Snackbar for notifications */}
       <Snackbar

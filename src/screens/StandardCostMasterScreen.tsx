@@ -2058,6 +2058,10 @@ export default function StandardCostMasterScreen() {
           label={t("standardCostMaster.registrationInProgress")}
         />
       )}
+
+      {uploadStatus === "uploading" && (
+        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      )}
     </>
   );
 }
