@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
 import {
@@ -95,6 +96,10 @@ import { SCREEN_IDS } from "../constants/screenIds.js";
 
 type GroupWithName = { id: string; name: string };
 type CodeWithName = { code: string; name: string };
+
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type CommonMasterRowMeta = { original: string[] } | null;
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 type DimCommonGroupApiItem = {
@@ -390,18 +395,26 @@ export default function CommonMasterScreen() {
     selectedCount,
   } = useRowSelectionMode();
 
-  // Parallel array to csvData.rows: server-assigned id per row.
-  // A row is considered "new" (added locally, not yet persisted) iff its id is empty.
-  const [rowIds, setRowIds] = useState<string[]>([]);
-  const isNewRow = (rowIndex: number) => !rowIds[rowIndex];
-  const newRowCount = rowIds.reduce((n, id) => (id ? n : n + 1), 0);
+  // Track newly added rows (delete-icon / "is new" state) via the shared hook,
+  // mirroring StandardCostMaster.
+  const {
+    isNewRow,
+    markRowsAsNew,
+    shiftIndicesForInsertion,
+    shiftIndicesForDeletion,
+    clearNewRowTracking,
+    newRowCount,
+  } = useNewRowTracking();
+
+  // Parallel to csvData.rows: null = locally-added new row, { original } = a
+  // search-derived row (compared against to detect edits during registration).
+  const [rowMetadata, setRowMetadata] = useState<CommonMasterRowMeta[]>([]);
+  // Frozen copy of the last search results, used for new-row duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
 
   const lastSearchPayloadRef = useRef<CommonMasterSearchPayload | null>(null);
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
-  // Snapshot of search results keyed by server id — used to detect edits and to
-  // run duplicate-row checks against the original (un-mutated) result set.
-  const originalRowsByIdRef = useRef<Map<string, string[]>>(new Map());
   const [isRegistering, setIsRegistering] = useState(false);
   // AI Generated Code by Deloitte + Cursor (END)
 
@@ -413,8 +426,9 @@ export default function CommonMasterScreen() {
     setSearchExecuted(true);
     setIsSearching(true);
     setCsvData(null);
-    setRowIds([]);
-    originalRowsByIdRef.current = new Map();
+    setRowMetadata([]);
+    searchSnapshotRef.current = [];
+    clearNewRowTracking();
     lastSearchPayloadRef.current = payload;
     try {
       const response = await fetch(SEARCH_API_URL, {
@@ -441,17 +455,13 @@ export default function CommonMasterScreen() {
         item.reserve5 ?? "",
         item.delete_flg_pfm === 1 ? "1" : "0",
       ]);
-      const ids: string[] = result.data.map((item) => item.id ?? "");
-      const snapshot = new Map<string, string[]>();
-      ids.forEach((id, i) => {
-        if (id) snapshot.set(id, [...rows[i]]);
-      });
-      originalRowsByIdRef.current = snapshot;
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows,
       });
-      setRowIds(ids);
+      setRowMetadata(rows.map((row) => ({ original: [...row] })));
+      searchSnapshotRef.current = rows.map((row) => [...row]);
+      clearNewRowTracking();
       if (!silent) {
         setSnackbarMessage(
           rows.length > 0
@@ -463,7 +473,8 @@ export default function CommonMasterScreen() {
       }
     } catch {
       setCsvData(getEmptyCsvData());
-      setRowIds([]);
+      setRowMetadata([]);
+      searchSnapshotRef.current = [];
       if (!silent) {
         setSnackbarMessage(t("commonMaster.searchCompletedNoResults"));
         setSnackbarSeverity("info");
@@ -519,18 +530,23 @@ export default function CommonMasterScreen() {
         emptyRow,
         ...base.rows.slice(insertIndex),
       ];
+      shiftIndicesForInsertion(insertIndex, 1);
+      markRowsAsNew([insertIndex]);
       setCsvData({ headers: base.headers, rows: newRows });
-      setRowIds((prev) => [
+      setRowMetadata((prev) => [
         ...prev.slice(0, insertIndex),
-        "",
+        null,
         ...prev.slice(insertIndex),
       ]);
     } else {
+      const insertIndex = base.rows.length;
+      shiftIndicesForInsertion(insertIndex, 1);
+      markRowsAsNew([insertIndex]);
       setCsvData({
         headers: base.headers,
         rows: [...base.rows, emptyRow],
       });
-      setRowIds((prev) => [...prev, ""]);
+      setRowMetadata((prev) => [...prev, null]);
     }
     setSnackbarMessage(t("commonMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -567,14 +583,15 @@ export default function CommonMasterScreen() {
       ...selectedRows,
       ...base.rows.slice(insertIndex),
     ];
-    const newIds = selectedRows.map(() => "");
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
     setCsvData({
       headers: base.headers,
       rows: newRows,
     });
-    setRowIds((prev) => [
+    setRowMetadata((prev) => [
       ...prev.slice(0, insertIndex),
-      ...newIds,
+      ...selectedRows.map(() => null),
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
@@ -587,8 +604,9 @@ export default function CommonMasterScreen() {
     if (!csvData || !isNewRow(rowIndex)) return;
 
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
+    shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
-    setRowIds((prev) => prev.filter((_, idx) => idx !== rowIndex));
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -606,20 +624,18 @@ export default function CommonMasterScreen() {
   const handleRegistration = async () => {
     if (!csvData) return;
 
-    const newRowIndices = rowIds
-      .map((id, idx) => (id ? -1 : idx))
-      .filter((idx) => idx >= 0);
-
-    const editedRowIndices = rowIds
-      .map((id, idx) => {
-        if (!id) return -1;
-        const original = originalRowsByIdRef.current.get(id);
-        if (!original) return -1;
-        const current = csvData.rows[idx];
-        const unchanged = current.every((cell, i) => cell === original[i]);
-        return unchanged ? -1 : idx;
-      })
-      .filter((idx) => idx >= 0);
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= csvData.rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = csvData.rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
       setSnackbarMessage(t("commonMaster.noChangesToRegister"));
@@ -675,7 +691,7 @@ export default function CommonMasterScreen() {
     // - New rows: must not match any row in the last search snapshot.
     // - Edited rows: must not collapse onto another row in the current table
     //   (excluding their own row so reverting an edit isn't self-flagged).
-    const snapshotRows = Array.from(originalRowsByIdRef.current.values());
+    const snapshotRows = searchSnapshotRef.current;
     const duplicateRows = new Set<number>();
     newRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
@@ -755,16 +771,15 @@ export default function CommonMasterScreen() {
       // drop newly added rows (no id) and discard edits by restoring each
       // surviving row from its original search snapshot.
       const restoredRows: string[][] = [];
-      const restoredIds: string[] = [];
-      rowIds.forEach((id) => {
-        if (!id) return;
-        const original = originalRowsByIdRef.current.get(id);
-        if (!original) return;
-        restoredRows.push([...original]);
-        restoredIds.push(id);
+      const restoredMeta: typeof rowMetadata = [];
+      rowMetadata.forEach((meta, idx) => {
+        if (meta === null || idx >= csvData.rows.length) return;
+        restoredRows.push([...meta.original]);
+        restoredMeta.push(meta);
       });
       setCsvData({ ...csvData, rows: restoredRows });
-      setRowIds(restoredIds);
+      setRowMetadata(restoredMeta);
+      clearNewRowTracking();
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
