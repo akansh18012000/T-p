@@ -9,18 +9,8 @@ interface KitManufacturerPartNumberApiRow {
   kit_manufacture_part_number: string;
 }
 
-interface KitManufacturerPartNumberApiEnvelope {
-  total: number;
-  data: KitManufacturerPartNumberApiRow[];
-}
-
 interface KitManufacturerApiRow {
   kit_manufacturer: string;
-}
-
-interface KitManufacturerApiEnvelope {
-  total: number;
-  data: KitManufacturerApiRow[];
 }
 
 export type KitItemDataStatus = "idle" | "loading" | "loaded" | "error";
@@ -78,19 +68,19 @@ export function KitItemDataProvider({
             partNumbersRes.json(),
             manufacturersRes.json(),
           ])) as [
-            KitManufacturerPartNumberApiEnvelope,
-            KitManufacturerApiEnvelope,
+            KitManufacturerPartNumberApiRow[],
+            KitManufacturerApiRow[],
           ];
 
-          const partRows = Array.isArray(partNumbersJson.data)
-            ? partNumbersJson.data
+          const partRows = Array.isArray(partNumbersJson)
+            ? partNumbersJson
             : [];
           setKitManufacturerPartNumberOptions(
             partRows.map((r) => r.kit_manufacture_part_number).filter(Boolean),
           );
 
-          const manuRows = Array.isArray(manufacturersJson.data)
-            ? manufacturersJson.data
+          const manuRows = Array.isArray(manufacturersJson)
+            ? manufacturersJson
             : [];
           setKitManufacturerOptions(
             manuRows.map((r) => r.kit_manufacturer).filter(Boolean),
