@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { styled } from "@mui/material/styles";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -146,6 +147,10 @@ type ProcessMonthCreatePayload = {
 };
 
 const CREATE_API_URL = "/api/v1/process-month/create";
+
+// Per-row snapshot used by the registration flow to distinguish new rows
+// (metadata === null) from edited rows (any cell !== original).
+type YearMonthRowMeta = { original: string[] } | null;
 // AI Generated Code by Deloitte + Cursor (END)
 
 function createNewRow(): string[] {
@@ -178,16 +183,23 @@ function YearMonthMasterScreen() {
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  // Parallel array to `rows`: server-assigned id per row. A row is "new"
-  // (added locally, not yet persisted) iff its id is empty.
-  const [rowIds, setRowIds] = useState<string[]>([]);
-  // Snapshot of fetched rows keyed by server id — baseline for duplicate
-  // checks against existing data on the server.
-  const originalRowsByIdRef = useRef<Map<string, string[]>>(new Map());
+  // Parallel to `rows`: null = locally-added new row, { original } = a
+  // fetched row (compared against to detect edits during registration).
+  const [rowMetadata, setRowMetadata] = useState<YearMonthRowMeta[]>([]);
+  // Frozen copy of the last fetched rows, used for new-row duplicate detection.
+  const searchSnapshotRef = useRef<string[][]>([]);
   const fetchedRef = useRef(false);
 
-  const isNewRow = (rowIndex: number) => !rowIds[rowIndex];
-  const newRowCount = rowIds.reduce((n, id) => (id ? n : n + 1), 0);
+  // Track newly added rows (delete-icon / "is new" state) via the shared hook,
+  // mirroring StandardCostMaster.
+  const {
+    isNewRow,
+    markRowsAsNew,
+    shiftIndicesForInsertion,
+    shiftIndicesForDeletion,
+    clearNewRowTracking,
+    newRowCount,
+  } = useNewRowTracking();
 
   const refreshProcessMonthData = async (): Promise<void> => {
     const payload: ProcessMonthFetchPayload = {
@@ -206,14 +218,10 @@ function YearMonthMasterScreen() {
     }
     const result: ProcessMonthFetchResponse = await response.json();
     const fetchedRows = result.data.map(mapFetchItemToRow);
-    const fetchedIds = result.data.map((item) => item.id ?? "");
-    const snapshot = new Map<string, string[]>();
-    fetchedIds.forEach((id, i) => {
-      if (id) snapshot.set(id, [...fetchedRows[i]]);
-    });
-    originalRowsByIdRef.current = snapshot;
     setRows(fetchedRows);
-    setRowIds(fetchedIds);
+    setRowMetadata(fetchedRows.map((row) => ({ original: [...row] })));
+    searchSnapshotRef.current = fetchedRows.map((row) => [...row]);
+    clearNewRowTracking();
   };
 
   useEffect(() => {
@@ -257,15 +265,17 @@ function YearMonthMasterScreen() {
     const newRow = createNewRow();
     // Insert new row at appropriate position based on current page
     const insertIndex = Math.min(pageOffset, rows.length);
+    shiftIndicesForInsertion(insertIndex, 1);
+    markRowsAsNew([insertIndex]);
     setRows([
       ...rows.slice(0, insertIndex),
       newRow,
       ...rows.slice(insertIndex),
     ]);
-    setRowIds([
-      ...rowIds.slice(0, insertIndex),
-      "",
-      ...rowIds.slice(insertIndex),
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      null,
+      ...prev.slice(insertIndex),
     ]);
     setSnackbarMessage(t("yearMonthMaster.rowAdded"));
     setSnackbarSeverity("success");
@@ -299,15 +309,17 @@ function YearMonthMasterScreen() {
         ),
       );
     const insertIndex = Math.min(pageOffset, rows.length);
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
     setRows([
       ...rows.slice(0, insertIndex),
       ...selectedRows,
       ...rows.slice(insertIndex),
     ]);
-    setRowIds([
-      ...rowIds.slice(0, insertIndex),
-      ...selectedRows.map(() => ""),
-      ...rowIds.slice(insertIndex),
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...selectedRows.map(() => null),
+      ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
     setSnackbarMessage(t("yearMonthMaster.rowAdded"));
@@ -317,8 +329,9 @@ function YearMonthMasterScreen() {
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!isNewRow(rowIndex)) return;
+    shiftIndicesForDeletion(rowIndex);
     setRows(rows.filter((_, idx) => idx !== rowIndex));
-    setRowIds(rowIds.filter((_, idx) => idx !== rowIndex));
+    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     setSnackbarMessage(t("common.newRowDeleted"));
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
@@ -343,20 +356,18 @@ function YearMonthMasterScreen() {
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const handleRegistration = async () => {
-    const newRowIndices = rowIds
-      .map((id, idx) => (id ? -1 : idx))
-      .filter((idx) => idx >= 0);
-
-    const editedRowIndices = rowIds
-      .map((id, idx) => {
-        if (!id) return -1;
-        const original = originalRowsByIdRef.current.get(id);
-        if (!original) return -1;
-        const current = rows[idx];
-        const unchanged = current.every((cell, i) => cell === original[i]);
-        return unchanged ? -1 : idx;
-      })
-      .filter((idx) => idx >= 0);
+    const newRowIndices: number[] = [];
+    const editedRowIndices: number[] = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (idx >= rows.length) return;
+      if (meta === null) {
+        newRowIndices.push(idx);
+        return;
+      }
+      const current = rows[idx];
+      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      if (changed) editedRowIndices.push(idx);
+    });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
       setSnackbarMessage(t("yearMonthMaster.noChangesToRegister"));
@@ -408,37 +419,38 @@ function YearMonthMasterScreen() {
       return;
     }
 
-    const snapshotEntries = Array.from(originalRowsByIdRef.current.entries());
-    const duplicateRowNumbers: number[] = [];
+    // Duplicate detection (compared on the editable columns only; the
+    // last-updated date/by columns are server-derived metadata).
+    // - New rows: must not match any row in the last fetch snapshot.
+    // - Edited rows: must not collapse onto another row in the current table
+    //   (excluding their own row so reverting an edit isn't self-flagged).
+    const duplicateRows = new Set<number>();
     newRowIndices.forEach((idx) => {
       const row = rows[idx];
+      if (!row) return;
       if (
-        snapshotEntries.some(([, snapRow]) =>
-          EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
+        searchSnapshotRef.current.some((snap) =>
+          EDITABLE_COL_INDICES.every((c) => row[c] === snap[c]),
         )
       ) {
-        duplicateRowNumbers.push(idx + 1);
+        duplicateRows.add(idx + 1);
       }
     });
     editedRowIndices.forEach((idx) => {
       const row = rows[idx];
-      const myId = rowIds[idx];
-      if (
-        snapshotEntries.some(
-          ([snapId, snapRow]) =>
-            snapId !== myId &&
-            EDITABLE_COL_INDICES.every((c) => row[c] === snapRow[c]),
-        )
-      ) {
-        duplicateRowNumbers.push(idx + 1);
-      }
+      if (!row) return;
+      const collides = rows.some((other, otherIdx) => {
+        if (otherIdx === idx) return false;
+        return EDITABLE_COL_INDICES.every((c) => row[c] === other[c]);
+      });
+      if (collides) duplicateRows.add(idx + 1);
     });
-    if (duplicateRowNumbers.length > 0) {
-      duplicateRowNumbers.sort((a, b) => a - b);
+    if (duplicateRows.size > 0) {
+      const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
       const rowsText = new Intl.ListFormat(i18n.language, {
         style: "long",
         type: "conjunction",
-      }).format(duplicateRowNumbers.map(String));
+      }).format(sorted.map(String));
       setSnackbarMessage(
         t("yearMonthMaster.duplicateRowError", { rows: rowsText }),
       );
@@ -483,16 +495,15 @@ function YearMonthMasterScreen() {
       // drop newly added rows (no id) and discard edits by restoring each
       // surviving row from its original search snapshot.
       const restoredRows: string[][] = [];
-      const restoredIds: string[] = [];
-      rowIds.forEach((id) => {
-        if (!id) return;
-        const original = originalRowsByIdRef.current.get(id);
-        if (!original) return;
-        restoredRows.push([...original]);
-        restoredIds.push(id);
+      const restoredMeta: typeof rowMetadata = [];
+      rowMetadata.forEach((meta, idx) => {
+        if (meta === null || idx >= rows.length) return;
+        restoredRows.push([...meta.original]);
+        restoredMeta.push(meta);
       });
       setRows(restoredRows);
-      setRowIds(restoredIds);
+      setRowMetadata(restoredMeta);
+      clearNewRowTracking();
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
