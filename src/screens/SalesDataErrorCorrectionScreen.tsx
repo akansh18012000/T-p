@@ -752,13 +752,15 @@ export default function SalesDataErrorCorrectionScreen() {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
+      // Restore the results to their previous search state without
+      // re-querying: clear the selection and any edits, leaving the
+      // searched rows unchanged.
+      setEdits({});
       setSelectedRowCodes(new Set());
       showSnackbar(
         t("errorCorrection.deletedSuccess", { count: deletedCount }),
         "success",
       );
-      // Refresh the results once the delete has completed.
-      await handleSearch();
     } catch (e) {
       console.error(e);
       showSnackbar(t("errorCorrection.deleteFailed"), "error");
@@ -933,7 +935,9 @@ export default function SalesDataErrorCorrectionScreen() {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
-      await handleSearch();
+      // Discard the registered edits so the table reverts to its original
+      // searched values, without re-querying the API.
+      setEdits({});
       showSnackbar(t("errorCorrection.registerSuccess"), "success");
     } catch (e) {
       console.error(e);

@@ -568,7 +568,15 @@ function FxRateEntryMasterScreen() {
       }
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      await handleSearch();
+
+      // Revert the table to the last search results without re-querying:
+      // drop newly added rows and discard edits by restoring the original
+      // searched rows.
+      setCsvData({
+        ...csvData,
+        rows: originalRowsRef.current.map((row) => [...row]),
+      });
+      clearNewRowTracking();
     } catch (e) {
       console.error(e);
       setSnackbarMessage(t("fxRateEntryMaster.registrationFailed"));

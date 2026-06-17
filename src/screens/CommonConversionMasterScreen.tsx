@@ -828,7 +828,19 @@ export default function CommonConversionMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      await handleSearch({ silent: true });
+      // Revert the table to the last search results without re-querying:
+      // drop newly added rows and discard edits by restoring each surviving
+      // row from its original search snapshot.
+      const restoredRows: string[][] = [];
+      const restoredMeta: typeof rowMetadata = [];
+      rowMetadata.forEach((meta, idx) => {
+        if (meta === null || idx >= csvData.rows.length) return;
+        restoredRows.push([...meta.original]);
+        restoredMeta.push(meta);
+      });
+      setCsvData({ ...csvData, rows: restoredRows });
+      setRowMetadata(restoredMeta);
+      clearNewRowTracking();
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {

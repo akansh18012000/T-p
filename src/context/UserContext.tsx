@@ -28,7 +28,7 @@ interface UserContextValue {
 const UserContext = createContext<UserContextValue | null>(null);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>({   "user_id": "ecefa784-b867-4e0d-94e2-d45e6d4f5611",   "email": "akansh.omar@terumomedical.com",   "username": "Akansh Omar",   "role_id": null,   "role_name": "Business Planning",   "status": "ACTIVE",   "last_login_at": "2026-06-06T15:04:35.692284" });
+  const [user, setUser] = useState<User | null>({   "user_id": "ecefa784-b867-4e0d-94e2-d45e6d4f5611",   "email": "akansh.omar@terumomedical.com",   "username": "Akansh Omar",   "role_id": null,   "role_name": "BUSINESS PLANNING",   "status": "ACTIVE",   "last_login_at": "2026-06-06T15:04:35.692284" });
   const [status, setStatus] = useState<UserDataStatus>("idle");
 
   // Guards against the call firing more than once — both for React StrictMode's
@@ -44,7 +44,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     void (async () => {
       try {
-        const res = await fetch(USER_ME_API_URL);
+        const res = await fetch(USER_ME_API_URL, { cache: "no-store" });
         if (!res.ok) {
           throw new Error(`User me HTTP ${res.status}`);
         }

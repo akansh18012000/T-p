@@ -23,6 +23,7 @@ import { CorporateDataProvider } from "./context/CorporateDataContext.js";
 import { LocalCustomerDataProvider } from "./context/LocalCustomerDataContext.js";
 import { ProductClassificationDataProvider } from "./context/ProductClassificationDataContext.js";
 import { Bu3CodeDataProvider } from "./context/Bu3CodeDataContext.js";
+import { KitItemDataProvider } from "./context/KitItemDataContext.js";
 import { ViewFileCacheProvider } from "./context/ViewFileCacheContext.js";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { BreadcrumbProvider } from "./context/BreadcrumbContext.js";
@@ -168,6 +169,7 @@ function AppRoutes() {
           <LocalCustomerDataProvider>
           <ProductClassificationDataProvider>
           <Bu3CodeDataProvider>
+          <KitItemDataProvider>
           <ViewFileCacheProvider>
           <UploadProvider>
             <SidebarProvider>
@@ -268,6 +270,7 @@ function AppRoutes() {
             </SidebarProvider>
           </UploadProvider>
           </ViewFileCacheProvider>
+          </KitItemDataProvider>
           </Bu3CodeDataProvider>
           </ProductClassificationDataProvider>
           </LocalCustomerDataProvider>

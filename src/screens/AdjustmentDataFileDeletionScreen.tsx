@@ -426,7 +426,9 @@ function AdjustmentDataFileDeletionScreen() {
       );
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
-      handleSearch();
+      // Restore the results to their previous search state without
+      // re-querying: clear the selection, leaving the searched rows unchanged.
+      setResultRows((prev) => prev.map((r) => ({ ...r, selected: false })));
     } catch (e) {
       console.error(e);
       setSnackbarMessage(t("adjustmentDataFileDeletion.filesDeletionFailed"));

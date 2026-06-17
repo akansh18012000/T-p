@@ -1019,7 +1019,7 @@ export default function StandardCostMasterScreen() {
       const row = rows[idx];
       if (!row) return;
       const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
+        (c) => !String(row[c] ?? "").trim(),
       ).map((c) => t(STANDARD_COST_MASTER_COLUMNS[c].labelKey));
       if (missingFields.length > 0) {
         missingByRow.push({ row: idx + 1, fields: missingFields });
@@ -1132,7 +1132,19 @@ export default function StandardCostMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      await handleSearch({ silent: true });
+      // Revert the table to the last search results without re-querying:
+      // drop newly added rows and discard edits by restoring each surviving
+      // row from its original search snapshot.
+      const restoredRows: string[][] = [];
+      const restoredMeta: typeof rowMetadata = [];
+      rowMetadata.forEach((meta, idx) => {
+        if (meta === null || idx >= csvData.rows.length) return;
+        restoredRows.push([...meta.original]);
+        restoredMeta.push(meta);
+      });
+      setCsvData({ ...csvData, rows: restoredRows });
+      setRowMetadata(restoredMeta);
+      clearNewRowTracking();
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
@@ -1781,6 +1793,7 @@ export default function StandardCostMasterScreen() {
                                 >
                                   #
                                 </StyledTableHeaderCell>
+                                {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                                 {STANDARD_COST_MASTER_COLUMNS.map((col, colIndex) => (
                                   <StyledTableHeaderCell
                                     key={col.key}
@@ -1798,7 +1811,6 @@ export default function StandardCostMasterScreen() {
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}
-                                {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                               </TableRow>
                             </TableHead>
                             <TableBody>
@@ -1826,6 +1838,19 @@ export default function StandardCostMasterScreen() {
                                     >
                                       {pageOffset + i + 1}
                                     </StyledTableIndexCell>
+                                    {newRowCount > 0 && (
+                                      <StyledDeleteActionCell>
+                                        {isNewRow(originalRowIndex) && (
+                                          <StyledNewRowDeleteButton
+                                            size="small"
+                                            onClick={() => handleDeleteNewRow(originalRowIndex)}
+                                            title={t("common.deleteRow")}
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </StyledNewRowDeleteButton>
+                                        )}
+                                      </StyledDeleteActionCell>
+                                    )}
                                     {row.map((cell, colIndex) => {
                                       const colConfig = STANDARD_COST_MASTER_COLUMNS[colIndex];
                                       const isCheckbox = colConfig?.isCheckbox;
@@ -1889,19 +1914,6 @@ export default function StandardCostMasterScreen() {
                                         </StyledTableDataCell>
                                       );
                                     })}
-                                    {newRowCount > 0 && (
-                                      <StyledDeleteActionCell>
-                                        {isNewRow(originalRowIndex) && (
-                                          <StyledNewRowDeleteButton
-                                            size="small"
-                                            onClick={() => handleDeleteNewRow(originalRowIndex)}
-                                            title={t("common.deleteRow")}
-                                          >
-                                            <DeleteIcon fontSize="small" />
-                                          </StyledNewRowDeleteButton>
-                                        )}
-                                      </StyledDeleteActionCell>
-                                    )}
                                   </StyledTableBodyRow>
                                 );
                               })}

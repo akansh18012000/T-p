@@ -113,38 +113,17 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { useUploadContext } from "../context/UploadContext.js";
+import { useKitItemData } from "../context/KitItemDataContext.js";
 import { usePermissions } from "../hooks/usePermissions.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
-const KIT_MANUFACTURER_PART_NUMBERS_API_URL =
-  "/api/v1/kit-item-combined/get_kit_manufacture_part_numbers";
-const KIT_MANUFACTURERS_API_URL =
-  "/api/v1/kit-item-combined/get_kit_manufacturers";
 const KIT_ITEM_COMBINED_SEARCH_API_URL =
   "/api/v1/kit-item-combined/search";
 const KIT_ITEM_COMBINED_CREATE_API_URL =
   "/api/v1/kit-item-combined/create";
-
-interface KitManufacturerPartNumberApiRow {
-  kit_manufacture_part_number: string;
-}
-
-interface KitManufacturerPartNumberApiEnvelope {
-  total: number;
-  data: KitManufacturerPartNumberApiRow[];
-}
-
-interface KitManufacturerApiRow {
-  kit_manufacturer: string;
-}
-
-interface KitManufacturerApiEnvelope {
-  total: number;
-  data: KitManufacturerApiRow[];
-}
 
 interface KitItemCombinedSearchRow {
   kit_manufacture_part_number: string | null;
@@ -255,67 +234,20 @@ export default function KitItemClassificationMasterScreen() {
   );
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
-  const [
+  // Kit manufacturer / part-number option lists come from the shared context
+  // (fetched at most once per session, reused across navigations).
+  const {
     kitManufacturerPartNumberOptions,
-    setKitManufacturerPartNumberOptions,
-  ] = useState<string[]>([]);
-  const [kitManufacturerOptions, setKitManufacturerOptions] = useState<
-    string[]
-  >([]);
-  const [
-    kitManufacturerPartNumbersLoading,
-    setKitManufacturerPartNumbersLoading,
-  ] = useState(false);
-  const [kitManufacturersLoading, setKitManufacturersLoading] = useState(false);
-  const initialDataFetchedRef = useRef(false);
+    kitManufacturerOptions,
+    status: kitItemDataStatus,
+    ensureLoaded: ensureKitItemData,
+  } = useKitItemData();
+  const kitManufacturerPartNumbersLoading = kitItemDataStatus === "loading";
+  const kitManufacturersLoading = kitItemDataStatus === "loading";
 
   useEffect(() => {
-    if (initialDataFetchedRef.current) return;
-    initialDataFetchedRef.current = true;
-    setKitManufacturerPartNumbersLoading(true);
-    setKitManufacturersLoading(true);
-
-    const fetchPartNumbers = async () => {
-      try {
-        const res = await fetch(KIT_MANUFACTURER_PART_NUMBERS_API_URL);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json =
-          (await res.json()) as KitManufacturerPartNumberApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        setKitManufacturerPartNumberOptions(
-          rows.map((r) => r.kit_manufacture_part_number).filter(Boolean),
-        );
-      } catch (e) {
-        console.error(e);
-        setKitManufacturerPartNumberOptions([]);
-      } finally {
-        setKitManufacturerPartNumbersLoading(false);
-      }
-    };
-
-    const fetchManufacturers = async () => {
-      try {
-        const res = await fetch(KIT_MANUFACTURERS_API_URL);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const json = (await res.json()) as KitManufacturerApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        setKitManufacturerOptions(
-          rows.map((r) => r.kit_manufacturer).filter(Boolean),
-        );
-      } catch (e) {
-        console.error(e);
-        setKitManufacturerOptions([]);
-      } finally {
-        setKitManufacturersLoading(false);
-      }
-    };
-
-    void Promise.allSettled([fetchPartNumbers(), fetchManufacturers()]);
-  }, []);
+    ensureKitItemData();
+  }, [ensureKitItemData]);
   // AI Generated Code by Deloitte + Cursor (END)
 
   // Visible option lists: filter the full dataset by the debounced query, then
@@ -744,7 +676,19 @@ export default function KitItemClassificationMasterScreen() {
         throw new Error(`HTTP ${res.status}`);
       }
 
-      await handleSearch({ silent: true });
+      // Revert the table to the last search results without re-querying:
+      // drop newly added rows and discard edits by restoring each surviving
+      // row from its original search snapshot.
+      const restoredRows: string[][] = [];
+      const restoredMeta: typeof rowMetadata = [];
+      rowMetadata.forEach((meta, idx) => {
+        if (meta === null || idx >= csvData.rows.length) return;
+        restoredRows.push([...meta.original]);
+        restoredMeta.push(meta);
+      });
+      setCsvData({ ...csvData, rows: restoredRows });
+      setRowMetadata(restoredMeta);
+      clearNewRowTracking();
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {

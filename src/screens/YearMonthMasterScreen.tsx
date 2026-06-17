@@ -479,7 +479,20 @@ function YearMonthMasterScreen() {
         throw new Error(`Create API responded ${response.status}`);
       }
 
-      await refreshProcessMonthData();
+      // Revert the table to the last search results without re-querying:
+      // drop newly added rows (no id) and discard edits by restoring each
+      // surviving row from its original search snapshot.
+      const restoredRows: string[][] = [];
+      const restoredIds: string[] = [];
+      rowIds.forEach((id) => {
+        if (!id) return;
+        const original = originalRowsByIdRef.current.get(id);
+        if (!original) return;
+        restoredRows.push([...original]);
+        restoredIds.push(id);
+      });
+      setRows(restoredRows);
+      setRowIds(restoredIds);
 
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
