@@ -1577,7 +1577,10 @@ export default function SalesDataErrorCorrectionScreen() {
                         selectedRowCodes.size === 0 || isDeleting || !canEdit
                       }
                     >
-                      {t("errorCorrection.delete")}
+                      {t("errorCorrection.delete")}{" "}
+                      {selectedRowCodes.size > 0
+                        ? `(${selectedRowCodes.size})`
+                        : ""}
                     </Button>
                   </Box>
                 </>
