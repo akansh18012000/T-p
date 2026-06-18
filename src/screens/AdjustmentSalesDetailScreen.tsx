@@ -62,6 +62,11 @@ import {
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { getAdjustmentUploadScreenId } from "../constants/screenIds.js";
 import { usePermissions } from "../hooks/usePermissions.js";
+import {
+  findDuplicateUploadFile,
+  stripUploadIdSuffix,
+  type UploadApiResponse,
+} from "../utils/commonUtils.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -694,6 +699,30 @@ export default function AdjustmentSalesDetailScreen() {
         method: "POST",
         body: formData,
       });
+
+      // The backend reports a duplicate as upload_status FAILED with the
+      // file's file_status set to "DUPLICATE", so parse the body before
+      // reacting to the HTTP status.
+      let uploadJson: UploadApiResponse | null = null;
+      try {
+        uploadJson = (await response.json()) as UploadApiResponse;
+      } catch {
+        uploadJson = null;
+      }
+      const duplicateFile = findDuplicateUploadFile(uploadJson);
+      if (duplicateFile) {
+        setUploadStatus("idle");
+        showSnackbar(
+          t("upload.duplicateFileMessage", {
+            file: duplicateFile.file_name,
+            duplicate: stripUploadIdSuffix(
+              duplicateFile.duplicate_file_name ?? "",
+            ),
+          }),
+          "error",
+        );
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Upload API responded ${response.status}`);

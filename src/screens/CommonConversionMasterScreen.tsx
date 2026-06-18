@@ -113,6 +113,11 @@ import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import {
+  findDuplicateUploadFile,
+  stripUploadIdSuffix,
+  type UploadApiResponse,
+} from "../utils/commonUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { usePermissions } from "../hooks/usePermissions.js";
@@ -984,6 +989,31 @@ export default function CommonConversionMasterScreen() {
         method: "POST",
         body: formData,
       });
+
+      // The backend reports a duplicate as upload_status FAILED with the
+      // file's file_status set to "DUPLICATE", so parse the body before
+      // reacting to the HTTP status.
+      let uploadJson: UploadApiResponse | null = null;
+      try {
+        uploadJson = (await response.json()) as UploadApiResponse;
+      } catch {
+        uploadJson = null;
+      }
+      const duplicateFile = findDuplicateUploadFile(uploadJson);
+      if (duplicateFile) {
+        setUploadStatus("idle");
+        setSnackbarMessage(
+          t("upload.duplicateFileMessage", {
+            file: duplicateFile.file_name,
+            duplicate: stripUploadIdSuffix(
+              duplicateFile.duplicate_file_name ?? "",
+            ),
+          }),
+        );
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Upload API responded ${response.status}`);
       }

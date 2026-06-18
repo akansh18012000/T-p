@@ -117,6 +117,11 @@ import { useKitItemData } from "../context/KitItemDataContext.js";
 import { usePermissions } from "../hooks/usePermissions.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
+import {
+  findDuplicateUploadFile,
+  stripUploadIdSuffix,
+  type UploadApiResponse,
+} from "../utils/commonUtils.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
@@ -827,6 +832,31 @@ export default function KitItemClassificationMasterScreen() {
         method: "POST",
         body: formData,
       });
+
+      // The backend reports a duplicate as upload_status FAILED with the
+      // file's file_status set to "DUPLICATE", so parse the body before
+      // reacting to the HTTP status.
+      let uploadJson: UploadApiResponse | null = null;
+      try {
+        uploadJson = (await response.json()) as UploadApiResponse;
+      } catch {
+        uploadJson = null;
+      }
+      const duplicateFile = findDuplicateUploadFile(uploadJson);
+      if (duplicateFile) {
+        setUploadStatus("idle");
+        setSnackbarMessage(
+          t("upload.duplicateFileMessage", {
+            file: duplicateFile.file_name,
+            duplicate: stripUploadIdSuffix(
+              duplicateFile.duplicate_file_name ?? "",
+            ),
+          }),
+        );
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Upload API responded ${response.status}`);
       }
