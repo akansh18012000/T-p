@@ -71,6 +71,7 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+import { DeleteConfirmationDialog } from "../components/shared/DeleteConfirmationDialog.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -317,6 +318,7 @@ function AdjustmentDataFileDeletionScreen() {
   // AI Generated Code by Deloitte + Cursor (END)
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -442,7 +444,7 @@ function AdjustmentDataFileDeletionScreen() {
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const filteredRows = searchTerm.trim()
     ? resultRows.filter((row) => {
-        const hay = [row.yearMonth, row.fileName, row.userId, row.dateTime]
+        const hay = [row.yearMonth, row.fileName, row.username, row.dateTime]
           .join(" ")
           .toLowerCase();
         return hay.includes(searchTerm.toLowerCase());
@@ -460,7 +462,10 @@ function AdjustmentDataFileDeletionScreen() {
   } = useTablePagination(filteredRows, {
     resetDeps: [searchTerm, resultRows.length, searchExecuted],
   });
-  const selectedCount = resultRows.filter((r) => r.selected).length;
+  const selectedFileNames = resultRows
+    .filter((r) => r.selected)
+    .map((r) => r.fileName);
+  const selectedCount = selectedFileNames.length;
   const allSelected =
     resultRows.length > 0 && resultRows.every((r) => r.selected);
   const someSelected = resultRows.some((r) => r.selected);
@@ -783,7 +788,7 @@ function AdjustmentDataFileDeletionScreen() {
                           <StyledDeleteButton
                             variant="contained"
                             startIcon={<DeleteIcon />}
-                            onClick={handleDeleteSelected}
+                            onClick={() => setDeleteDialogOpen(true)}
                             disabled={selectedCount === 0 || deleting || !canEdit}
                           >
                             {t("adjustmentDataFileDeletion.delete")}{" "}
@@ -799,6 +804,19 @@ function AdjustmentDataFileDeletionScreen() {
           )}
         </StyledSectionWrapper>
       </StyledMainPaper>
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        title={t("adjustmentDataFileDeletion.confirmDeletion")}
+        message={t("adjustmentDataFileDeletion.deleteDialogMessage")}
+        manyItemsMessage={t("adjustmentDataFileDeletion.deleteDialogManyMessage")}
+        items={selectedFileNames}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={() => {
+          setDeleteDialogOpen(false);
+          handleDeleteSelected();
+        }}
+      />
 
       <Snackbar
         open={snackbarOpen}

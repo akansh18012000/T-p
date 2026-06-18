@@ -16,6 +16,14 @@ export {
   type FreezeColumnsDialogProps,
 } from "./FreezeColumnsDialog.js";
 export {
+  DeleteConfirmationDialog,
+  type DeleteConfirmationDialogProps,
+} from "./DeleteConfirmationDialog.js";
+export {
+  FlagInfoButton,
+  type FlagInfoButtonProps,
+} from "./FlagInfoButton.js";
+export {
   CellSearchButton,
   type CellSearchButtonProps,
 } from "./CellSearchButton.js";

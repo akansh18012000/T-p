@@ -1770,6 +1770,13 @@ export default function SalesDataUploadScreen() {
 
       <Snackbar
         open={snackbarOpen}
+        // Auto-dismiss success messages (both all-uploaded and partial-upload
+        // cases); errors stay until the user closes them.
+        autoHideDuration={snackbarSeverity === "success" ? 4000 : null}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

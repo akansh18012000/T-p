@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
+import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -1768,8 +1769,20 @@ export default function GpcMasterScreen() {
                                       colIndex + 1,
                                     )}
                                   >
-                                    <StyledTableHeaderText variant="body2">
+                                    <StyledTableHeaderText
+                                      variant="body2"
+                                      sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
                                       {t(col.labelKey)}
+                                      {col.infoTextKey && (
+                                        <FlagInfoButton
+                                          text={t(col.infoTextKey)}
+                                          ariaLabel={t(col.labelKey)}
+                                        />
+                                      )}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}

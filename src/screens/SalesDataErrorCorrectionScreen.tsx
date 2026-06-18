@@ -50,6 +50,7 @@ import { usePermissions } from "../hooks/usePermissions.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+import { DeleteConfirmationDialog } from "../components/shared/DeleteConfirmationDialog.js";
 import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js";
 import {
   SALES_DATA_ERROR_CORRECTION_COLUMNS,
@@ -520,6 +521,7 @@ export default function SalesDataErrorCorrectionScreen() {
     new Set(),
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const apiRowsByCodeRef = useRef<Record<string, SalesDataCorrectionApiRow>>(
     {},
@@ -722,6 +724,12 @@ export default function SalesDataErrorCorrectionScreen() {
       }
       return next;
     });
+  };
+
+  const handleToggleAllRows = (checked: boolean) => {
+    setSelectedRowCodes(
+      checked ? new Set(errorData.map((r) => r.rowCode)) : new Set(),
+    );
   };
 
   const handleDeleteSelected = async () => {
@@ -1012,6 +1020,23 @@ export default function SalesDataErrorCorrectionScreen() {
     freezeColumnsConfig,
   );
   const TABLE_COLUMNS = SALES_DATA_ERROR_CORRECTION_COLUMNS;
+
+  // Row numbers of the currently-selected rows, in the order they appear in the
+  // table (matching the "#" column), for display in the delete confirmation.
+  const selectedRowNumbers = sortedData
+    .map((row, idx) => ({ idx, code: row.rowCode }))
+    .filter(({ code }) => selectedRowCodes.has(code))
+    .map(({ idx }) =>
+      t("errorCorrection.deleteDialogRowLabel", { row: idx + 1 }),
+    );
+
+  // Header "select all" reflects/controls selection across the full result set.
+  const allRowsSelected =
+    errorData.length > 0 &&
+    errorData.every((r) => selectedRowCodes.has(r.rowCode));
+  const someRowsSelected = errorData.some((r) =>
+    selectedRowCodes.has(r.rowCode),
+  );
 
   return (
     <>
@@ -1424,7 +1449,37 @@ export default function SalesDataErrorCorrectionScreen() {
                             </StyledTableHeaderCellSortable>
                           ))}
                           <StyledTableHeaderCell>
-                            {t("errorCorrection.delete")}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {t("errorCorrection.delete")}
+                              <Checkbox
+                                size="small"
+                                checked={allRowsSelected}
+                                indeterminate={
+                                  someRowsSelected && !allRowsSelected
+                                }
+                                onChange={(e) =>
+                                  handleToggleAllRows(e.target.checked)
+                                }
+                                sx={{
+                                  p: 0.25,
+                                  color: "common.white",
+                                  "&.Mui-checked": { color: "common.white" },
+                                  "&.MuiCheckbox-indeterminate": {
+                                    color: "common.white",
+                                  },
+                                }}
+                                inputProps={{
+                                  "aria-label": t("common.selectAll"),
+                                }}
+                              />
+                            </Box>
                           </StyledTableHeaderCell>
                         </TableRow>
                       </TableHead>
@@ -1511,7 +1566,7 @@ export default function SalesDataErrorCorrectionScreen() {
                       variant="contained"
                       color="error"
                       startIcon={<DeleteIcon />}
-                      onClick={handleDeleteSelected}
+                      onClick={() => setDeleteDialogOpen(true)}
                       disabled={
                         selectedRowCodes.size === 0 || isDeleting || !canEdit
                       }
@@ -1525,6 +1580,19 @@ export default function SalesDataErrorCorrectionScreen() {
           </StyledResultsSection>
         )}
       </StyledMainPaper>
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        title={t("errorCorrection.confirmDeletion")}
+        message={t("errorCorrection.deleteDialogMessage")}
+        manyItemsMessage={t("errorCorrection.deleteDialogManyMessage")}
+        items={selectedRowNumbers}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={() => {
+          setDeleteDialogOpen(false);
+          handleDeleteSelected();
+        }}
+      />
 
       {/* Snackbar */}
       <Snackbar

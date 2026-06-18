@@ -4,6 +4,7 @@ import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useTranslation } from "react-i18next";
+import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import {
   Box,
   Typography,
@@ -1209,8 +1210,20 @@ export default function KitItemClassificationMasterScreen() {
                                       colIndex + 1,
                                     )}
                                   >
-                                    <StyledTableHeaderText variant="body2">
+                                    <StyledTableHeaderText
+                                      variant="body2"
+                                      sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
                                       {t(col.labelKey)}
+                                      {col.infoTextKey && (
+                                        <FlagInfoButton
+                                          text={t(col.infoTextKey)}
+                                          ariaLabel={t(col.labelKey)}
+                                        />
+                                      )}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}

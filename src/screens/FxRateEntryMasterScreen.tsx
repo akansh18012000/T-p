@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -1072,8 +1073,20 @@ function FxRateEntryMasterScreen() {
                                     key={colIndex}
                                     $deletionFlag={col.key === "deletionFlag" || col.key === "overwritePreventionFlag"}
                                   >
-                                    <StyledTableHeaderText variant="body2">
+                                    <StyledTableHeaderText
+                                      variant="body2"
+                                      sx={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                      }}
+                                    >
                                       {t(col.labelKey)}
+                                      {col.infoTextKey && (
+                                        <FlagInfoButton
+                                          text={t(col.infoTextKey)}
+                                          ariaLabel={t(col.labelKey)}
+                                        />
+                                      )}
                                     </StyledTableHeaderText>
                                   </StyledTableHeaderCell>
                                 ))}

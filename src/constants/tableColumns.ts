@@ -9,6 +9,8 @@ export interface I18nColumnConfig {
   labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
+  /** i18n key for an info popover shown beside this column's header. */
+  infoTextKey?: string;
 }
 
 /** Column config for freeze columns dialog (labelKey used with t() in component) */
@@ -432,6 +434,8 @@ export interface GlobalDadMasterColumnConfig {
   searchable?: boolean;
   /** If true, renders as checkbox */
   isCheckbox?: boolean;
+  /** i18n key for an info popover shown beside this column's header. */
+  infoTextKey?: string;
 }
 
 export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
@@ -445,7 +449,7 @@ export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
   { key: "effectiveStartDate", label: "Effective Start Date", labelKey: "globalDadMaster.effectiveStartDate", editable: true },
   { key: "expirationDate", label: "Expiration Date", labelKey: "globalDadMaster.expirationDate", editable: true },
   { key: "patternId", label: "Pattern Id", labelKey: "globalDadMaster.patternId", editable: false },
-  { key: "deletionFlag", label: "Deletion Flag", labelKey: "globalDadMaster.deletionFlag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "globalDadMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 export const GLOBAL_DAD_MASTER_HEADERS: string[] = GLOBAL_DAD_MASTER_COLUMNS.map((col) => col.label);
@@ -497,6 +501,8 @@ export interface StandardCostMasterColumnConfig {
   associatedColumn?: string;
   /** If true, renders as checkbox */
   isCheckbox?: boolean;
+  /** i18n key for an info popover shown beside this column's header. */
+  infoTextKey?: string;
 }
 
 export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
@@ -510,8 +516,8 @@ export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
   { key: "effectiveStartDate", label: "Effective Start Date (Year/Month)", labelKey: "standardCostMaster.effectiveStartDate", editable: true },
   { key: "currency", label: "Currency", labelKey: "standardCostMaster.currency", editable: true },
   { key: "standardCost", label: "Standard Cost", labelKey: "standardCostMaster.standardCost", editable: true },
-  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "standardCostMaster.overwritePreventionFlag", editable: true, isCheckbox: true },
-  { key: "deletionFlag", label: "Deletion Flag", labelKey: "standardCostMaster.deletionFlag", editable: true, isCheckbox: true },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "standardCostMaster.overwritePreventionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.overwritePreventionFlagInfo" },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "standardCostMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 /** Header labels array for backward compatibility */
@@ -562,6 +568,8 @@ export interface KitItemClassificationMasterColumnConfig {
   editable?: boolean;
   /** If true, renders as checkbox */
   isCheckbox?: boolean;
+  /** i18n key for an info popover shown beside this column's header. */
+  infoTextKey?: string;
 }
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMasterColumnConfig[] = [
@@ -571,7 +579,7 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMaster
   { key: "componentsManufacturer", label: "Components Manufacturer", labelKey: "kitItemClassification.componentsManufacturer", editable: false },
   { key: "componentLocationCode", label: "Component Location Code", labelKey: "kitItemClassification.componentLocationCode", editable: false },
   { key: "quantity", label: "Quantity", labelKey: "kitItemClassification.quantity", editable: true },
-  { key: "deletionFlag", label: "Deletion Flag", labelKey: "kitItemClassification.deletionFlag", editable: true, isCheckbox: true },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "kitItemClassification.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 /** Header labels array for backward compatibility */
@@ -631,8 +639,8 @@ export const FX_RATE_ENTRY_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "toCurrency", labelKey: "fxRateEntryMaster.toCurrency", editable: true },
   { key: "currencyType", labelKey: "fxRateEntryMaster.currencyType", editable: true },
   { key: "currencyExchangeRate", labelKey: "fxRateEntryMaster.currencyExchangeRate", editable: true },
-  { key: "overwritePreventionFlag", labelKey: "fxRateEntryMaster.overwritePreventionFlag", editable: true },
-  { key: "deletionFlag", labelKey: "fxRateEntryMaster.deletionFlag", editable: true },
+  { key: "overwritePreventionFlag", labelKey: "fxRateEntryMaster.overwritePreventionFlag", editable: true, infoTextKey: "tableCommon.overwritePreventionFlagInfo" },
+  { key: "deletionFlag", labelKey: "fxRateEntryMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -782,6 +790,8 @@ export interface GpcMasterColumnConfig {
   associatedColumn?: string;
   /** If true, renders as checkbox */
   isCheckbox?: boolean;
+  /** i18n key for an info popover shown beside this column's header. */
+  infoTextKey?: string;
 }
 
 export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
@@ -793,8 +803,8 @@ export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
   { key: "validYear", label: "Valid Year", labelKey: "gpcMaster.validYear", editable: true },
   { key: "bu3Code", label: "BU3 Code", labelKey: "gpcMaster.bu3Code", editable: false },
   { key: "bu3Name", label: "BU3 Name", labelKey: "gpcMaster.bu3Name", editable: false },
-  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "gpcMaster.overwritePreventionFlag", editable: true, isCheckbox: true },
-  { key: "deletionFlag", label: "Deletion Flag", labelKey: "gpcMaster.deletionFlag", editable: true, isCheckbox: true },
+  { key: "overwritePreventionFlag", label: "Overwrite Prevention Flag", labelKey: "gpcMaster.overwritePreventionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.overwritePreventionFlagInfo" },
+  { key: "deletionFlag", label: "Deletion Flag", labelKey: "gpcMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 /** Header labels array for backward compatibility */
@@ -888,7 +898,7 @@ export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "reserve3", labelKey: "commonConversionMaster.reserve3", editable: true },
   { key: "reserve4", labelKey: "commonConversionMaster.reserve4", editable: true },
   { key: "reserve5", labelKey: "commonConversionMaster.reserve5", editable: true },
-  { key: "deletionFlag", labelKey: "commonConversionMaster.deletionFlag", editable: true },
+  { key: "deletionFlag", labelKey: "commonConversionMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
@@ -945,7 +955,7 @@ export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "reserve3", labelKey: "commonMaster.reserve3", editable: true },
   { key: "reserve4", labelKey: "commonMaster.reserve4", editable: true },
   { key: "reserve5", labelKey: "commonMaster.reserve5", editable: true },
-  { key: "deletionFlag", labelKey: "commonMaster.deletionFlag", editable: true },
+  { key: "deletionFlag", labelKey: "commonMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [

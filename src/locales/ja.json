@@ -295,6 +295,9 @@
     "invalid": "無効",
     "confirmDeletion": "削除確認",
     "deleteConfirmMessage": "ローカル商品コードに\"Item\"が含まれる選択された行を削除してもよろしいですか？この操作は元に戻せません。",
+    "deleteDialogMessage": "以下の行を削除してもよろしいですか？この操作は元に戻せません。",
+    "deleteDialogManyMessage": "選択したすべての行を削除してもよろしいですか？この操作は元に戻せません。",
+    "deleteDialogRowLabel": "{{row}}行目",
     "rowsSelected": "{{count}}行が削除対象として選択されています。",
     "cancel": "キャンセル",
     "delete": "削除",
@@ -382,6 +385,9 @@
     "noFilesFound": "ファイルが見つかりません",
     "useSearchToFindFiles": "検索してファイルを検索してください。",
     "delete": "削除",
+    "confirmDeletion": "削除確認",
+    "deleteDialogMessage": "以下のファイルを削除してもよろしいですか？この操作は元に戻せません。",
+    "deleteDialogManyMessage": "選択したすべてのファイルを削除してもよろしいですか？この操作は元に戻せません。",
     "searchCompletedWithData": "検索完了。データを読み込みました。",
     "searchCompletedNoResults": "検索完了。結果がありません。",
     "noRowsSelectedForDeletion": "削除対象の行が選択されていません。",
@@ -972,7 +978,9 @@
     "uploadCancelled": "アップロードをキャンセルしました。"
   },
   "tableCommon": {
-    "rowNumber": "#"
+    "rowNumber": "#",
+    "deletionFlagInfo": "このレコードを削除する場合は、このフラグをオンにしてください。",
+    "overwritePreventionFlagInfo": "このレコードを上書きから保護する場合は、このフラグをオンにします。上書きを許可する場合はオフにしてください。"
   },
   "common": {
     "addRow": "行を追加",
@@ -984,6 +992,8 @@
     "deleteRow": "行を削除",
     "newRowDeleted": "新しい行が削除されました。",
     "selectAll": "全て選択",
+    "cancel": "キャンセル",
+    "yesDelete": "はい、削除します",
     "loadingResults": "読み込み中...",
     "manufacturerDataLoadFailed": "メーカーデータの読み込みに失敗しました。ページを再読み込みしてください。",
     "gpcDataLoadFailed": "GPCデータの読み込みに失敗しました。ページを再読み込みしてください。",
