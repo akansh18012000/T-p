@@ -1839,10 +1839,15 @@ export default function StandardCostMasterScreen() {
                                   >
                                     <StyledTableHeaderText
                                       variant="body2"
-                                      sx={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                      }}
+                                      sx={
+                                        col.infoTextKey
+                                          ? {
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              alignItems: "center",
+                                            }
+                                          : undefined
+                                      }
                                     >
                                       {t(col.labelKey)}
                                       {col.infoTextKey && (

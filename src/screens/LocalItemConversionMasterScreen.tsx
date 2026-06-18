@@ -1618,7 +1618,8 @@ function LocalItemConversionMasterScreen() {
                                   <StyledTableHeaderText
                                     variant="body2"
                                     sx={{
-                                      display: "inline-flex",
+                                      display: "flex",
+                                      flexDirection: "column",
                                       alignItems: "center",
                                     }}
                                   >

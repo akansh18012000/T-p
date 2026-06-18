@@ -1,33 +1,42 @@
 import { useState, type MouseEvent } from "react";
-import { IconButton, Popover, Typography } from "@mui/material";
-import { InfoOutlined } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
+import {
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Typography,
+} from "@mui/material";
+import { InfoOutlined, Close as CloseIcon } from "@mui/icons-material";
 
 export interface FlagInfoButtonProps {
-  /** Info text shown in the popover when the icon is clicked. */
+  /** Info text shown in the dialog when the icon is clicked. */
   text: string;
-  /** Accessible label for the icon button (typically the column header label). */
+  /** Accessible label for the icon button; also used as the dialog title. */
   ariaLabel?: string;
+  /** Optional dialog title (defaults to `ariaLabel`). */
+  title?: string;
 }
 
 /**
- * Small white outlined info icon used beside flag column headers (e.g. Deletion
- * Flag, Overwrite Prevention Flag). Clicking it opens a popover that explains
- * what the flag does. The icon inherits the surrounding font size so it scales
- * with the column header text.
+ * Small white outlined info icon used beneath flag column headers (e.g. Deletion
+ * Flag, Overwrite Prevention Flag). Clicking it opens a centered dialog that
+ * explains what the flag does. The icon inherits the surrounding font size so it
+ * scales with the column header text.
  */
-export function FlagInfoButton({ text, ariaLabel }: FlagInfoButtonProps) {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const open = Boolean(anchorEl);
+export function FlagInfoButton({ text, ariaLabel, title }: FlagInfoButtonProps) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
 
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
     // Stop the click from reaching the header (sort toggles, etc.).
     event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+    setOpen(true);
   };
 
-  const handleClose = (event?: object, _reason?: string) => {
+  const handleClose = (event?: object) => {
     (event as MouseEvent | undefined)?.stopPropagation?.();
-    setAnchorEl(null);
+    setOpen(false);
   };
 
   return (
@@ -39,23 +48,33 @@ export function FlagInfoButton({ text, ariaLabel }: FlagInfoButtonProps) {
         sx={{
           color: "common.white",
           p: 0.25,
-          ml: 0.5,
           fontSize: "inherit",
         }}
       >
         <InfoOutlined sx={{ fontSize: "1.1em" }} />
       </IconButton>
-      <Popover
-        open={open}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        transformOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Typography variant="body2" sx={{ p: 1.5, maxWidth: 280 }}>
-          {text}
-        </Typography>
-      </Popover>
+      <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pr: 1,
+          }}
+        >
+          {title ?? ariaLabel}
+          <IconButton
+            aria-label={t("common.cancel")}
+            onClick={handleClose}
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2">{text}</Typography>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
