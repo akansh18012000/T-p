@@ -445,14 +445,21 @@ function FxRateEntryMasterScreen() {
       return;
     }
 
-    // Every column is required. Collect, per row, the names of the empty
-    // columns so the error can list them.
+    // Every column is required except the checkbox flags (overwrite prevention
+    // and deletion), whose unchecked state is a meaningful "0", not a missing
+    // value. Collect, per row, the names of the empty columns so the error can
+    // list them.
     const missingByRow: { row: number; fields: string[] }[] = [];
     [...createdRowIndices, ...updatedRowIndices].forEach((idx) => {
       const row = csvData.rows[idx];
       if (!row) return;
       const missingFields = FX_RATE_ENTRY_MASTER_COLUMNS
-        .filter((_col, ci) => String(row[ci] ?? "").trim() === "")
+        .filter(
+          (_col, ci) =>
+            ci !== overwriteFlagColIndex &&
+            ci !== deletionFlagColIndex &&
+            String(row[ci] ?? "").trim() === "",
+        )
         .map((col) => t(col.labelKey));
       if (missingFields.length > 0) {
         missingByRow.push({ row: idx + 1, fields: missingFields });
@@ -529,8 +536,8 @@ function FxRateEntryMasterScreen() {
       to_currency: row[2],
       currency_type: row[3],
       rate: Number(row[4]),
-      overwrite_flag: row[5],
-      delete_flg: row[6],
+      overwrite_flag: row[5] === "1" ? "1" : "0",
+      delete_flg: row[6] === "1" ? "1" : "0",
     }));
 
     setRegistering(true);
