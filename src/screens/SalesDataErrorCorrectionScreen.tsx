@@ -1448,7 +1448,9 @@ export default function SalesDataErrorCorrectionScreen() {
                               </StyledTableSortLabel>
                             </StyledTableHeaderCellSortable>
                           ))}
-                          <StyledTableHeaderCell>
+                          <StyledTableHeaderCell
+                            sx={{ width: 80, minWidth: 80, maxWidth: 80 }}
+                          >
                             <Box
                               sx={{
                                 display: "flex",
@@ -1532,7 +1534,11 @@ export default function SalesDataErrorCorrectionScreen() {
                                 </StyledBodyCell>
                               );
                             })}
-                            <StyledBodyCell $rowIndex={index}>
+                            <StyledBodyCell
+                              $rowIndex={index}
+                              align="center"
+                              sx={{ width: 80, minWidth: 80, maxWidth: 80 }}
+                            >
                               <Checkbox
                                 size="small"
                                 checked={selectedRowCodes.has(row.rowCode)}
