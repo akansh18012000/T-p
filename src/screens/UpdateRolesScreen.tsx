@@ -9,10 +9,7 @@ import {
   MenuItem,
   Button,
   Snackbar,
-  Table,
   TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
 } from "@mui/material";
@@ -21,9 +18,13 @@ import { useUser } from "../context/UserContext.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
   StyledSnackbarAlert,
-  StyledTableWrapper,
-  StyledFileListTableHeaderRow,
-  StyledFileListTableHeaderCell,
+  StyledTableContainer,
+  ScrollableTable,
+  StyledTableHeaderCell,
+  StyledTableHeaderText,
+  StyledTableBodyRow,
+  StyledTableIndexCell,
+  StyledTableDataCell,
 } from "../components/shared/StyledComponents.js";
 
 const ROLES_API_URL = "/api/v1/roles";
@@ -273,47 +274,55 @@ export default function UpdateRolesScreen() {
           <StyledSectionTitle variant="subtitle1">
             {t("updateRoleForm.currentUsersTitle")}
           </StyledSectionTitle>
-          <StyledTableWrapper>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <StyledFileListTableHeaderRow>
-                    <StyledFileListTableHeaderCell>
+          <StyledTableContainer>
+            <ScrollableTable stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <StyledTableHeaderCell $indexCell>#</StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    <StyledTableHeaderText variant="body2">
                       {t("updateRoleForm.colUsername")}
-                    </StyledFileListTableHeaderCell>
-                    <StyledFileListTableHeaderCell>
+                    </StyledTableHeaderText>
+                  </StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    <StyledTableHeaderText variant="body2">
                       {t("updateRoleForm.colEmail")}
-                    </StyledFileListTableHeaderCell>
-                    <StyledFileListTableHeaderCell>
+                    </StyledTableHeaderText>
+                  </StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    <StyledTableHeaderText variant="body2">
                       {t("updateRoleForm.colRole")}
-                    </StyledFileListTableHeaderCell>
-                  </StyledFileListTableHeaderRow>
-                </TableHead>
-                <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.email} hover>
-                      <TableCell>
-                        <Typography variant="body2">{u.username}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{u.email}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{u.role_name}</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            {!loading && users.length === 0 && (
-              <StyledEmptyBox>
-                <Typography variant="body2">
-                  {t("updateRoleForm.noUsers")}
-                </Typography>
-              </StyledEmptyBox>
-            )}
-          </StyledTableWrapper>
+                    </StyledTableHeaderText>
+                  </StyledTableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {users.map((u, i) => (
+                  <StyledTableBodyRow key={u.email} $index={i}>
+                    <StyledTableIndexCell $rowIndex={i}>
+                      {i + 1}
+                    </StyledTableIndexCell>
+                    <StyledTableDataCell $rowIndex={i}>
+                      <Typography variant="body2">{u.username}</Typography>
+                    </StyledTableDataCell>
+                    <StyledTableDataCell $rowIndex={i}>
+                      <Typography variant="body2">{u.email}</Typography>
+                    </StyledTableDataCell>
+                    <StyledTableDataCell $rowIndex={i}>
+                      <Typography variant="body2">{u.role_name}</Typography>
+                    </StyledTableDataCell>
+                  </StyledTableBodyRow>
+                ))}
+              </TableBody>
+            </ScrollableTable>
+          </StyledTableContainer>
+          {!loading && users.length === 0 && (
+            <StyledEmptyBox>
+              <Typography variant="body2">
+                {t("updateRoleForm.noUsers")}
+              </Typography>
+            </StyledEmptyBox>
+          )}
         </Box>
       </StyledBodyBox>
 
