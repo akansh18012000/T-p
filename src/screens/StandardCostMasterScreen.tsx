@@ -66,6 +66,7 @@ import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
   stripUploadIdSuffix,
+  formatDateFieldForDisplay,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import {
@@ -830,7 +831,7 @@ export default function StandardCostMasterScreen() {
         r.manufacturer_detail_name ?? "",
         r.company_code ?? "",
         r.company_name ?? "",
-        r.fiscal_month_from ?? "",
+        formatDateFieldForDisplay(r.fiscal_month_from, "yearMonth"),
         r.currency_code ?? "",
         r.standard_cost ?? "",
         r.overwrite_ban_flg ?? "0",
@@ -1643,6 +1644,7 @@ export default function StandardCostMasterScreen() {
                       value={validFrom}
                       onChange={(newValue) => setValidFrom(newValue)}
                       views={["year", "month"]}
+                      format="yyyyMM"
                       open={validFromPickerOpen}
                       onOpen={() => setValidFromPickerOpen(true)}
                       onClose={() => setValidFromPickerOpen(false)}

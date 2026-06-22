@@ -231,9 +231,8 @@ const REQUIRED_COL_INDICES = [
 
 // API dates arrive as YYYYMM (e.g. "201404"); display them as YYYY-MM.
 function formatYearMonth(yyyymm: string): string {
-  const v = (yyyymm || "").trim();
-  if (v.length !== 6) return v;
-  return `${v.slice(0, 4)}-${v.slice(4, 6)}`;
+  // Display effective/expiration dates as compact YYYYMM (strip any separators).
+  return (yyyymm || "").replace(/\D/g, "").slice(0, 6);
 }
 
 // Inverse of formatYearMonth for submission: strip non-digits so both
@@ -1333,6 +1332,7 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.effectiveStartDate = v;
                       }}
                       views={["year", "month"]}
+                      format="yyyyMM"
                       open={effectiveStartDatePickerOpen}
                       onOpen={() => setEffectiveStartDatePickerOpen(true)}
                       onClose={() => setEffectiveStartDatePickerOpen(false)}
@@ -1352,6 +1352,7 @@ export default function GlobalDadMasterScreen() {
                         searchConditionsRef.current.expirationDate = v;
                       }}
                       views={["year", "month"]}
+                      format="yyyyMM"
                       open={expirationDatePickerOpen}
                       onOpen={() => setExpirationDatePickerOpen(true)}
                       onClose={() => setExpirationDatePickerOpen(false)}

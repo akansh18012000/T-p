@@ -77,7 +77,12 @@ import {
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS } from "../constants/tableColumns.js";
-import { formatDateTimeForDisplay, formatYearMonthForPayload } from "../utils/commonUtils.js";
+import {
+  formatDateTimeForDisplay,
+  formatDateFieldForDisplay,
+  formatYearMonthForPayload,
+  stripUploadIdSuffix,
+} from "../utils/commonUtils.js";
 import { usePermissions } from "../hooks/usePermissions.js";
 
 // Screen-specific table components (delete column, white borders)
@@ -462,9 +467,11 @@ function AdjustmentDataFileDeletionScreen() {
   } = useTablePagination(filteredRows, {
     resetDeps: [searchTerm, resultRows.length, searchExecuted],
   });
+  // Display only (deletion dialog): strip the upload-id suffix (last "_" and
+  // after). The deletion API still uses the untouched r.fileName.
   const selectedFileNames = resultRows
     .filter((r) => r.selected)
-    .map((r) => r.fileName);
+    .map((r) => stripUploadIdSuffix(r.fileName));
   const selectedCount = selectedFileNames.length;
   const allSelected =
     resultRows.length > 0 && resultRows.every((r) => r.selected);
@@ -534,7 +541,7 @@ function AdjustmentDataFileDeletionScreen() {
                         searchConditionsRef.current.yearMonth = newValue;
                       }}
                       views={["year", "month"]}
-                      format="yyyy/MM"
+                      format="yyyyMM"
                       // AI Generated Code by Deloitte + Cursor (BEGIN)
                       open={yearMonthPickerOpen}
                       onOpen={() => setYearMonthPickerOpen(true)}
@@ -734,6 +741,22 @@ function AdjustmentDataFileDeletionScreen() {
                                       if (col.key === "dateTime") {
                                         cellValue = formatDateTimeForDisplay(
                                           row.dateTime,
+                                        );
+                                      } else if (col.key === "yearMonth") {
+                                        // Display only: show YYYYMM. The raw
+                                        // row.yearMonth is still echoed to the
+                                        // deletion API.
+                                        cellValue = formatDateFieldForDisplay(
+                                          row.yearMonth,
+                                          "yearMonth",
+                                        );
+                                      } else if (col.key === "fileName") {
+                                        // Display only: strip the upload-id
+                                        // suffix (last "_" and after). The
+                                        // untouched row.fileName is still sent
+                                        // to the deletion API.
+                                        cellValue = stripUploadIdSuffix(
+                                          row.fileName,
                                         );
                                       } else if (
                                         col.key === "numberOfRecords"

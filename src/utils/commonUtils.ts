@@ -11,6 +11,26 @@ export function formatYearMonthForPayload(d: Date | null): string {
   return `${y}${m}`;
 }
 
+/** Granularity of a date field, controls the compact display width. */
+export type DateFieldType = "year" | "yearMonth" | "date";
+
+/**
+ * Display a raw date value compactly by granularity:
+ *   "year" -> YYYY, "yearMonth" -> YYYYMM, "date" -> YYYYMMDD.
+ * Strips any separators (dashes/slashes) or time component the API might
+ * include, returns "" for empty input, and passes shorter values through.
+ */
+export function formatDateFieldForDisplay(
+  value: string | number | null | undefined,
+  type: DateFieldType,
+): string {
+  if (value === null || value === undefined) return "";
+  const digits = String(value).replace(/\D/g, "");
+  if (!digits) return "";
+  const width = type === "year" ? 4 : type === "yearMonth" ? 6 : 8;
+  return digits.length > width ? digits.slice(0, width) : digits;
+}
+
 // Per-file result returned by /api/v1/upload. `file_status` is "DUPLICATE" when
 // the backend rejected the file because identical content already exists; in
 // that case `duplicate_file_name` carries the stored name of the existing file.

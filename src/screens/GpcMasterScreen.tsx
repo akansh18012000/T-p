@@ -120,6 +120,7 @@ import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
   stripUploadIdSuffix,
+  formatDateFieldForDisplay,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 
@@ -701,7 +702,7 @@ export default function GpcMasterScreen() {
         r.manufacture_part_number ?? "",
         r.gpc_code ?? "",
         r.gpc_name ?? "",
-        r.fiscal_year ?? "",
+        formatDateFieldForDisplay(r.fiscal_year, "year"),
         r.bu_lv3_code ?? "",
         r.bu_lv3_name ?? "",
         r.overwrite_ban_flg ?? "0",
@@ -1574,6 +1575,7 @@ export default function GpcMasterScreen() {
                       value={validYear}
                       onChange={(newValue) => setValidYear(newValue)}
                       views={["year"]}
+                      format="yyyy"
                       open={validYearPickerOpen}
                       onOpen={() => setValidYearPickerOpen(true)}
                       onClose={() => setValidYearPickerOpen(false)}

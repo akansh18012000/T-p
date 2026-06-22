@@ -146,6 +146,7 @@ import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
   stripUploadIdSuffix,
+  formatDateFieldForDisplay,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 
@@ -563,14 +564,14 @@ function LocalItemConversionMasterScreen() {
         r.item_type ?? "", // Global Item Types
         r.gpc_code ?? "", // GPC Code
         r.gpc_name ?? "", // GPC Name
-        r.fiscal_year ?? "", // Validity Year
+        formatDateFieldForDisplay(r.fiscal_year, "year"), // Validity Year (YYYY)
         r.manufacturer_detail ?? "", // Location Code
         r.manufacturer_detail_name ?? "", // Location Name
         r.company_code ?? "", // Corporate Code
         r.company_name ?? "", // Corporate Name
         r.standard_cost ?? "", // Standard Cost
         r.currency_code ?? "", // Currency
-        r.fiscal_month_from ?? "", // Valid from date (YYYYMM)
+        formatDateFieldForDisplay(r.fiscal_month_from, "yearMonth"), // Valid from date (YYYYMM)
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
@@ -1262,6 +1263,7 @@ function LocalItemConversionMasterScreen() {
                         searchConditionsRef.current.yearMonth = newValue;
                       }}
                       views={["year", "month"]}
+                      format="yyyyMM"
                       open={yearMonthPickerOpen}
                       onOpen={() => setYearMonthPickerOpen(true)}
                       onClose={() => setYearMonthPickerOpen(false)}

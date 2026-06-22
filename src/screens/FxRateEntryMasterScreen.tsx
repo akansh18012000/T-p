@@ -112,6 +112,7 @@ import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncodin
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   formatYearMonthForPayload,
+  formatDateFieldForDisplay,
   findDuplicateUploadFile,
   stripUploadIdSuffix,
   type UploadApiResponse,
@@ -276,7 +277,7 @@ function FxRateEntryMasterScreen() {
       const json = (await res.json()) as FxRateSearchEnvelope;
       const rows = Array.isArray(json.data) ? json.data : [];
       const mappedRows: string[][] = rows.map((r) => [
-        r.proc_period ?? "",
+        formatDateFieldForDisplay(r.proc_period, "yearMonth"),
         r.from_currency ?? "",
         r.to_currency ?? "",
         r.currency_type ?? "",
@@ -832,6 +833,7 @@ function FxRateEntryMasterScreen() {
                         searchConditionsRef.current.processingDate = newValue;
                       }}
                       views={["year", "month"]}
+                      format="yyyyMM"
                       open={processingDatePickerOpen}
                       onOpen={() => setProcessingDatePickerOpen(true)}
                       onClose={() => setProcessingDatePickerOpen(false)}
