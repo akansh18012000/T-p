@@ -115,7 +115,7 @@ import { useManufacturerData } from "../context/ManufacturerDataContext.js";
 import { useGpcData } from "../context/GpcDataContext.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
@@ -745,25 +745,21 @@ export default function GpcMasterScreen() {
     await executeSearch(payload, options);
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("gpcMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const yearStr = validYear ? String(validYear.getFullYear()) : "export";
-    link.download = `gpc_master_${yearStr}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("gpcMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const saved = await downloadCsvWithPicker(blob, `gpc_master_${yearStr}.csv`);
+    if (saved) {
+      setSnackbarMessage(t("gpcMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   // Add row menu handlers

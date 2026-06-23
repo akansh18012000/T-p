@@ -101,6 +101,7 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
+import { downloadCsvWithPicker } from "../utils/csvUtils.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -955,9 +956,7 @@ export default function SalesDataErrorCorrectionScreen() {
     }
   };
 
-  const handleDownload = () => {
-    // Generate CSV for download using filtered/sorted data
-
+  const handleDownload = async () => {
     const headers = TABLE_COLUMNS.map((col) => t(col.labelKey));
     const csvContent = [
       headers.join(","),
@@ -968,13 +967,10 @@ export default function SalesDataErrorCorrectionScreen() {
       ),
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = t("errorCorrection.downloadFileName");
-    link.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const rawName = t("errorCorrection.downloadFileName");
+    const suggestedName = rawName.endsWith(".csv") ? rawName : `${rawName}.csv`;
+    await downloadCsvWithPicker(blob, suggestedName);
   };
 
   const clearFilters = () => {

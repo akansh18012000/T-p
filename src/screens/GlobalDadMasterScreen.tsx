@@ -50,7 +50,7 @@ import { useSystemIdData } from "../context/SystemIdDataContext.js";
 import { useLocalCustomerData } from "../context/LocalCustomerDataContext.js";
 import { useProductClassificationData } from "../context/ProductClassificationDataContext.js";
 import { useBu3CodeData } from "../context/Bu3CodeDataContext.js";
-import { stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -660,24 +660,20 @@ export default function GlobalDadMasterScreen() {
     await executeSearch(payload, options);
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("globalDadMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "global_dad_master_export.csv";
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("globalDadMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
+    const saved = await downloadCsvWithPicker(blob, "global_dad_master_export.csv");
+    if (saved) {
+      setSnackbarMessage(t("globalDadMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   const handleAddEmptyRow = () => {

@@ -61,7 +61,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { usePermissions } from "../hooks/usePermissions.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
@@ -874,27 +874,23 @@ export default function StandardCostMasterScreen() {
     await executeSearch(payload, options);
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("standardCostMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const validFromStr = validFrom
       ? `${validFrom.getFullYear()}-${String(validFrom.getMonth() + 1).padStart(2, "0")}`
       : "export";
-    link.download = `standard_cost_${validFromStr}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("standardCostMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const saved = await downloadCsvWithPicker(blob, `standard_cost_${validFromStr}.csv`);
+    if (saved) {
+      setSnackbarMessage(t("standardCostMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   // Add row menu handlers

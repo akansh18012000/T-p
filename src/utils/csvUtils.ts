@@ -663,3 +663,42 @@ export function processCsvData(
 
   return result;
 }
+
+/**
+ * Save a CSV blob via the native Save-As file picker when available
+ * (Chrome/Edge), falling back to an anchor-click download on other browsers.
+ *
+ * Returns true when the file was saved, false when the user cancelled the
+ * dialog or an unexpected error occurred (so callers can skip success toasts).
+ */
+export async function downloadCsvWithPicker(
+  blob: Blob,
+  suggestedName: string,
+): Promise<boolean> {
+  const picker = (window as any).showSaveFilePicker; // feature-detect; typed as any intentionally
+  if (typeof picker === "function") {
+    try {
+      const handle: any = await picker({
+        suggestedName,
+        types: [{ description: "CSV file", accept: { "text/csv": [".csv"] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return true;
+    } catch (err) {
+      if ((err as DOMException)?.name !== "AbortError") {
+        console.error("Save file picker error:", err);
+      }
+      return false;
+    }
+  } else {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = suggestedName;
+    link.click();
+    URL.revokeObjectURL(url);
+    return true;
+  }
+}

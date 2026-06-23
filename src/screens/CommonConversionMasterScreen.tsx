@@ -112,7 +112,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
@@ -571,24 +571,20 @@ export default function CommonConversionMasterScreen() {
     await executeSearch(payload, options);
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("commonConversionMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "common_conversion_master_export.csv";
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("commonConversionMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
+    const saved = await downloadCsvWithPicker(blob, "common_conversion_master_export.csv");
+    if (saved) {
+      setSnackbarMessage(t("commonConversionMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   // Add row menu handlers

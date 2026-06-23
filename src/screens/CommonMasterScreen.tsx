@@ -90,7 +90,7 @@ import {
   StyledSearchIcon,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
-import { parseCsv, stringifyCsv, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -500,24 +500,20 @@ export default function CommonMasterScreen() {
     return executeSearch(payload);
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("commonMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "common_master_export.csv";
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("commonMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
+    const saved = await downloadCsvWithPicker(blob, "common_master_export.csv");
+    if (saved) {
+      setSnackbarMessage(t("commonMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   const handleAddRow = (insertAtPagePosition = true) => {

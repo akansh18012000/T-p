@@ -108,7 +108,7 @@ import {
   TABLE_PAGINATION_ROWS_OPTIONS,
 } from "../hooks/useTablePagination.js";
 import { useUploadContext } from "../context/UploadContext.js";
-import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, type CsvData } from "../utils/csvUtils.js";
+import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   formatYearMonthForPayload,
@@ -309,27 +309,23 @@ function FxRateEntryMasterScreen() {
     }
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("fxRateEntryMaster.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const dateStr = processingDate
       ? `${processingDate.getFullYear()}-${String(processingDate.getMonth() + 1).padStart(2, "0")}`
       : "export";
-    link.download = `fx_rate_entry_${dateStr}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("fxRateEntryMaster.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const saved = await downloadCsvWithPicker(blob, `fx_rate_entry_${dateStr}.csv`);
+    if (saved) {
+      setSnackbarMessage(t("fxRateEntryMaster.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   const handleAddRow = (insertAtPagePosition = true) => {

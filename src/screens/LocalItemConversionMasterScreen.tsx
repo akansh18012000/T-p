@@ -140,6 +140,7 @@ import {
   stringifyCsv,
   validateCsvColumns,
   readFileWithDetectedEncoding,
+  downloadCsvWithPicker,
   type CsvData,
 } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
@@ -610,30 +611,23 @@ function LocalItemConversionMasterScreen() {
     }
   };
 
-  const handleDownloadCsv = () => {
+  const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
       setSnackbarMessage(t("localItemConversion.noDataToDownload"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
       return;
     }
-    const csvString = stringifyCsv(csvData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
+    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const yearMonthStr = yearMonth
-      ? `${yearMonth.getFullYear()}-${String(yearMonth.getMonth() + 1).padStart(
-          2,
-          "0",
-        )}`
+      ? `${yearMonth.getFullYear()}-${String(yearMonth.getMonth() + 1).padStart(2, "0")}`
       : "export";
-    link.download = `local_item_conversion_${yearMonthStr}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setSnackbarMessage(t("localItemConversion.csvDownloaded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    const saved = await downloadCsvWithPicker(blob, `local_item_conversion_${yearMonthStr}.csv`);
+    if (saved) {
+      setSnackbarMessage(t("localItemConversion.csvDownloaded"));
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
   };
 
   // Add row menu handlers
