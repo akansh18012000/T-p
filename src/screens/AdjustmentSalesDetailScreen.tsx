@@ -53,6 +53,7 @@ import {
   parseCsv,
   validateCsvColumns,
   readFileWithDetectedEncoding,
+  csvToBlob,
   type CsvData as CsvDataType,
 } from "../utils/csvUtils.js";
 import {
@@ -502,6 +503,46 @@ const StyledWarningAlert = styled(Alert)(({ theme }) => ({
 // (e.g. sales_data_202405.csv). Month must be 01-12.
 const FILENAME_YYYYMM_PATTERN = /_\d{4}(0[1-9]|1[0-2])\.[A-Za-z0-9]+$/;
 
+// Template column headers per upload type, in each supported UI language.
+// Downloads generate a CSV from the set matching the active language; upload
+// validation accepts a file whose columns match EITHER language set. The
+// English headers are translations of the canonical Japanese ones.
+const TEMPLATE_HEADERS: Record<
+  "salesDetail" | "consolidated",
+  { ja: string[]; en: string[] }
+> = {
+  salesDetail: {
+    ja: [
+      "システムID", "法人コード", "法人名称", "販売拠点コード", "ローカル組織コード",
+      "売上計上日", "ローカル品目コード", "品目コード", "品目名称", "品目分類コード",
+      "品目分類名称", "Bu3コード", "Bu3名称", "ローカル製品分類", "生産工場コード",
+      "ローカル顧客コード", "内部取引会社コード", "仕向国", "仕向国名", "勘定科目コード",
+      "勘定科目名称", "数量", "売上通貨", "売上金額", "売上原価", "データ種区分",
+      "予備1", "予備2", "予備3", "連結", "法人", "摘要", "補正区分", "削除",
+    ],
+    en: [
+      "System ID", "Entity Code", "Entity Name", "Sales Base Code", "Local Org Code",
+      "Sales Date", "Local Item Code", "Item Code", "Item Name", "Item Class Code",
+      "Item Class Name", "BU3 Code", "BU3 Name", "Local Product Class", "Production Plant Code",
+      "Local Customer Code", "Internal Company Code", "Destination Country Code", "Destination Country Name", "Account Code",
+      "Account Name", "Quantity", "Sales Currency", "Sales Amount", "Cost of Sales", "Data Type Category",
+      "Reserve 1", "Reserve 2", "Reserve 3", "Consolidated Sale Type", "Entity Sale Type", "Remarks", "Adjustment Type", "Deletion Flag",
+    ],
+  },
+  consolidated: {
+    ja: [
+      "売上計上月度", "法人コード", "法人名称", "品目コード", "品目名称", "生産工場コード",
+      "仕向国", "仕向国名称", "勘定科目コード", "勘定科目名称", "連結", "法人", "通貨", "金額",
+      "摘要", "補正区分", "削除",
+    ],
+    en: [
+      "Sales Month", "Entity Code", "Entity Name", "Item Code", "Item Name", "Production Plant Code",
+      "Destination Country Code", "Destination Country Name", "Account Code", "Account Name", "Consolidated Sale Type", "Entity Sale Type", "Currency", "Amount",
+      "Remarks", "Adjustment Type", "Deletion Flag",
+    ],
+  },
+};
+
 interface CSVData {
   headers: string[];
   rows: string[][];
@@ -518,8 +559,11 @@ interface CSVEditorState {
 export default function AdjustmentSalesDetailScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const screenKey = location.pathname;
+  const lang: "ja" | "en" = i18n.language?.toLowerCase().startsWith("ja")
+    ? "ja"
+    : "en";
   const {
     getUploadState,
     setSelectedFile,
@@ -621,6 +665,13 @@ export default function AdjustmentSalesDetailScreen() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Header set for the current upload type in the active UI language, used to
+  // generate the downloadable template.
+  const getTemplateHeaders = (): string[] | null =>
+    uploadType === "salesDetail" || uploadType === "consolidated"
+      ? TEMPLATE_HEADERS[uploadType][lang]
+      : null;
+
   const getTemplateFileName = () =>
     uploadType === "salesDetail"
       ? "Sales_Detail_Adjustment_Template.csv"
@@ -643,31 +694,23 @@ export default function AdjustmentSalesDetailScreen() {
       return;
     }
 
-    const templateFileName = getTemplateFileName();
-    if (templateFileName) {
-      try {
-        const templateResponse = await fetch(`/templates/${templateFileName}`);
-        if (!templateResponse.ok) throw new Error("Template fetch failed");
-        const templateText = await templateResponse.text();
-        const templateParsed = await parseCsv(templateText);
-
-        const validation = validateCsvColumns(
-          parsed.headers,
-          templateParsed.headers,
-        );
-        if (!validation.isValid) {
-          setUploadStatus("idle");
-          showSnackbar(
-            t("adjustmentSalesDetail.missingColumnsError", {
-              columns: validation.missingColumns.join(", "),
-            }),
-            "error",
-          );
-          return;
-        }
-      } catch {
+    // Validate columns against the in-code template headers. A file passes if
+    // its columns match EITHER the Japanese or the English header set, so users
+    // can upload a template downloaded in either language regardless of the
+    // current UI language. Missing-column feedback uses the active language.
+    if (uploadType === "salesDetail" || uploadType === "consolidated") {
+      const headerSets = TEMPLATE_HEADERS[uploadType];
+      const jaValidation = validateCsvColumns(parsed.headers, headerSets.ja);
+      const enValidation = validateCsvColumns(parsed.headers, headerSets.en);
+      if (!jaValidation.isValid && !enValidation.isValid) {
         setUploadStatus("idle");
-        showSnackbar(t("adjustmentSalesDetail.templateLoadError"), "error");
+        const activeValidation = lang === "ja" ? jaValidation : enValidation;
+        showSnackbar(
+          t("adjustmentSalesDetail.missingColumnsError", {
+            columns: activeValidation.missingColumns.join(", "),
+          }),
+          "error",
+        );
         return;
       }
     }
@@ -784,12 +827,17 @@ export default function AdjustmentSalesDetailScreen() {
   };
 
   const handleDownloadTemplate = () => {
+    const headers = getTemplateHeaders();
     const fileName = getTemplateFileName();
-    if (!fileName) return;
+    if (!headers || !fileName) return;
+    // Build a headers-only CSV (with UTF-8 BOM) in the active UI language.
+    const blob = csvToBlob({ headers, rows: [] });
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = `/templates/${fileName}`;
+    link.href = url;
     link.download = fileName;
     link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const theme = useTheme();
