@@ -322,7 +322,7 @@ function FxRateEntryMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `fx_rate_entry_${dateStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("fxRateEntryMaster.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

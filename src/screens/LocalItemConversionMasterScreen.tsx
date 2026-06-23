@@ -624,7 +624,7 @@ function LocalItemConversionMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `local_item_conversion_${yearMonthStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("localItemConversion.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

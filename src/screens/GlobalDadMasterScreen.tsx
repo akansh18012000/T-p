@@ -670,7 +670,7 @@ export default function GlobalDadMasterScreen() {
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "global_dad_master_export.csv");
     if (saved) {
-      setSnackbarMessage(t("globalDadMaster.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

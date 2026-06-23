@@ -315,7 +315,8 @@
     "enterCharsToSearch": "Select or type to filter",
     "searchAllDataPlaceholder": "Search all data...",
     "showingRowsFiltered": "Showing {{filtered}} of {{total}} rows",
-    "downloadFileName": "sales_error_data.csv"
+    "downloadFileName": "sales_error_data.csv",
+    "csvDownloaded": "CSV downloaded."
   },
   "adjustmentSalesDetail": {
     "title": "Adjustment Data Upload",
@@ -998,6 +999,7 @@
     "manufacturerDataLoadFailed": "Failed to load manufacturer data. Please reload the page to try again.",
     "gpcDataLoadFailed": "Failed to load GPC data. Please reload the page to try again.",
     "invalidFileTypeCsvOnly": "Only CSV files are allowed.",
+    "downloadSuccess": "{{fileName}} is downloaded.",
     "paginatedListbox": {
       "previous": "Previous",
       "next": "Next",

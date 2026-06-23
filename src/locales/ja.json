@@ -315,7 +315,8 @@
     "enterCharsToSearch": "選択または入力してフィルター",
     "searchAllDataPlaceholder": "すべてのデータを検索...",
     "showingRowsFiltered": "{{filtered}} / {{total}} 件を表示",
-    "downloadFileName": "sales_error_data.csv"
+    "downloadFileName": "sales_error_data.csv",
+    "csvDownloaded": "CSVをダウンロードしました。"
   },
   "adjustmentSalesDetail": {
     "title": "調整データアップロード",
@@ -998,6 +999,7 @@
     "manufacturerDataLoadFailed": "メーカーデータの読み込みに失敗しました。ページを再読み込みしてください。",
     "gpcDataLoadFailed": "GPCデータの読み込みに失敗しました。ページを再読み込みしてください。",
     "invalidFileTypeCsvOnly": "CSVファイルのみアップロードできます。",
+    "downloadSuccess": "{{fileName}} をダウンロードしました。",
     "paginatedListbox": {
       "previous": "前へ",
       "next": "次へ",

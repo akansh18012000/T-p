@@ -668,13 +668,16 @@ export function processCsvData(
  * Save a CSV blob via the native Save-As file picker when available
  * (Chrome/Edge), falling back to an anchor-click download on other browsers.
  *
- * Returns true when the file was saved, false when the user cancelled the
- * dialog or an unexpected error occurred (so callers can skip success toasts).
+ * Returns the saved file name on success — the name the user actually chose in
+ * the picker (`handle.name`), or the suggested name on the anchor fallback.
+ * Returns null when the user cancelled the dialog or an unexpected error
+ * occurred (so callers can skip success toasts). The returned string is truthy,
+ * so existing `if (saved)` checks keep working.
  */
 export async function downloadCsvWithPicker(
   blob: Blob,
   suggestedName: string,
-): Promise<boolean> {
+): Promise<string | null> {
   const picker = (window as any).showSaveFilePicker; // feature-detect; typed as any intentionally
   if (typeof picker === "function") {
     try {
@@ -685,12 +688,14 @@ export async function downloadCsvWithPicker(
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-      return true;
+      return typeof handle.name === "string" && handle.name
+        ? handle.name
+        : suggestedName;
     } catch (err) {
       if ((err as DOMException)?.name !== "AbortError") {
         console.error("Save file picker error:", err);
       }
-      return false;
+      return null;
     }
   } else {
     const url = URL.createObjectURL(blob);
@@ -699,6 +704,6 @@ export async function downloadCsvWithPicker(
     link.download = suggestedName;
     link.click();
     URL.revokeObjectURL(url);
-    return true;
+    return suggestedName;
   }
 }

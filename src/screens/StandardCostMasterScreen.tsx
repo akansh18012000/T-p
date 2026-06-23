@@ -887,7 +887,7 @@ export default function StandardCostMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `standard_cost_${validFromStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("standardCostMaster.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

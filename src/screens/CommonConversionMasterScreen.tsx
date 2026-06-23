@@ -581,7 +581,7 @@ export default function CommonConversionMasterScreen() {
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "common_conversion_master_export.csv");
     if (saved) {
-      setSnackbarMessage(t("commonConversionMaster.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

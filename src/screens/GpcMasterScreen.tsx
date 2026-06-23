@@ -756,7 +756,7 @@ export default function GpcMasterScreen() {
     const yearStr = validYear ? String(validYear.getFullYear()) : "export";
     const saved = await downloadCsvWithPicker(blob, `gpc_master_${yearStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("gpcMaster.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

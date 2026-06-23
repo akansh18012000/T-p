@@ -433,7 +433,7 @@ export default function KitItemClassificationMasterScreen() {
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "kit_item_classification_export.csv");
     if (saved) {
-      setSnackbarMessage(t("kitItemClassification.csvDownloaded"));
+      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     }

@@ -970,7 +970,13 @@ export default function SalesDataErrorCorrectionScreen() {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const rawName = t("errorCorrection.downloadFileName");
     const suggestedName = rawName.endsWith(".csv") ? rawName : `${rawName}.csv`;
-    await downloadCsvWithPicker(blob, suggestedName);
+    const saved = await downloadCsvWithPicker(blob, suggestedName);
+    if (saved) {
+      showSnackbar(
+        t("common.downloadSuccess", { fileName: saved }),
+        "success",
+      );
+    }
   };
 
   const clearFilters = () => {
