@@ -677,7 +677,30 @@ export function processCsvData(
 export async function downloadCsvWithPicker(
   blob: Blob,
   suggestedName: string,
+  onWriteStart?: () => void,
 ): Promise<string | null> {
+  // `onWriteStart` is currently unused because the picker path (which needs a
+  // "write started" signal for the loader) is disabled — see the commented
+  // block below. Referenced here so noUnusedParameters stays satisfied and the
+  // signature is unchanged for callers.
+  void onWriteStart;
+
+  // --- Anchor-download path (ACTIVE) ---
+  // On locked-down corporate machines the File System Access API picker's
+  // close() blocks ~10s while the endpoint security agent (EDR/DLP) scans the
+  // file on commit. The classic anchor download hands the file to the browser's
+  // own download pipeline (scan happens there, off our code path), so the app
+  // stays responsive. Trade-off: files go to the browser's default Downloads
+  // folder — no "choose location / replace existing file?" dialog.
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = suggestedName;
+  link.click();
+  URL.revokeObjectURL(url);
+  return suggestedName;
+
+  /* --- File System Access API path (DISABLED for now) ---
   const picker = (window as any).showSaveFilePicker; // feature-detect; typed as any intentionally
   if (typeof picker === "function") {
     try {
@@ -685,6 +708,11 @@ export async function downloadCsvWithPicker(
         suggestedName,
         types: [{ description: "CSV file", accept: { "text/csv": [".csv"] } }],
       });
+      // The picker has resolved — the user has chosen a destination (and
+      // confirmed any "replace existing file?" prompt). The write/close below
+      // can take a noticeable moment, so let callers show a loader now (not
+      // while the native dialog was open).
+      onWriteStart?.();
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
@@ -706,4 +734,5 @@ export async function downloadCsvWithPicker(
     URL.revokeObjectURL(url);
     return suggestedName;
   }
+  */
 }
