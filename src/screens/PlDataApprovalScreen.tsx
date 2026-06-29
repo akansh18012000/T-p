@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
@@ -249,9 +249,7 @@ export default function PlDataApprovalScreen() {
   };
 
   // GET the approval history and return the rows mapped to the table shape.
-  const fetchApprovalHistory = useCallback(async (): Promise<
-    ApprovalHistoryRow[]
-  > => {
+  const fetchHistory = async (): Promise<ApprovalHistoryRow[]> => {
     const res = await fetch(PNL_APPROVAL_LOG_API_URL, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -268,33 +266,28 @@ export default function PlDataApprovalScreen() {
       status: row.status,
       approvalDateTime: formatApiTimestamp(row.requested_at),
     }));
-  }, []);
+  };
 
-  // Load the approval history once on page load.
+  // Load the approval history once on page load. The ref guard early-returns on
+  // React StrictMode's second mount pass so the fetch fires exactly once.
+  const historyFetchedRef = useRef(false);
   useEffect(() => {
-    let cancelled = false;
-    const loadOnMount = async () => {
+    if (historyFetchedRef.current) return;
+    historyFetchedRef.current = true;
+    (async () => {
       setIsLoading(true);
       try {
-        const mapped = await fetchApprovalHistory();
-        if (!cancelled) {
-          setApprovalHistory(mapped);
-        }
+        const mapped = await fetchHistory();
+        setApprovalHistory(mapped);
       } catch {
-        if (!cancelled) {
-          setApprovalHistory([]);
-        }
+        setApprovalHistory([]);
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
-    };
-    void loadOnMount();
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchApprovalHistory]);
+    })();
+    // Intentionally empty deps: this fetch must run exactly once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // POST the Approve/Rollback action, then refresh the history before the
   // loader is removed and surface a success/failure snackbar.
@@ -315,7 +308,7 @@ export default function PlDataApprovalScreen() {
       }
       // Refresh the results while the loader is still visible.
       try {
-        const mapped = await fetchApprovalHistory();
+        const mapped = await fetchHistory();
         setApprovalHistory(mapped);
       } catch {
         // Keep the existing table if the refresh fails; the action succeeded.
