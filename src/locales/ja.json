@@ -316,7 +316,8 @@
     "searchAllDataPlaceholder": "すべてのデータを検索...",
     "showingRowsFiltered": "{{filtered}} / {{total}} 件を表示",
     "downloadFileName": "sales_error_data.csv",
-    "csvDownloaded": "CSVをダウンロードしました。"
+    "csvDownloaded": "CSVをダウンロードしました。",
+    "savingFileInProgress": "ファイルをダウンロードしています..."
   },
   "adjustmentSalesDetail": {
     "title": "調整データアップロード",
@@ -509,6 +510,13 @@
   "plDataApproval": {
     "title": "P&L データ承認",
     "approve": "承認",
+    "rollback": "ロールバック",
+    "approveInProgress": "承認を送信しています…",
+    "rollbackInProgress": "ロールバックを送信しています…",
+    "approveSuccess": "承認を送信しました。",
+    "rollbackSuccess": "ロールバックを送信しました。",
+    "approveFailed": "承認の送信に失敗しました。もう一度お試しください。",
+    "rollbackFailed": "ロールバックの送信に失敗しました。もう一度お試しください。",
     "dataTableTitle": "P&L 承認データ",
     "historyTableTitle": "承認履歴",
     "date": "日付",
@@ -519,7 +527,8 @@
     "flag": "フラグ",
     "actualsAmount": "実績金額",
     "approver": "承認者",
-    "status": "ステータス",
+    "action": "アクション",
+    "status": "ジョブステータス",
     "approvalDateTime": "承認日時",
     "noHistory": "承認履歴はまだありません。",
     "uploadFile": "ファイルアップロード",

@@ -406,27 +406,24 @@ function LocalItemConversionMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      // Fall back to the typed input when the user typed a value but did not
-      // pick an option from the dropdown (freeSolo). The selected-value state
-      // is empty in that case, so without this fallback the typed text would
-      // be dropped from the search payload.
-      systemId: systemId || systemIdSearchInput,
+      // For the freeSolo Autocompletes, the visible input value is the source
+      // of truth: selecting an option sets both the selected-value state and
+      // the input to the same string, while typing only updates the input.
+      // Preferring the selected-value state here would send a stale code after
+      // the user edits the input away from a previously picked option.
+      systemId: systemIdSearchInput,
       yearMonth,
       localItemCode,
-      manufacturerCode: manufacturerCode || manufacturerCodeSearchInput,
+      manufacturerCode: manufacturerCodeSearchInput,
       manufacturerName,
-      manufacturerPartNumber:
-        manufacturerPartNumber || manufacturerPartNumberSearchInput,
+      manufacturerPartNumber: manufacturerPartNumberSearchInput,
     };
   }, [
-    systemId,
     systemIdSearchInput,
     yearMonth,
     localItemCode,
-    manufacturerCode,
     manufacturerCodeSearchInput,
     manufacturerName,
-    manufacturerPartNumber,
     manufacturerPartNumberSearchInput,
   ]);
 
@@ -512,6 +509,18 @@ function LocalItemConversionMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   // Row selection mode hooks
   const {
@@ -589,13 +598,12 @@ function LocalItemConversionMasterScreen() {
       setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
-      setSnackbarMessage(
+      showSnackbar(
         mappedRows.length > 0
           ? t("localItemConversion.searchCompletedWithData")
           : t("localItemConversion.searchCompletedNoResults"),
+        mappedRows.length > 0 ? "success" : "info",
       );
-      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
     } catch (err) {
       console.error("Local item search failed:", err);
       setCsvData(getEmptyCsvData());
@@ -603,9 +611,7 @@ function LocalItemConversionMasterScreen() {
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       clearNewRowTracking();
-      setSnackbarMessage(t("localItemConversion.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.searchCompletedNoResults"), "info");
     } finally {
       setSearchLoading(false);
     }
@@ -613,9 +619,7 @@ function LocalItemConversionMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("localItemConversion.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
@@ -624,9 +628,7 @@ function LocalItemConversionMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `local_item_conversion_${yearMonthStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -652,16 +654,12 @@ function LocalItemConversionMasterScreen() {
       null,
       ...prev.slice(insertIndex),
     ]);
-    setSnackbarMessage(t("localItemConversion.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -695,9 +693,7 @@ function LocalItemConversionMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("localItemConversion.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -706,9 +702,7 @@ function LocalItemConversionMasterScreen() {
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -741,9 +735,7 @@ function LocalItemConversionMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("localItemConversion.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.noChangesToRegister"), "info");
       return;
     }
 
@@ -764,15 +756,14 @@ function LocalItemConversionMasterScreen() {
     });
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
+      let message: React.ReactNode;
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
-          t("localItemConversion.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-        );
+        message = t("localItemConversion.requiredFieldsMissingSingle", {
+          row: missingByRow[0].row,
+          fields: missingByRow[0].fields.join(", "),
+        });
       } else {
-        setSnackbarMessage(
+        message = (
           <Box component="span">
             {t("localItemConversion.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -785,11 +776,10 @@ function LocalItemConversionMasterScreen() {
                 </li>
               ))}
             </Box>
-          </Box>,
+          </Box>
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(message, "error", true);
       return;
     }
 
@@ -819,13 +809,13 @@ function LocalItemConversionMasterScreen() {
     });
     if (duplicateRows.size > 0) {
       const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
-      setSnackbarMessage(
+      showSnackbar(
         t("localItemConversion.duplicateRowError", {
           rows: formatRowList(sorted),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -896,14 +886,10 @@ function LocalItemConversionMasterScreen() {
       } else {
         messageKey = "localItemConversion.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error("Local item registration failed:", e);
-      setSnackbarMessage(t("localItemConversion.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -942,9 +928,7 @@ function LocalItemConversionMasterScreen() {
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("localItemConversion.rowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("localItemConversion.rowDeleted"), "success");
   };
 
   const handleRowDeletionFlagToggle = (rowIndex: number, checked: boolean) => {
@@ -964,9 +948,7 @@ function LocalItemConversionMasterScreen() {
       prev.filter((_, idx) => !rowDeletionFlags.has(idx)),
     );
     setRowDeletionFlags(new Set());
-    setSnackbarMessage(t("localItemConversion.rowsDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("localItemConversion.rowsDeleted"), "success");
   };
 
   const handleUploadDrag = (e: React.DragEvent) => {
@@ -985,9 +967,7 @@ function LocalItemConversionMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -1003,9 +983,7 @@ function LocalItemConversionMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
@@ -1025,9 +1003,7 @@ function LocalItemConversionMasterScreen() {
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");
-      setSnackbarMessage(t("localItemConversion.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.parseCsvFailed"), "error", true);
       return;
     }
 
@@ -1046,13 +1022,13 @@ function LocalItemConversionMasterScreen() {
         jaValidation.missingColumns.length
           ? enValidation.missingColumns
           : jaValidation.missingColumns;
-      setSnackbarMessage(
+      showSnackbar(
         t("localItemConversion.missingColumnsError", {
           columns: missing.join(", "),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -1082,16 +1058,16 @@ function LocalItemConversionMasterScreen() {
       const duplicateFile = findDuplicateUploadFile(uploadJson);
       if (duplicateFile) {
         setUploadStatus("idle");
-        setSnackbarMessage(
+        showSnackbar(
           t("upload.duplicateFileMessage", {
             file: duplicateFile.file_name,
             duplicate: stripUploadIdSuffix(
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
         );
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
         return;
       }
       if (!response.ok) {
@@ -1101,15 +1077,11 @@ function LocalItemConversionMasterScreen() {
       setSelectedFile(screenKey, null);
       setUploadStatus("idle");
       if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("localItemConversion.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.fileUploadedSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setSnackbarMessage(t("localItemConversion.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("localItemConversion.uploadError"), "error");
     }
   };
 
@@ -1117,9 +1089,7 @@ function LocalItemConversionMasterScreen() {
     setSelectedFile(screenKey, null);
     setUploadStatus("idle");
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("localItemConversion.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+    showSnackbar(t("localItemConversion.uploadCancelled"), "info");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -1964,8 +1934,11 @@ function LocalItemConversionMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

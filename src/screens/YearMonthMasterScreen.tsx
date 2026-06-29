@@ -180,6 +180,18 @@ function YearMonthMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -237,9 +249,7 @@ function YearMonthMasterScreen() {
         await refreshProcessMonthData();
       } catch (err) {
         console.error("Failed to fetch process-month data:", err);
-        setSnackbarMessage(t("yearMonthMaster.fetchError"));
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
+        showSnackbar(t("yearMonthMaster.fetchError"), "error");
       } finally {
         setIsLoading(false);
       }
@@ -277,16 +287,12 @@ function YearMonthMasterScreen() {
       null,
       ...prev.slice(insertIndex),
     ]);
-    setSnackbarMessage(t("yearMonthMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("yearMonthMaster.rowAdded"), "success");
   };
 
   const handleEnterSelectionMode = () => {
     if (rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -322,9 +328,7 @@ function YearMonthMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("yearMonthMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("yearMonthMaster.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -332,23 +336,17 @@ function YearMonthMasterScreen() {
     shiftIndicesForDeletion(rowIndex);
     setRows(rows.filter((_, idx) => idx !== rowIndex));
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
       await refreshProcessMonthData();
-      setSnackbarMessage(t("yearMonthMaster.tableRefreshed"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("yearMonthMaster.tableRefreshed"), "info");
     } catch (err) {
       console.error("Failed to refresh process-month data:", err);
-      setSnackbarMessage(t("yearMonthMaster.fetchError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("yearMonthMaster.fetchError"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -370,9 +368,7 @@ function YearMonthMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("yearMonthMaster.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("yearMonthMaster.noChangesToRegister"), "info");
       return;
     }
 
@@ -391,14 +387,16 @@ function YearMonthMasterScreen() {
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
+        showSnackbar(
           t("yearMonthMaster.requiredFieldsMissingSingle", {
             row: missingByRow[0].row,
             fields: missingByRow[0].fields.join(", "),
           }),
+          "error",
+          true,
         );
       } else {
-        setSnackbarMessage(
+        showSnackbar(
           <Box component="span">
             {t("yearMonthMaster.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -412,10 +410,10 @@ function YearMonthMasterScreen() {
               ))}
             </Box>
           </Box>,
+          "error",
+          true,
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -451,11 +449,11 @@ function YearMonthMasterScreen() {
         style: "long",
         type: "conjunction",
       }).format(sorted.map(String));
-      setSnackbarMessage(
+      showSnackbar(
         t("yearMonthMaster.duplicateRowError", { rows: rowsText }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -513,14 +511,10 @@ function YearMonthMasterScreen() {
       } else {
         messageKey = "yearMonthMaster.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("yearMonthMaster.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("yearMonthMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -765,8 +759,11 @@ function YearMonthMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

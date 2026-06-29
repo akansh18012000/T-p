@@ -759,6 +759,9 @@ export default function SalesDataUploadScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState<ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<AlertColor>("success");
+  // Persistent snackbars stay open until the user clicks ✕ (used for
+  // user-action validation errors); all others auto-close after 4s.
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
   // A second, independent snackbar dedicated to duplicate-file errors so it can
   // be shown at the same time as the success snackbar when an upload contains a
   // mix of new and duplicate files.
@@ -848,9 +851,11 @@ export default function SalesDataUploadScreen() {
   const showSnackbar = (
     message: ReactNode,
     severity: AlertColor = "success",
+    persistent = false,
   ) => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
     setSnackbarOpen(true);
   };
 
@@ -882,7 +887,7 @@ export default function SalesDataUploadScreen() {
     const csvFiles = filterCsvFiles(files);
     if (csvFiles.length === 0) {
       if (files.length > 0) {
-        showSnackbar(t("common.invalidFileTypeCsvOnly"), "error");
+        showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
       }
       return;
     }
@@ -890,6 +895,7 @@ export default function SalesDataUploadScreen() {
       showSnackbar(
         t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
         "error",
+        true,
       );
       return;
     }
@@ -1113,6 +1119,7 @@ export default function SalesDataUploadScreen() {
           </Box>
         ),
         "error",
+        true,
       );
       return;
     }
@@ -1770,9 +1777,10 @@ export default function SalesDataUploadScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        // Auto-dismiss success messages (both all-uploaded and partial-upload
-        // cases); errors stay until the user closes them.
-        autoHideDuration={snackbarSeverity === "success" ? 4000 : null}
+        // User-action validation errors stay open until the user closes them
+        // (persistent); everything else (success, info, API/network errors)
+        // auto-dismisses after 4s.
+        autoHideDuration={snackbarPersistent ? null : 4000}
         onClose={(_event, reason) => {
           if (reason === "clickaway") return;
           setSnackbarOpen(false);

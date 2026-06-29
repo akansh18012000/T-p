@@ -294,18 +294,16 @@ export default function KitItemClassificationMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      // Fall back to the typed input when the user typed a value but did not
-      // pick an option from the dropdown (freeSolo). The selected-value state
-      // is empty in that case, so without this fallback the typed text would
-      // be dropped from the search payload.
-      kitManufacturerPartNumber:
-        kitManufacturerPartNumber || kitManufacturerPartNumberSearchInput,
-      kitManufacturer: kitManufacturer || kitManufacturerSearchInput,
+      // For the freeSolo Autocompletes, the visible input value is the source
+      // of truth: selecting an option sets both the selected-value state and
+      // the input to the same string, while typing only updates the input.
+      // Preferring the selected-value state here would send a stale value after
+      // the user edits the input away from a previously picked option.
+      kitManufacturerPartNumber: kitManufacturerPartNumberSearchInput,
+      kitManufacturer: kitManufacturerSearchInput,
     };
   }, [
-    kitManufacturerPartNumber,
     kitManufacturerPartNumberSearchInput,
-    kitManufacturer,
     kitManufacturerSearchInput,
   ]);
 
@@ -327,6 +325,18 @@ export default function KitItemClassificationMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   const [rowMetadata, setRowMetadata] = useState<Array<ExistingRowMeta | null>>(
     [],
@@ -400,13 +410,12 @@ export default function KitItemClassificationMasterScreen() {
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
       if (!silent) {
-        setSnackbarMessage(
+        showSnackbar(
           mappedRows.length > 0
             ? t("kitItemClassification.searchCompletedWithData")
             : t("kitItemClassification.searchCompletedNoResults"),
+          mappedRows.length > 0 ? "success" : "info",
         );
-        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-        setSnackbarOpen(true);
       }
     } catch (e) {
       console.error(e);
@@ -414,9 +423,7 @@ export default function KitItemClassificationMasterScreen() {
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       if (!silent) {
-        setSnackbarMessage(t("kitItemClassification.searchFailed"));
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
+        showSnackbar(t("kitItemClassification.searchFailed"), "error");
       }
     } finally {
       setIsSearching(false);
@@ -425,17 +432,13 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("kitItemClassification.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "kit_item_classification_export.csv");
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -466,9 +469,7 @@ export default function KitItemClassificationMasterScreen() {
       setRowMetadata((prev) => [...prev, null]);
       markRowsAsNew([base.rows.length]);
     }
-    setSnackbarMessage(t("kitItemClassification.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("kitItemClassification.rowAdded"), "success");
   };
 
   const handleAddEmptyRow = () => {
@@ -477,9 +478,7 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -513,9 +512,7 @@ export default function KitItemClassificationMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("kitItemClassification.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("kitItemClassification.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -525,9 +522,7 @@ export default function KitItemClassificationMasterScreen() {
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     shiftIndicesForDeletion(rowIndex);
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -552,9 +547,7 @@ export default function KitItemClassificationMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("kitItemClassification.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.noChangesToRegister"), "info");
       return;
     }
 
@@ -572,15 +565,14 @@ export default function KitItemClassificationMasterScreen() {
     });
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
+      let message: React.ReactNode;
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
-          t("kitItemClassification.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-        );
+        message = t("kitItemClassification.requiredFieldsMissingSingle", {
+          row: missingByRow[0].row,
+          fields: missingByRow[0].fields.join(", "),
+        });
       } else {
-        setSnackbarMessage(
+        message = (
           <Box component="span">
             {t("kitItemClassification.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -593,11 +585,10 @@ export default function KitItemClassificationMasterScreen() {
                 </li>
               ))}
             </Box>
-          </Box>,
+          </Box>
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(message, "error", true);
       return;
     }
 
@@ -630,11 +621,11 @@ export default function KitItemClassificationMasterScreen() {
         style: "long",
         type: "conjunction",
       }).format(sorted.map(String));
-      setSnackbarMessage(
+      showSnackbar(
         t("kitItemClassification.duplicateRowError", { rows: rowsText }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -700,14 +691,10 @@ export default function KitItemClassificationMasterScreen() {
       } else {
         messageKey = "kitItemClassification.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("kitItemClassification.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -745,9 +732,7 @@ export default function KitItemClassificationMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -763,9 +748,7 @@ export default function KitItemClassificationMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
@@ -785,9 +768,7 @@ export default function KitItemClassificationMasterScreen() {
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");
-      setSnackbarMessage(t("kitItemClassification.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.parseCsvFailed"), "error", true);
       return;
     }
 
@@ -806,13 +787,13 @@ export default function KitItemClassificationMasterScreen() {
         jaValidation.missingColumns.length
           ? enValidation.missingColumns
           : jaValidation.missingColumns;
-      setSnackbarMessage(
+      showSnackbar(
         t("kitItemClassification.missingColumnsError", {
           columns: missing.join(", "),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -842,16 +823,16 @@ export default function KitItemClassificationMasterScreen() {
       const duplicateFile = findDuplicateUploadFile(uploadJson);
       if (duplicateFile) {
         setUploadStatus("idle");
-        setSnackbarMessage(
+        showSnackbar(
           t("upload.duplicateFileMessage", {
             file: duplicateFile.file_name,
             duplicate: stripUploadIdSuffix(
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
         );
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
         return;
       }
       if (!response.ok) {
@@ -861,15 +842,11 @@ export default function KitItemClassificationMasterScreen() {
       setSelectedFile(screenKey, null);
       setUploadStatus("idle");
       if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("kitItemClassification.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.fileUploadedSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setSnackbarMessage(t("kitItemClassification.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("kitItemClassification.uploadError"), "error");
     }
   };
 
@@ -877,9 +854,7 @@ export default function KitItemClassificationMasterScreen() {
     setSelectedFile(screenKey, null);
     setUploadStatus("idle");
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("kitItemClassification.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+    showSnackbar(t("kitItemClassification.uploadCancelled"), "info");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -1466,8 +1441,11 @@ export default function KitItemClassificationMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

@@ -625,10 +625,16 @@ export default function AdjustmentSalesDetailScreen() {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<AlertColor>("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
 
-  const showSnackbar = (message: string, severity: AlertColor = "success") => {
+  const showSnackbar = (
+    message: string,
+    severity: AlertColor = "success",
+    persistent = false,
+  ) => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
     setSnackbarOpen(true);
   };
 
@@ -655,7 +661,7 @@ export default function AdjustmentSalesDetailScreen() {
     if (csvFile) {
       setSelectedFile(screenKey, csvFile);
     } else if (files.length > 0) {
-      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error");
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -690,7 +696,7 @@ export default function AdjustmentSalesDetailScreen() {
       parsed = (await parseCsv(text)) as CsvDataType;
     } catch {
       setUploadStatus("idle");
-      showSnackbar(t("adjustmentData.errorParsingCsv"), "error");
+      showSnackbar(t("adjustmentData.errorParsingCsv"), "error", true);
       return;
     }
 
@@ -710,6 +716,7 @@ export default function AdjustmentSalesDetailScreen() {
             columns: activeValidation.missingColumns.join(", "),
           }),
           "error",
+          true,
         );
         return;
       }
@@ -763,6 +770,7 @@ export default function AdjustmentSalesDetailScreen() {
             ),
           }),
           "error",
+          true,
         );
         return;
       }
@@ -898,7 +906,7 @@ export default function AdjustmentSalesDetailScreen() {
 
       if (parsed.errors.length > 0) {
         console.error("CSV parsing errors:", parsed.errors);
-        showSnackbar(t("adjustmentData.errorParsingCsv"), "error");
+        showSnackbar(t("adjustmentData.errorParsingCsv"), "error", true);
         return;
       }
 
@@ -1451,8 +1459,11 @@ export default function AdjustmentSalesDetailScreen() {
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

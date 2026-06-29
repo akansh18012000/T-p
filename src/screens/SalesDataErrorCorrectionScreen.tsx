@@ -513,6 +513,7 @@ export default function SalesDataErrorCorrectionScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
 
   // Row-selection + delete state. `selectedRowCodes` tracks the Delete-column
@@ -524,13 +525,19 @@ export default function SalesDataErrorCorrectionScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSavingFile, setIsSavingFile] = useState(false);
   const apiRowsByCodeRef = useRef<Record<string, SalesDataCorrectionApiRow>>(
     {},
   );
 
-  const showSnackbar = (message: ReactNode, severity: "success" | "error" | "info") => {
+  const showSnackbar = (
+    message: ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
     setSnackbarOpen(true);
   };
 
@@ -735,7 +742,7 @@ export default function SalesDataErrorCorrectionScreen() {
 
   const handleDeleteSelected = async () => {
     if (selectedRowCodes.size === 0) {
-      showSnackbar(t("errorCorrection.noRowsSelected"), "error");
+      showSnackbar(t("errorCorrection.noRowsSelected"), "error", true);
       return;
     }
     setIsDeleting(true);
@@ -897,6 +904,7 @@ export default function SalesDataErrorCorrectionScreen() {
             fields: emptyByRow[0].fields.join(", "),
           }),
           "error",
+          true,
         );
       } else {
         showSnackbar(
@@ -914,6 +922,7 @@ export default function SalesDataErrorCorrectionScreen() {
             </Box>
           </Box>,
           "error",
+          true,
         );
       }
       return;
@@ -970,12 +979,18 @@ export default function SalesDataErrorCorrectionScreen() {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const rawName = t("errorCorrection.downloadFileName");
     const suggestedName = rawName.endsWith(".csv") ? rawName : `${rawName}.csv`;
-    const saved = await downloadCsvWithPicker(blob, suggestedName);
-    if (saved) {
-      showSnackbar(
-        t("common.downloadSuccess", { fileName: saved }),
-        "success",
+    try {
+      const saved = await downloadCsvWithPicker(blob, suggestedName, () =>
+        setIsSavingFile(true),
       );
+      if (saved) {
+        showSnackbar(
+          t("common.downloadSuccess", { fileName: saved }),
+          "success",
+        );
+      }
+    } finally {
+      setIsSavingFile(false);
     }
   };
 
@@ -1608,8 +1623,11 @@ export default function SalesDataErrorCorrectionScreen() {
       {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert
@@ -1626,6 +1644,10 @@ export default function SalesDataErrorCorrectionScreen() {
 
       {isRegistering && (
         <ResultsLoader fullScreen label={t("errorCorrection.registerInProgress")} />
+      )}
+
+      {isSavingFile && (
+        <ResultsLoader fullScreen label={t("errorCorrection.savingFileInProgress")} />
       )}
     </>
   );

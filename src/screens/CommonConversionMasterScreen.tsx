@@ -325,12 +325,13 @@ export default function CommonConversionMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      // Fall back to the typed input when the user typed a value but did not
-      // pick an option from the dropdown (freeSolo). The selected-value state
-      // (itemId/systemId) is empty in that case, so without this fallback the
-      // typed text would be dropped from the search payload.
-      itemId: itemId || itemIdSearchInput,
-      systemId: systemId || systemIdSearchInput,
+      // For the freeSolo Autocompletes, the visible input value is the source
+      // of truth: selecting an option sets both the selected-value state and
+      // the input to the same string, while typing only updates the input.
+      // Preferring the selected-value state here would send a stale value after
+      // the user edits the input away from a previously picked option.
+      itemId: itemIdSearchInput,
+      systemId: systemIdSearchInput,
       preconversionCode1,
       preconversionCode1Name,
       preconversionCode2,
@@ -340,8 +341,6 @@ export default function CommonConversionMasterScreen() {
       deletionFlag,
     };
   }, [
-    itemId,
-    systemId,
     itemIdSearchInput,
     systemIdSearchInput,
     preconversionCode1,
@@ -411,15 +410,25 @@ export default function CommonConversionMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   // Surface a snackbar once when the system-id data fetch fails.
   const systemIdErrorReportedRef = useRef(false);
   useEffect(() => {
     if (systemIdDataStatus === "error" && !systemIdErrorReportedRef.current) {
       systemIdErrorReportedRef.current = true;
-      setSnackbarMessage(t("commonConversionMaster.systemIdLoadFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.systemIdLoadFailed"), "error");
     } else if (systemIdDataStatus === "loaded") {
       systemIdErrorReportedRef.current = false;
     }
@@ -454,9 +463,7 @@ export default function CommonConversionMasterScreen() {
       } catch (e) {
         console.error("Failed to fetch column ids:", e);
         setItemIdData([]);
-        setSnackbarMessage(t("commonConversionMaster.itemIdLoadFailed"));
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
+        showSnackbar(t("commonConversionMaster.itemIdLoadFailed"), "error");
       } finally {
         setItemIdLoading(false);
       }
@@ -542,13 +549,12 @@ export default function CommonConversionMasterScreen() {
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
       if (!silent) {
-        setSnackbarMessage(
+        showSnackbar(
           mappedRows.length > 0
             ? t("commonConversionMaster.searchCompletedWithData")
             : t("commonConversionMaster.searchCompletedNoResults"),
+          mappedRows.length > 0 ? "success" : "info",
         );
-        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-        setSnackbarOpen(true);
       }
     } catch (e) {
       console.error(e);
@@ -556,9 +562,7 @@ export default function CommonConversionMasterScreen() {
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       if (!silent) {
-        setSnackbarMessage(t("commonConversionMaster.searchCompletedNoResults"));
-        setSnackbarSeverity("info");
-        setSnackbarOpen(true);
+        showSnackbar(t("commonConversionMaster.searchCompletedNoResults"), "info");
       }
     } finally {
       setSearchLoading(false);
@@ -573,17 +577,13 @@ export default function CommonConversionMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("commonConversionMaster.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "common_conversion_master_export.csv");
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -609,16 +609,12 @@ export default function CommonConversionMasterScreen() {
       null,
       ...prev.slice(insertIndex),
     ]);
-    setSnackbarMessage(t("commonConversionMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonConversionMaster.rowAdded"), "success");
   };
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -652,9 +648,7 @@ export default function CommonConversionMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("commonConversionMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonConversionMaster.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -663,9 +657,7 @@ export default function CommonConversionMasterScreen() {
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -701,9 +693,7 @@ export default function CommonConversionMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("commonConversionMaster.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.noChangesToRegister"), "info");
       return;
     }
 
@@ -725,14 +715,16 @@ export default function CommonConversionMasterScreen() {
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
+        showSnackbar(
           t("commonConversionMaster.requiredFieldsMissingSingle", {
             row: missingByRow[0].row,
             fields: missingByRow[0].fields.join(", "),
           }),
+          "error",
+          true,
         );
       } else {
-        setSnackbarMessage(
+        showSnackbar(
           <Box component="span">
             {t("commonConversionMaster.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -746,10 +738,10 @@ export default function CommonConversionMasterScreen() {
               ))}
             </Box>
           </Box>,
+          "error",
+          true,
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -779,13 +771,13 @@ export default function CommonConversionMasterScreen() {
     });
     if (duplicateRows.size > 0) {
       const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
-      setSnackbarMessage(
+      showSnackbar(
         t("commonConversionMaster.duplicateRowError", {
           rows: formatRowList(sorted),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -852,14 +844,10 @@ export default function CommonConversionMasterScreen() {
       } else {
         messageKey = "commonConversionMaster.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("commonConversionMaster.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -903,9 +891,7 @@ export default function CommonConversionMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -921,9 +907,7 @@ export default function CommonConversionMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
@@ -941,9 +925,7 @@ export default function CommonConversionMasterScreen() {
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");
-      setSnackbarMessage(t("commonConversionMaster.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.parseCsvFailed"), "error", true);
       return;
     }
 
@@ -963,13 +945,13 @@ export default function CommonConversionMasterScreen() {
         jaValidation.missingColumns.length
           ? enValidation.missingColumns
           : jaValidation.missingColumns;
-      setSnackbarMessage(
+      showSnackbar(
         t("commonConversionMaster.missingColumnsError", {
           columns: missing.join(", "),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -999,16 +981,16 @@ export default function CommonConversionMasterScreen() {
       const duplicateFile = findDuplicateUploadFile(uploadJson);
       if (duplicateFile) {
         setUploadStatus("idle");
-        setSnackbarMessage(
+        showSnackbar(
           t("upload.duplicateFileMessage", {
             file: duplicateFile.file_name,
             duplicate: stripUploadIdSuffix(
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
         );
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
         return;
       }
       if (!response.ok) {
@@ -1018,15 +1000,11 @@ export default function CommonConversionMasterScreen() {
       setSelectedFile(screenKey, null);
       setUploadStatus("idle");
       if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("commonConversionMaster.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.fileUploadedSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setSnackbarMessage(t("commonConversionMaster.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonConversionMaster.uploadError"), "error");
     }
   };
 
@@ -1034,9 +1012,7 @@ export default function CommonConversionMasterScreen() {
     setSelectedFile(screenKey, null);
     setUploadStatus("idle");
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("commonConversionMaster.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonConversionMaster.uploadCancelled"), "info");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -1760,8 +1736,11 @@ export default function CommonConversionMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

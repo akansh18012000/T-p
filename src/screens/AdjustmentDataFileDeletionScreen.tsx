@@ -330,6 +330,18 @@ function AdjustmentDataFileDeletionScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: string,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   const handleSearch = async () => {
     setSearchExecuted(true);
@@ -357,22 +369,20 @@ function AdjustmentDataFileDeletionScreen() {
       const rows = Array.isArray(json.data) ? json.data : [];
       const mapped = rows.map((raw, i) => mapApiRowToResultRow(raw, i));
       setResultRows(mapped);
-      setSnackbarMessage(
+      showSnackbar(
         mapped.length > 0
           ? t("adjustmentDataFileDeletion.searchCompletedWithData")
           : t("adjustmentDataFileDeletion.searchCompletedNoResults"),
+        mapped.length > 0 ? "success" : "info",
       );
-      setSnackbarSeverity(mapped.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
       // AI Generated Code by Deloitte + Cursor (END)
     } catch (e) {
       console.error(e);
       setResultRows([]);
-      setSnackbarMessage(
+      showSnackbar(
         t("adjustmentDataFileDeletion.searchCompletedNoResults"),
+        "info",
       );
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
     } finally {
       setLoading(false);
     }
@@ -395,11 +405,11 @@ function AdjustmentDataFileDeletionScreen() {
   const handleDeleteSelected = async () => {
     const selectedRows = resultRows.filter((r) => r.selected);
     if (selectedRows.length === 0) {
-      setSnackbarMessage(
+      showSnackbar(
         t("adjustmentDataFileDeletion.noRowsSelectedForDeletion"),
+        "info",
+        true,
       );
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -426,21 +436,21 @@ function AdjustmentDataFileDeletionScreen() {
         const text = await res.text();
         throw new Error(text || `HTTP ${res.status}`);
       }
-      setSnackbarMessage(
+      showSnackbar(
         t("adjustmentDataFileDeletion.filesDeletedSuccess", {
           count: selectedRows.length,
         }),
+        "success",
       );
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
       // Restore the results to their previous search state without
       // re-querying: clear the selection, leaving the searched rows unchanged.
       setResultRows((prev) => prev.map((r) => ({ ...r, selected: false })));
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("adjustmentDataFileDeletion.filesDeletionFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(
+        t("adjustmentDataFileDeletion.filesDeletionFailed"),
+        "error",
+      );
     } finally {
       setDeleting(false);
     }
@@ -843,8 +853,11 @@ function AdjustmentDataFileDeletionScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

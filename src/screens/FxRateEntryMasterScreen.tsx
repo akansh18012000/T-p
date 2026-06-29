@@ -228,6 +228,18 @@ function FxRateEntryMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   // Row selection mode state (for adding existing rows)
   const {
@@ -291,19 +303,16 @@ function FxRateEntryMasterScreen() {
       });
       originalRowsRef.current = mappedRows.map((r) => [...r]);
       clearNewRowTracking();
-      setSnackbarMessage(
+      showSnackbar(
         mappedRows.length > 0
           ? t("fxRateEntryMaster.searchCompletedWithData")
           : t("fxRateEntryMaster.searchCompletedNoResults"),
+        mappedRows.length > 0 ? "success" : "info",
       );
-      setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-      setSnackbarOpen(true);
     } catch (e) {
       console.error(e);
       setCsvData(getEmptyCsvData());
-      setSnackbarMessage(t("fxRateEntryMaster.searchCompletedNoResults"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.searchCompletedNoResults"), "info");
     } finally {
       setSearchLoading(false);
     }
@@ -311,9 +320,7 @@ function FxRateEntryMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("fxRateEntryMaster.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
@@ -322,9 +329,7 @@ function FxRateEntryMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `fx_rate_entry_${dateStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -352,9 +357,7 @@ function FxRateEntryMasterScreen() {
       });
       markRowsAsNew([base.rows.length]);
     }
-    setSnackbarMessage(t("fxRateEntryMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("fxRateEntryMaster.rowAdded"), "success");
   };
 
   const handleAddEmptyRow = () => {
@@ -363,9 +366,7 @@ function FxRateEntryMasterScreen() {
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -394,20 +395,16 @@ function FxRateEntryMasterScreen() {
       rows: newRows,
     });
     exitSelectionMode();
-    setSnackbarMessage(t("fxRateEntryMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("fxRateEntryMaster.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
     if (!csvData || !isNewRow(rowIndex)) return;
-    
+
     const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     shiftIndicesForDeletion(rowIndex);
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -442,9 +439,7 @@ function FxRateEntryMasterScreen() {
 
     const rowsToSubmit = [...createdRows, ...updatedRows];
     if (rowsToSubmit.length === 0) {
-      setSnackbarMessage(t("fxRateEntryMaster.noRowsToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.noRowsToRegister"), "info");
       return;
     }
 
@@ -471,14 +466,16 @@ function FxRateEntryMasterScreen() {
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
+        showSnackbar(
           t("fxRateEntryMaster.requiredFieldsMissingSingle", {
             row: missingByRow[0].row,
             fields: missingByRow[0].fields.join(", "),
           }),
+          "error",
+          true,
         );
       } else {
-        setSnackbarMessage(
+        showSnackbar(
           <Box component="span">
             {t("fxRateEntryMaster.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -492,10 +489,10 @@ function FxRateEntryMasterScreen() {
               ))}
             </Box>
           </Box>,
+          "error",
+          true,
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -525,11 +522,11 @@ function FxRateEntryMasterScreen() {
         style: "long",
         type: "conjunction",
       }).format(duplicateRowNumbers.map(String));
-      setSnackbarMessage(
+      showSnackbar(
         t("fxRateEntryMaster.duplicateRowError", { rows: rowsText }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -561,23 +558,24 @@ function FxRateEntryMasterScreen() {
         throw new Error(text || `HTTP ${res.status}`);
       }
       if (createdRows.length > 0 && updatedRows.length > 0) {
-        setSnackbarMessage(
+        showSnackbar(
           t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
             created: createdRows.length,
             updated: updatedRows.length,
           }),
+          "success",
         );
       } else if (createdRows.length > 0) {
-        setSnackbarMessage(
+        showSnackbar(
           t("fxRateEntryMaster.createdRowsSuccess", { count: createdRows.length }),
+          "success",
         );
       } else {
-        setSnackbarMessage(
+        showSnackbar(
           t("fxRateEntryMaster.updatedRowsSuccess", { count: updatedRows.length }),
+          "success",
         );
       }
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
 
       // Revert the table to the last search results without re-querying:
       // drop newly added rows and discard edits by restoring the original
@@ -589,9 +587,7 @@ function FxRateEntryMasterScreen() {
       clearNewRowTracking();
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("fxRateEntryMaster.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.registrationFailed"), "error");
     } finally {
       setRegistering(false);
     }
@@ -629,9 +625,7 @@ function FxRateEntryMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -647,9 +641,7 @@ function FxRateEntryMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
@@ -669,9 +661,7 @@ function FxRateEntryMasterScreen() {
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");
-      setSnackbarMessage(t("fxRateEntryMaster.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.parseCsvFailed"), "error", true);
       return;
     }
 
@@ -690,13 +680,13 @@ function FxRateEntryMasterScreen() {
         jaValidation.missingColumns.length
           ? enValidation.missingColumns
           : jaValidation.missingColumns;
-      setSnackbarMessage(
+      showSnackbar(
         t("fxRateEntryMaster.missingColumnsError", {
           columns: missing.join(", "),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -726,16 +716,16 @@ function FxRateEntryMasterScreen() {
       const duplicateFile = findDuplicateUploadFile(uploadJson);
       if (duplicateFile) {
         setUploadStatus("idle");
-        setSnackbarMessage(
+        showSnackbar(
           t("upload.duplicateFileMessage", {
             file: duplicateFile.file_name,
             duplicate: stripUploadIdSuffix(
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
         );
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
         return;
       }
       if (!response.ok) {
@@ -745,15 +735,11 @@ function FxRateEntryMasterScreen() {
       setSelectedFile(screenKey, null);
       setUploadStatus("idle");
       if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("fxRateEntryMaster.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.fileUploadedSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setSnackbarMessage(t("fxRateEntryMaster.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("fxRateEntryMaster.uploadError"), "error");
     }
   };
 
@@ -761,9 +747,7 @@ function FxRateEntryMasterScreen() {
     setSelectedFile(screenKey, null);
     setUploadStatus("idle");
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("fxRateEntryMaster.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+    showSnackbar(t("fxRateEntryMaster.uploadCancelled"), "info");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -1362,8 +1346,11 @@ function FxRateEntryMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

@@ -316,7 +316,8 @@
     "searchAllDataPlaceholder": "Search all data...",
     "showingRowsFiltered": "Showing {{filtered}} of {{total}} rows",
     "downloadFileName": "sales_error_data.csv",
-    "csvDownloaded": "CSV downloaded."
+    "csvDownloaded": "CSV downloaded.",
+    "savingFileInProgress": "Downloading file..."
   },
   "adjustmentSalesDetail": {
     "title": "Adjustment Data Upload",
@@ -509,6 +510,13 @@
   "plDataApproval": {
     "title": "P&L Data Approval",
     "approve": "Approve",
+    "rollback": "Rollback",
+    "approveInProgress": "Submitting approval…",
+    "rollbackInProgress": "Submitting rollback…",
+    "approveSuccess": "Approval submitted successfully.",
+    "rollbackSuccess": "Rollback submitted successfully.",
+    "approveFailed": "Failed to submit approval. Please try again.",
+    "rollbackFailed": "Failed to submit rollback. Please try again.",
     "dataTableTitle": "P&L Approval Data",
     "historyTableTitle": "Approval History",
     "date": "Date",
@@ -519,7 +527,8 @@
     "flag": "Flag",
     "actualsAmount": "Actuals amount",
     "approver": "APPROVER",
-    "status": "STATUS",
+    "action": "ACTION",
+    "status": "JOB STATUS",
     "approvalDateTime": "APPROVAL DATE/TIME",
     "noHistory": "No approval history yet.",
     "uploadFile": "Upload File",

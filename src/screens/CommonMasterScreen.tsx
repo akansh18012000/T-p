@@ -299,19 +299,18 @@ export default function CommonMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      // Fall back to the typed input when the user typed a value but did not
-      // pick an option from the dropdown (freeSolo). The selected-value state
-      // is empty in that case, so without this fallback the typed text would
-      // be dropped from the search payload.
-      groupId: groupId || groupIdSearchInput,
-      code: code || codeSearchInput,
+      // For the freeSolo Autocompletes, the visible input value is the source
+      // of truth: selecting an option sets both the selected-value state and
+      // the input to the same string, while typing only updates the input.
+      // Preferring the selected-value state here would send a stale value after
+      // the user edits the input away from a previously picked option.
+      groupId: groupIdSearchInput,
+      code: codeSearchInput,
       codeName,
       deletionFlag,
     };
   }, [
-    groupId,
     groupIdSearchInput,
-    code,
     codeSearchInput,
     codeName,
     deletionFlag,
@@ -384,6 +383,18 @@ export default function CommonMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   // Row selection mode state (for adding existing rows)
   const {
@@ -464,22 +475,19 @@ export default function CommonMasterScreen() {
       searchSnapshotRef.current = rows.map((row) => [...row]);
       clearNewRowTracking();
       if (!silent) {
-        setSnackbarMessage(
+        showSnackbar(
           rows.length > 0
             ? t("commonMaster.searchCompletedWithData")
             : t("commonMaster.searchCompletedNoResults"),
+          rows.length > 0 ? "success" : "info",
         );
-        setSnackbarSeverity(rows.length > 0 ? "success" : "info");
-        setSnackbarOpen(true);
       }
     } catch {
       setCsvData(getEmptyCsvData());
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       if (!silent) {
-        setSnackbarMessage(t("commonMaster.searchCompletedNoResults"));
-        setSnackbarSeverity("info");
-        setSnackbarOpen(true);
+        showSnackbar(t("commonMaster.searchCompletedNoResults"), "info");
       }
     } finally {
       setIsSearching(false);
@@ -502,17 +510,13 @@ export default function CommonMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("commonMaster.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonMaster.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
     const saved = await downloadCsvWithPicker(blob, "common_master_export.csv");
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -545,9 +549,7 @@ export default function CommonMasterScreen() {
       });
       setRowMetadata((prev) => [...prev, null]);
     }
-    setSnackbarMessage(t("commonMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonMaster.rowAdded"), "success");
   };
 
   const handleAddEmptyRow = () => {
@@ -556,9 +558,7 @@ export default function CommonMasterScreen() {
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -592,9 +592,7 @@ export default function CommonMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("commonMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonMaster.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -604,9 +602,7 @@ export default function CommonMasterScreen() {
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -635,9 +631,7 @@ export default function CommonMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("commonMaster.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonMaster.noChangesToRegister"), "info");
       return;
     }
 
@@ -656,14 +650,16 @@ export default function CommonMasterScreen() {
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
+        showSnackbar(
           t("commonMaster.requiredFieldsMissingSingle", {
             row: missingByRow[0].row,
             fields: missingByRow[0].fields.join(", "),
           }),
+          "error",
+          true,
         );
       } else {
-        setSnackbarMessage(
+        showSnackbar(
           <Box component="span">
             {t("commonMaster.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -677,10 +673,10 @@ export default function CommonMasterScreen() {
               ))}
             </Box>
           </Box>,
+          "error",
+          true,
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -716,11 +712,11 @@ export default function CommonMasterScreen() {
         style: "long",
         type: "conjunction",
       }).format(sorted.map(String));
-      setSnackbarMessage(
+      showSnackbar(
         t("commonMaster.duplicateRowError", { rows: rowsText }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -786,14 +782,10 @@ export default function CommonMasterScreen() {
       } else {
         messageKey = "commonMaster.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("commonMaster.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("commonMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -829,9 +821,7 @@ export default function CommonMasterScreen() {
       (row) => row[deletionFlagColIndex] !== "1",
     );
     setCsvData({ ...csvData, rows: newRows });
-    setSnackbarMessage(t("commonMaster.rowsDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("commonMaster.rowsDeleted"), "success");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -1385,8 +1375,11 @@ export default function CommonMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

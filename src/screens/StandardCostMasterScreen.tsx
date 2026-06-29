@@ -685,30 +685,26 @@ export default function StandardCostMasterScreen() {
   });
   useEffect(() => {
     searchConditionsRef.current = {
-      // Fall back to the typed input when the user typed a value but did not
-      // pick an option from the dropdown (freeSolo). The selected-value state
-      // is empty in that case, so without this fallback the typed text would
-      // be dropped from the search payload.
-      manufacturerPartNumber:
-        manufacturerPartNumber || manufacturerPartNumberSearchInput,
-      manufacturer: manufacturer || manufacturerSearchInput,
+      // For the freeSolo Autocompletes, the visible input value is the source
+      // of truth: selecting an option sets both the selected-value state and
+      // the input to the same string, while typing only updates the input.
+      // Preferring the selected-value state here would send a stale value after
+      // the user edits the input away from a previously picked option.
+      manufacturerPartNumber: manufacturerPartNumberSearchInput,
+      manufacturer: manufacturerSearchInput,
       manufacturerName,
-      locationCode: locationCode || locationCodeSearchInput,
+      locationCode: locationCodeSearchInput,
       locationName,
-      corporateCode: corporateCode || corporateCodeSearchInput,
+      corporateCode: corporateCodeSearchInput,
       corporateName,
       validFrom,
     };
   }, [
-    manufacturerPartNumber,
     manufacturerPartNumberSearchInput,
-    manufacturer,
     manufacturerSearchInput,
     manufacturerName,
-    locationCode,
     locationCodeSearchInput,
     locationName,
-    corporateCode,
     corporateCodeSearchInput,
     corporateName,
     validFrom,
@@ -771,6 +767,18 @@ export default function StandardCostMasterScreen() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "info"
   >("success");
+  const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  const showSnackbar = (
+    message: React.ReactNode,
+    severity: "success" | "error" | "info",
+    persistent = false,
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarPersistent(persistent);
+    setSnackbarOpen(true);
+  };
 
   // Row selection mode hooks
   const {
@@ -845,13 +853,12 @@ export default function StandardCostMasterScreen() {
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
       if (!silent) {
-        setSnackbarMessage(
+        showSnackbar(
           mappedRows.length > 0
             ? t("standardCostMaster.searchCompletedWithData")
             : t("standardCostMaster.searchCompletedNoResults"),
+          mappedRows.length > 0 ? "success" : "info",
         );
-        setSnackbarSeverity(mappedRows.length > 0 ? "success" : "info");
-        setSnackbarOpen(true);
       }
     } catch (e) {
       console.error(e);
@@ -859,9 +866,7 @@ export default function StandardCostMasterScreen() {
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       if (!silent) {
-        setSnackbarMessage(t("standardCostMaster.searchCompletedNoResults"));
-        setSnackbarSeverity("info");
-        setSnackbarOpen(true);
+        showSnackbar(t("standardCostMaster.searchCompletedNoResults"), "info");
       }
     } finally {
       setSearchLoading(false);
@@ -876,9 +881,7 @@ export default function StandardCostMasterScreen() {
 
   const handleDownloadCsv = async () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("standardCostMaster.noDataToDownload"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.noDataToDownload"), "info");
       return;
     }
     const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
@@ -887,9 +890,7 @@ export default function StandardCostMasterScreen() {
       : "export";
     const saved = await downloadCsvWithPicker(blob, `standard_cost_${validFromStr}.csv`);
     if (saved) {
-      setSnackbarMessage(t("common.downloadSuccess", { fileName: saved }));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.downloadSuccess", { fileName: saved }), "success");
     }
   };
 
@@ -915,16 +916,12 @@ export default function StandardCostMasterScreen() {
       null,
       ...prev.slice(insertIndex),
     ]);
-    setSnackbarMessage(t("standardCostMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("standardCostMaster.rowAdded"), "success");
   };
 
   const handleEnterSelectionMode = () => {
     if (!csvData || csvData.rows.length === 0) {
-      setSnackbarMessage(t("common.noRowsToSelect"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.noRowsToSelect"), "error");
       return;
     }
     enterSelectionMode();
@@ -958,9 +955,7 @@ export default function StandardCostMasterScreen() {
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
-    setSnackbarMessage(t("standardCostMaster.rowAdded"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("standardCostMaster.rowAdded"), "success");
   };
 
   const handleDeleteNewRow = (rowIndex: number) => {
@@ -969,9 +964,7 @@ export default function StandardCostMasterScreen() {
     shiftIndicesForDeletion(rowIndex);
     setCsvData({ ...csvData, rows: newRows });
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    setSnackbarMessage(t("common.newRowDeleted"));
-    setSnackbarSeverity("success");
-    setSnackbarOpen(true);
+    showSnackbar(t("common.newRowDeleted"), "success");
   };
 
   const handleRefresh = () => {
@@ -1007,9 +1000,7 @@ export default function StandardCostMasterScreen() {
     });
 
     if (newRowIndices.length === 0 && editedRowIndices.length === 0) {
-      setSnackbarMessage(t("standardCostMaster.noChangesToRegister"));
-      setSnackbarSeverity("info");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.noChangesToRegister"), "info");
       return;
     }
 
@@ -1030,15 +1021,14 @@ export default function StandardCostMasterScreen() {
     });
     if (missingByRow.length > 0) {
       missingByRow.sort((a, b) => a.row - b.row);
+      let message: React.ReactNode;
       if (missingByRow.length === 1) {
-        setSnackbarMessage(
-          t("standardCostMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-        );
+        message = t("standardCostMaster.requiredFieldsMissingSingle", {
+          row: missingByRow[0].row,
+          fields: missingByRow[0].fields.join(", "),
+        });
       } else {
-        setSnackbarMessage(
+        message = (
           <Box component="span">
             {t("standardCostMaster.requiredFieldsMissingMultiple")}
             <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
@@ -1051,11 +1041,10 @@ export default function StandardCostMasterScreen() {
                 </li>
               ))}
             </Box>
-          </Box>,
+          </Box>
         );
       }
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(message, "error", true);
       return;
     }
 
@@ -1085,13 +1074,13 @@ export default function StandardCostMasterScreen() {
     });
     if (duplicateRows.size > 0) {
       const sorted = Array.from(duplicateRows).sort((a, b) => a - b);
-      setSnackbarMessage(
+      showSnackbar(
         t("standardCostMaster.duplicateRowError", {
           rows: formatRowList(sorted),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -1157,14 +1146,10 @@ export default function StandardCostMasterScreen() {
       } else {
         messageKey = "standardCostMaster.updatedExistingRows";
       }
-      setSnackbarMessage(t(messageKey));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
-      setSnackbarMessage(t("standardCostMaster.registrationFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
     }
@@ -1225,9 +1210,7 @@ export default function StandardCostMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (dropped.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
   };
 
@@ -1243,9 +1226,7 @@ export default function StandardCostMasterScreen() {
     if (files.length > 0) {
       setSelectedFile(screenKey, files[0]);
     } else if (selected.length > 0) {
-      setSnackbarMessage(t("common.invalidFileTypeCsvOnly"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
     }
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
   };
@@ -1265,9 +1246,7 @@ export default function StandardCostMasterScreen() {
       parsed = await parseCsv(text);
     } catch {
       setUploadStatus("idle");
-      setSnackbarMessage(t("standardCostMaster.parseCsvFailed"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.parseCsvFailed"), "error", true);
       return;
     }
 
@@ -1287,13 +1266,13 @@ export default function StandardCostMasterScreen() {
         jaValidation.missingColumns.length
           ? enValidation.missingColumns
           : jaValidation.missingColumns;
-      setSnackbarMessage(
+      showSnackbar(
         t("standardCostMaster.missingColumnsError", {
           columns: missing.join(", "),
         }),
+        "error",
+        true,
       );
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
       return;
     }
 
@@ -1323,16 +1302,16 @@ export default function StandardCostMasterScreen() {
       const duplicateFile = findDuplicateUploadFile(uploadJson);
       if (duplicateFile) {
         setUploadStatus("idle");
-        setSnackbarMessage(
+        showSnackbar(
           t("upload.duplicateFileMessage", {
             file: duplicateFile.file_name,
             duplicate: stripUploadIdSuffix(
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
         );
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
         return;
       }
       if (!response.ok) {
@@ -1342,15 +1321,11 @@ export default function StandardCostMasterScreen() {
       setSelectedFile(screenKey, null);
       setUploadStatus("idle");
       if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-      setSnackbarMessage(t("standardCostMaster.fileUploadedSuccess"));
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.fileUploadedSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
       setUploadStatus("idle");
-      setSnackbarMessage(t("standardCostMaster.uploadError"));
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      showSnackbar(t("standardCostMaster.uploadError"), "error");
     }
   };
 
@@ -1358,9 +1333,7 @@ export default function StandardCostMasterScreen() {
     setSelectedFile(screenKey, null);
     setUploadStatus("idle");
     if (uploadFileInputRef.current) uploadFileInputRef.current.value = "";
-    setSnackbarMessage(t("standardCostMaster.uploadCancelled"));
-    setSnackbarSeverity("info");
-    setSnackbarOpen(true);
+    showSnackbar(t("standardCostMaster.uploadCancelled"), "info");
   };
 
   const displayData = csvData || getEmptyCsvData();
@@ -2098,8 +2071,11 @@ export default function StandardCostMasterScreen() {
 
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
+        autoHideDuration={snackbarPersistent ? null : 4000}
+        onClose={(_event, reason) => {
+          if (reason === "clickaway") return;
+          setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert

@@ -113,6 +113,12 @@ export const SCREEN_IDS = {
     displayName: "Stravis COA Hierarchy Upload",
     active: true,
   },
+  PNL_APPROVAL: {
+    id: "326a86fc-d247-4558-9fa6-ff79659e5142",
+    screenName: "PNL_APPROVAL_SCREEN",
+    displayName: "P&L Approval",
+    active: true,
+  },
 } as const satisfies Record<string, ScreenInfo>;
 
 export type ScreenKey = keyof typeof SCREEN_IDS;
