@@ -204,6 +204,13 @@ export const StyledSearchButton = styled(Button)(({ theme }) => ({
   "&:hover": { backgroundColor: theme.palette.primary.dark },
   paddingLeft: theme.spacing(3),
   paddingRight: theme.spacing(3),
+  "&.Mui-disabled": {
+    backgroundColor: theme.palette.grey![500],
+    color: theme.palette.common.white,
+    "& .MuiSvgIcon-root": {
+      color: theme.palette.common.white,
+    },
+  },
 }));
 
 export const StyledSearchButtonsBox = styled(Box)(({ theme }) => ({
