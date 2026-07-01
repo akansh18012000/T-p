@@ -720,6 +720,24 @@ export default function AdjustmentSalesDetailScreen() {
         );
         return;
       }
+
+      // Reject files that carry columns beyond the expected template. Report the
+      // extras from whichever template matched (a JA file has different headers
+      // than the EN template, so its extras must be measured against JA).
+      const matchedValidation = enValidation.isValid
+        ? enValidation
+        : jaValidation;
+      if (matchedValidation.extraColumns.length > 0) {
+        setUploadStatus("idle");
+        showSnackbar(
+          t("common.extraColumnsError", {
+            columns: matchedValidation.extraColumns.join(", "),
+          }),
+          "error",
+          true,
+        );
+        return;
+      }
     }
 
     // Validation passed — POST the file to the upload API

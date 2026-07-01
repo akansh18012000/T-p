@@ -134,6 +134,7 @@
     "maxFilesHint": "You can select up to {{max}} files at a time.",
     "validationFailedHeader": "The following files failed validation:",
     "fileMissingColumns": "{{file}}: missing columns: {{columns}}",
+    "fileExtraColumns": "{{file}}: extra columns: {{columns}}",
     "fileParseError": "{{file}}: failed to parse CSV.",
     "templateLoadError": "Failed to load the template file. Please try again.",
     "uploadSuccess": "All files uploaded successfully.",
@@ -1009,6 +1010,7 @@
     "gpcDataLoadFailed": "Failed to load GPC data. Please reload the page to try again.",
     "invalidFileTypeCsvOnly": "Only CSV files are allowed.",
     "downloadSuccess": "{{fileName}} is downloaded.",
+    "extraColumnsError": "Upload failed. The following extra columns were found: {{columns}}",
     "paginatedListbox": {
       "previous": "Previous",
       "next": "Next",

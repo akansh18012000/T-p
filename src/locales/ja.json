@@ -134,6 +134,7 @@
     "maxFilesHint": "一度に最大{{max}}件のファイルを選択できます。",
     "validationFailedHeader": "以下のファイルの検証に失敗しました：",
     "fileMissingColumns": "{{file}}: 不足している列: {{columns}}",
+    "fileExtraColumns": "{{file}}: 余分な列: {{columns}}",
     "fileParseError": "{{file}}: CSVの解析に失敗しました。",
     "templateLoadError": "テンプレートファイルの読み込みに失敗しました。もう一度お試しください。",
     "uploadSuccess": "すべてのファイルが正常にアップロードされました。",
@@ -1009,6 +1010,7 @@
     "gpcDataLoadFailed": "GPCデータの読み込みに失敗しました。ページを再読み込みしてください。",
     "invalidFileTypeCsvOnly": "CSVファイルのみアップロードできます。",
     "downloadSuccess": "{{fileName}} をダウンロードしました。",
+    "extraColumnsError": "アップロードに失敗しました。次の余分な列が見つかりました：{{columns}}",
     "paginatedListbox": {
       "previous": "前へ",
       "next": "次へ",

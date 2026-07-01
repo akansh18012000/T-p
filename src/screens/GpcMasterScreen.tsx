@@ -274,6 +274,14 @@ function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
+/** Returns a Date in the current Japanese fiscal year (starts in April). */
+function defaultEffectiveYear(): Date {
+  const today = new Date();
+  const fiscalYear =
+    today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  return new Date(fiscalYear, 3, 1);
+}
+
 export default function GpcMasterScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -303,7 +311,9 @@ export default function GpcMasterScreen() {
   const [manufacturerPartNumber, setManufacturerPartNumber] = useState("");
   const [gpcCode, setGpcCode] = useState("");
   const [gpcName, setGpcName] = useState("");
-  const [validYear, setValidYear] = useState<Date | null>(null);
+  const [validYear, setValidYear] = useState<Date | null>(
+    defaultEffectiveYear,
+  );
   const [validYearPickerOpen, setValidYearPickerOpen] = useState(false);
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
@@ -1250,6 +1260,24 @@ export default function GpcMasterScreen() {
           : jaValidation.missingColumns;
       showSnackbar(
         t("gpcMaster.missingColumnsError", { columns: missing.join(", ") }),
+        "error",
+        true,
+      );
+      return;
+    }
+
+    // Reject files that carry columns beyond the expected template. Report the
+    // extras from whichever template matched (a JA file has different headers
+    // than the EN template, so its extras must be measured against JA).
+    const matchedValidation = enValidation.isValid
+      ? enValidation
+      : jaValidation;
+    if (matchedValidation.extraColumns.length > 0) {
+      setUploadStatus("idle");
+      showSnackbar(
+        t("common.extraColumnsError", {
+          columns: matchedValidation.extraColumns.join(", "),
+        }),
         "error",
         true,
       );

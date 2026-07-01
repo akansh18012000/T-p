@@ -261,15 +261,18 @@ function escapeCsvField(field: string, delimiter: string): string {
 export interface CsvColumnValidationResult {
   isValid: boolean;
   missingColumns: string[];
+  extraColumns: string[];
 }
 
 /**
  * Check that every column in the template is present in the uploaded file.
  * Order is not enforced; comparison strips BOM, trims whitespace, and is
- * case-insensitive. Missing columns are reported in their template casing.
+ * case-insensitive. Missing columns are reported in their template casing;
+ * extra columns (present in the upload but not in the template) are reported
+ * in their uploaded casing.
  * @param uploadedHeaders - Headers parsed from the user's uploaded CSV
  * @param templateHeaders - Headers parsed from the template CSV
- * @returns Validation result with the list of missing template columns
+ * @returns Validation result with the missing and extra column lists
  */
 export function validateCsvColumns(
   uploadedHeaders: string[],
@@ -282,12 +285,21 @@ export function validateCsvColumns(
       .map((h) => normalize(h).toLowerCase())
       .filter((h) => h.length > 0),
   );
+  const templateKeys = new Set(
+    templateHeaders
+      .map((h) => normalize(h).toLowerCase())
+      .filter((h) => h.length > 0),
+  );
   const missingColumns = templateHeaders
     .map(normalize)
     .filter((h) => h.length > 0 && !uploadedKeys.has(h.toLowerCase()));
+  const extraColumns = uploadedHeaders
+    .map(normalize)
+    .filter((h) => h.length > 0 && !templateKeys.has(h.toLowerCase()));
   return {
     isValid: missingColumns.length === 0,
     missingColumns,
+    extraColumns,
   };
 }
 

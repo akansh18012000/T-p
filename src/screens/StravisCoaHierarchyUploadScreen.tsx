@@ -349,6 +349,13 @@ export default function StravisCoaHierarchyUploadScreen() {
               columns: validation.missingColumns.join(", "),
             }),
           );
+        } else if (validation.extraColumns.length > 0) {
+          failures.push(
+            t("upload.fileExtraColumns", {
+              file: upload.file.name,
+              columns: validation.extraColumns.join(", "),
+            }),
+          );
         }
       } catch {
         failures.push(t("upload.fileParseError", { file: upload.file.name }));
