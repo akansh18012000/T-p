@@ -215,6 +215,7 @@ export default function CommonMasterScreen() {
 
   // Search condition state
   const [groupId, setGroupId] = useState("");
+  const [selectedGroupOption, setSelectedGroupOption] = useState<GroupWithName | null>(null);
   const [code, setCode] = useState("");
   const [codeName, setCodeName] = useState("");
   const [deletionFlag, setDeletionFlag] = useState(false);
@@ -354,7 +355,6 @@ export default function CommonMasterScreen() {
         .slice(0, MAX_VISIBLE_OPTIONS)
     : codeOptions.map((o) => o.code).slice(0, MAX_VISIBLE_OPTIONS);
 
-  const groupSelected = groupOptions.find((o) => o.id === groupId);
   const codeSelected = codeOptions.find((o) => o.code === code);
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
@@ -903,6 +903,7 @@ export default function CommonMasterScreen() {
                         searchConditionsRef.current.groupId = v;
                         if (!v) {
                           setGroupId("");
+                          setSelectedGroupOption(null);
                           setCode("");
                           setCodeSearchInput("");
                           setCodeName("");
@@ -914,6 +915,7 @@ export default function CommonMasterScreen() {
                         const s = typeof v === "string" ? v : (v?.id ?? "");
                         setGroupId(s);
                         setGroupIdSearchInput(s);
+                        setSelectedGroupOption(typeof v === "string" ? null : (v ?? null));
                         searchConditionsRef.current.groupId = s;
                         if (!s) {
                           setCode("");
@@ -949,9 +951,9 @@ export default function CommonMasterScreen() {
                         />
                       )}
                     />
-                    {groupSelected && (
+                    {selectedGroupOption && (
                       <StyledPrimaryCaption variant="caption" fontSize={16}>
-                        {groupSelected.name}
+                        {selectedGroupOption.name}
                       </StyledPrimaryCaption>
                     )}
                   </Box>
@@ -1303,8 +1305,8 @@ export default function CommonMasterScreen() {
                                                 v,
                                               )
                                             }
-                                            editable
-                                            searchable
+                                            editable={isNewRow(originalRowIndex)}
+                                            searchable={isNewRow(originalRowIndex)}
                                             searchOptions={groupOptions.map((o) => o.id)}
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
@@ -1323,6 +1325,7 @@ export default function CommonMasterScreen() {
                                             size="small"
                                             multiline
                                             maxRows={4}
+                                            InputProps={{ readOnly: !isNewRow(originalRowIndex) }}
                                           />
                                         ) : (
                                           <StyledCellTextField
