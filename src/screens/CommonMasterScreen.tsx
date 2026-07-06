@@ -1307,35 +1307,21 @@ export default function CommonMasterScreen() {
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (
-                                          // Group Name auto-fills from the
-                                          // selected Group Id (see handleCellEdit).
-                                          // New rows (empty/copied) get an editable
-                                          // input so the user can override it;
-                                          // existing search-derived rows stay
-                                          // read-only.
-                                          isNewRow(originalRowIndex) ? (
-                                            <StyledCellTextField
-                                              value={cell}
-                                              onChange={(e) =>
-                                                handleCellEdit(
-                                                  originalRowIndex,
-                                                  colIndex,
-                                                  e.target.value,
-                                                )
-                                              }
-                                              variant="standard"
-                                              fullWidth
-                                              size="small"
-                                              multiline
-                                              maxRows={4}
-                                            />
-                                          ) : (
-                                            <SearchableCell
-                                              value={cell}
-                                              onChange={() => {}}
-                                              editable={false}
-                                            />
-                                          )
+                                          <StyledCellTextField
+                                            value={cell}
+                                            onChange={(e) =>
+                                              handleCellEdit(
+                                                originalRowIndex,
+                                                colIndex,
+                                                e.target.value,
+                                              )
+                                            }
+                                            variant="standard"
+                                            fullWidth
+                                            size="small"
+                                            multiline
+                                            maxRows={4}
+                                          />
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}
