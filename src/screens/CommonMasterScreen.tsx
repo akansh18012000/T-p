@@ -337,10 +337,8 @@ export default function CommonMasterScreen() {
 
   const visibleGroupIdOptions = groupIdDebounced
     ? groupOptions
-        .filter(
-          (o) =>
-            o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()) ||
-            o.name.toLowerCase().includes(groupIdDebounced.toLowerCase()),
+        .filter((o) =>
+          o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()),
         )
         .map((o) => o.id)
         .slice(0, MAX_VISIBLE_OPTIONS)
@@ -348,10 +346,8 @@ export default function CommonMasterScreen() {
 
   const visibleCodeIdOptions = codeDebounced
     ? codeOptions
-        .filter(
-          (o) =>
-            o.code.toLowerCase().includes(codeDebounced.toLowerCase()) ||
-            o.name.toLowerCase().includes(codeDebounced.toLowerCase()),
+        .filter((o) =>
+          o.code.toLowerCase().includes(codeDebounced.toLowerCase()),
         )
         .map((o) => o.code)
         .slice(0, MAX_VISIBLE_OPTIONS)
