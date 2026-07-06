@@ -523,23 +523,26 @@ export default function CommonConversionMasterScreen() {
       const rows = Array.isArray(json.data) ? json.data : [];
       // Map API rows into the table's column order (see
       // COMMON_CONVERSION_MASTER_COLUMNS).
+      // Coerce raw API cells to strings — numeric fields (e.g. delete_flg_pfm)
+      // can arrive as numbers despite the string types, which breaks the
+      // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = rows.map((r) => [
-        r.column_id ?? "",
-        r.column_name ?? "",
-        r.system_id ?? "",
-        r.convert_code_before_1 ?? "",
-        r.convert_name_before_1 ?? "",
-        r.convert_code_before_2 ?? "",
-        r.convert_name_before_2 ?? "",
-        r.convert_code_after ?? "",
-        r.convert_name_after ?? "",
-        r.description ?? "",
-        r.reserve1 ?? "",
-        r.reserve2 ?? "",
-        r.reserve3 ?? "",
-        r.reserve4 ?? "",
-        r.reserve5 ?? "",
-        r.delete_flg_pfm ?? "0",
+        String(r.column_id ?? ""),
+        String(r.column_name ?? ""),
+        String(r.system_id ?? ""),
+        String(r.convert_code_before_1 ?? ""),
+        String(r.convert_name_before_1 ?? ""),
+        String(r.convert_code_before_2 ?? ""),
+        String(r.convert_name_before_2 ?? ""),
+        String(r.convert_code_after ?? ""),
+        String(r.convert_name_after ?? ""),
+        String(r.description ?? ""),
+        String(r.reserve1 ?? ""),
+        String(r.reserve2 ?? ""),
+        String(r.reserve3 ?? ""),
+        String(r.reserve4 ?? ""),
+        String(r.reserve5 ?? ""),
+        String(r.delete_flg_pfm ?? "0"),
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],

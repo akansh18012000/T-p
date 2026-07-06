@@ -288,14 +288,17 @@ function FxRateEntryMasterScreen() {
       }
       const json = (await res.json()) as FxRateSearchEnvelope;
       const rows = Array.isArray(json.data) ? json.data : [];
+      // Coerce raw API cells to strings — numeric fields (e.g. rate) can arrive
+      // as numbers despite the string types, which breaks the string[][] CsvData
+      // contract (cell comparisons, CSV download).
       const mappedRows: string[][] = rows.map((r) => [
         formatDateFieldForDisplay(r.proc_period, "yearMonth"),
-        r.from_currency ?? "",
-        r.to_currency ?? "",
-        r.currency_type ?? "",
-        r.rate ?? "",
-        r.overwrite_flag ?? "",
-        r.delete_flg ?? "",
+        String(r.from_currency ?? ""),
+        String(r.to_currency ?? ""),
+        String(r.currency_type ?? ""),
+        String(r.rate ?? ""),
+        String(r.overwrite_flag ?? ""),
+        String(r.delete_flg ?? ""),
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],

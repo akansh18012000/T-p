@@ -289,6 +289,14 @@ function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
+/** Returns April 1st of the current Japanese fiscal year (starts in April). */
+function defaultYearMonth(): Date {
+  const today = new Date();
+  const fiscalYear =
+    today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+  return new Date(fiscalYear, 3, 1);
+}
+
 function LocalItemConversionMasterScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -312,7 +320,7 @@ function LocalItemConversionMasterScreen() {
 
   // Search condition state
   const [systemId, setSystemId] = useState("");
-  const [yearMonth, setYearMonth] = useState<Date | null>(null);
+  const [yearMonth, setYearMonth] = useState<Date | null>(defaultYearMonth);
   const [yearMonthPickerOpen, setYearMonthPickerOpen] = useState(false);
   const [localItemCode, setLocalItemCode] = useState("");
   const [manufacturerCode, setManufacturerCode] = useState("");
@@ -398,7 +406,7 @@ function LocalItemConversionMasterScreen() {
   // Keep ref in sync with search conditions so handleSearch always reads latest values (avoids stale state on Search click)
   const searchConditionsRef = useRef({
     systemId: "",
-    yearMonth: null as Date | null,
+    yearMonth: defaultYearMonth() as Date | null,
     localItemCode: "",
     manufacturerCode: "",
     manufacturerName: "",
@@ -565,22 +573,25 @@ function LocalItemConversionMasterScreen() {
       // Map each API row to the column array; order must match
       // LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS. The deletion flag
       // (delete_flg) drives the separate deletion-flag checkbox column below.
+      // Coerce raw API cells to strings — numeric fields (e.g. standard_cost)
+      // can arrive as numbers despite the string types, which breaks the
+      // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = apiRows.map((r) => [
-        r.local_system_id ?? "", // System ID
-        r.local_item_code ?? "", // Local Item Code
-        r.manufacturer ?? "", // Manufacturer
-        r.manufacturer_name ?? "", // Manufacturer Name
-        r.manufacturer_part_number ?? "", // Mfr Part Number
-        r.item_type ?? "", // Global Item Types
-        r.gpc_code ?? "", // GPC Code
-        r.gpc_name ?? "", // GPC Name
+        String(r.local_system_id ?? ""), // System ID
+        String(r.local_item_code ?? ""), // Local Item Code
+        String(r.manufacturer ?? ""), // Manufacturer
+        String(r.manufacturer_name ?? ""), // Manufacturer Name
+        String(r.manufacturer_part_number ?? ""), // Mfr Part Number
+        String(r.item_type ?? ""), // Global Item Types
+        String(r.gpc_code ?? ""), // GPC Code
+        String(r.gpc_name ?? ""), // GPC Name
         formatDateFieldForDisplay(r.fiscal_year, "year"), // Validity Year (YYYY)
-        r.manufacturer_detail ?? "", // Location Code
-        r.manufacturer_detail_name ?? "", // Location Name
-        r.company_code ?? "", // Corporate Code
-        r.company_name ?? "", // Corporate Name
-        r.standard_cost ?? "", // Standard Cost
-        r.currency_code ?? "", // Currency
+        String(r.manufacturer_detail ?? ""), // Location Code
+        String(r.manufacturer_detail_name ?? ""), // Location Name
+        String(r.company_code ?? ""), // Corporate Code
+        String(r.company_name ?? ""), // Corporate Name
+        String(r.standard_cost ?? ""), // Standard Cost
+        String(r.currency_code ?? ""), // Currency
         formatDateFieldForDisplay(r.fiscal_month_from, "yearMonth"), // Valid from date (YYYYMM)
       ]);
       setCsvData({

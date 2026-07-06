@@ -240,8 +240,15 @@ export function stringifyCsv(
  * @returns Properly escaped field value
  */
 function escapeCsvField(field: string, delimiter: string): string {
+  // Defensive: callers type rows as string[][], but data sourced from APIs can
+  // slip through as numbers/null. Coerce so we never call string methods on a
+  // non-string (field.includes would otherwise throw).
+  if (typeof field !== "string") {
+    field = field == null ? "" : String(field);
+  }
+
   // Check if field needs to be quoted
-  const needsQuoting = 
+  const needsQuoting =
     field.includes(delimiter) || 
     field.includes('"') || 
     field.includes('\n') || 

@@ -287,7 +287,8 @@ export default function CommonMasterScreen() {
   }, [groupId, i18n.language]);
   // AI Generated Code by Deloitte + Cursor (END)
 
-  // Search inputs — no debounce, show all options on focus and filter as user types
+  // Search box inputs and debounced values (min 3 chars, 300 ms — matches the
+  // LocalItemConversion search autocompletes).
   const [groupIdSearchInput, setGroupIdSearchInput] = useState("");
   const [codeSearchInput, setCodeSearchInput] = useState("");
 
@@ -316,55 +317,45 @@ export default function CommonMasterScreen() {
     deletionFlag,
   ]);
 
-  // Group Id options are filtered with a debounced query (min 3 chars, 300 ms)
-  // and capped, mirroring GpcMaster's search-condition autocompletes. Below the
-  // minimum length (or when cleared) the full list is shown, capped at
-  // MAX_VISIBLE_OPTIONS so the dropdown never stalls on a large source.
-  const { debouncedValue: groupIdDebouncedQuery } = useDebouncedSearch(
+  // Group Id / Code options are filtered with a debounced query (min 3 chars,
+  // 300 ms) and capped, mirroring LocalItemConversion's Manufacturer Code
+  // autocomplete. Below the minimum length (or when cleared) the debounced
+  // value is empty, so the full list is shown, capped at MAX_VISIBLE_OPTIONS so
+  // the dropdown never stalls on a large source. Options are derived inline so
+  // they update in the same render the debounced value changes (MUI's own
+  // filtering is disabled via filterOptions={(x) => x}).
+  const { debouncedValue: groupIdDebounced } = useDebouncedSearch(
     groupIdSearchInput,
     { minLength: 3, delay: 300 },
   );
-  const MAX_VISIBLE_OPTIONS = 1000;
-  const [visibleGroupIdOptions, setVisibleGroupIdOptions] = useState<string[]>(
-    [],
-  );
-  useEffect(() => {
-    const q = groupIdDebouncedQuery.trim().toLowerCase();
-    const matches =
-      q.length === 0
-        ? groupOptions
-        : groupOptions.filter(
-            (o) =>
-              o.id.toLowerCase().includes(q) ||
-              o.name.toLowerCase().includes(q),
-          );
-    setVisibleGroupIdOptions(
-      matches.map((o) => o.id).slice(0, MAX_VISIBLE_OPTIONS),
-    );
-  }, [groupOptions, groupIdDebouncedQuery]);
+  const { debouncedValue: codeDebounced } = useDebouncedSearch(codeSearchInput, {
+    minLength: 3,
+    delay: 300,
+  });
 
-  // Code options use the same debounced + capped pattern as Group Id.
-  const { debouncedValue: codeDebouncedQuery } = useDebouncedSearch(
-    codeSearchInput,
-    { minLength: 3, delay: 300 },
-  );
-  const [visibleCodeIdOptions, setVisibleCodeIdOptions] = useState<string[]>(
-    [],
-  );
-  useEffect(() => {
-    const q = codeDebouncedQuery.trim().toLowerCase();
-    const matches =
-      q.length === 0
-        ? codeOptions
-        : codeOptions.filter(
-            (o) =>
-              o.code.toLowerCase().includes(q) ||
-              o.name.toLowerCase().includes(q),
-          );
-    setVisibleCodeIdOptions(
-      matches.map((o) => o.code).slice(0, MAX_VISIBLE_OPTIONS),
-    );
-  }, [codeOptions, codeDebouncedQuery]);
+  const MAX_VISIBLE_OPTIONS = 1000;
+
+  const visibleGroupIdOptions = groupIdDebounced
+    ? groupOptions
+        .filter(
+          (o) =>
+            o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()) ||
+            o.name.toLowerCase().includes(groupIdDebounced.toLowerCase()),
+        )
+        .map((o) => o.id)
+        .slice(0, MAX_VISIBLE_OPTIONS)
+    : groupOptions.map((o) => o.id).slice(0, MAX_VISIBLE_OPTIONS);
+
+  const visibleCodeIdOptions = codeDebounced
+    ? codeOptions
+        .filter(
+          (o) =>
+            o.code.toLowerCase().includes(codeDebounced.toLowerCase()) ||
+            o.name.toLowerCase().includes(codeDebounced.toLowerCase()),
+        )
+        .map((o) => o.code)
+        .slice(0, MAX_VISIBLE_OPTIONS)
+    : codeOptions.map((o) => o.code).slice(0, MAX_VISIBLE_OPTIONS);
 
   const groupSelected = groupOptions.find((o) => o.id === groupId);
   const codeSelected = codeOptions.find((o) => o.code === code);
@@ -452,19 +443,22 @@ export default function CommonMasterScreen() {
         throw new Error(`Search API responded ${response.status}`);
       }
       const result: CommonMasterSearchResponse = await response.json();
+      // Coerce raw API cells to strings — fields can arrive as numbers despite
+      // the string types, which breaks the string[][] CsvData contract (cell
+      // comparisons, CSV download).
       const rows: string[][] = result.data.map((item) => [
-        item.column_group_id ?? "",
-        item.column_name ?? "",
-        item.code ?? "",
-        item.name_en ?? "",
-        item.name_jp ?? "",
-        item.description ?? "",
+        String(item.column_group_id ?? ""),
+        String(item.column_name ?? ""),
+        String(item.code ?? ""),
+        String(item.name_en ?? ""),
+        String(item.name_jp ?? ""),
+        String(item.description ?? ""),
         item.display_order != null ? String(item.display_order) : "",
-        item.reserve1 ?? "",
-        item.reserve2 ?? "",
-        item.reserve3 ?? "",
-        item.reserve4 ?? "",
-        item.reserve5 ?? "",
+        String(item.reserve1 ?? ""),
+        String(item.reserve2 ?? ""),
+        String(item.reserve3 ?? ""),
+        String(item.reserve4 ?? ""),
+        String(item.reserve5 ?? ""),
         item.delete_flg_pfm === 1 ? "1" : "0",
       ]);
       setCsvData({
@@ -1311,11 +1305,35 @@ export default function CommonMasterScreen() {
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (
-                                          <SearchableCell
-                                            value={cell}
-                                            onChange={() => {}}
-                                            editable={false}
-                                          />
+                                          // Group Name auto-fills from the
+                                          // selected Group Id (see handleCellEdit).
+                                          // New rows (empty/copied) get an editable
+                                          // input so the user can override it;
+                                          // existing search-derived rows stay
+                                          // read-only.
+                                          isNewRow(originalRowIndex) ? (
+                                            <StyledCellTextField
+                                              value={cell}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.value,
+                                                )
+                                              }
+                                              variant="standard"
+                                              fullWidth
+                                              size="small"
+                                              multiline
+                                              maxRows={4}
+                                            />
+                                          ) : (
+                                            <SearchableCell
+                                              value={cell}
+                                              onChange={() => {}}
+                                              editable={false}
+                                            />
+                                          )
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}

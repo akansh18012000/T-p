@@ -831,19 +831,23 @@ export default function StandardCostMasterScreen() {
       }
       const json = (await res.json()) as SearchApiEnvelope;
       const rows = Array.isArray(json.data) ? json.data : [];
+      // Coerce every cell to a string: although the API types declare these as
+      // strings, numeric fields (e.g. standard_cost, the flag columns) can come
+      // back as numbers, which would break the string[][] CsvData contract and
+      // crash escapeCsvField (field.includes) on download.
       const mappedRows = rows.map((r) => [
-        r.manufacture_part_number ?? "",
-        r.manufacturer ?? "",
-        r.manufacturer_name ?? "",
-        r.manufacturer_detail ?? "",
-        r.manufacturer_detail_name ?? "",
-        r.company_code ?? "",
-        r.company_name ?? "",
+        String(r.manufacture_part_number ?? ""),
+        String(r.manufacturer ?? ""),
+        String(r.manufacturer_name ?? ""),
+        String(r.manufacturer_detail ?? ""),
+        String(r.manufacturer_detail_name ?? ""),
+        String(r.company_code ?? ""),
+        String(r.company_name ?? ""),
         formatDateFieldForDisplay(r.fiscal_month_from, "yearMonth"),
-        r.currency_code ?? "",
-        r.standard_cost ?? "",
-        r.overwrite_ban_flg ?? "0",
-        r.delete_flg ?? "0",
+        String(r.currency_code ?? ""),
+        String(r.standard_cost ?? ""),
+        String(r.overwrite_ban_flg ?? "0"),
+        String(r.delete_flg ?? "0"),
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],

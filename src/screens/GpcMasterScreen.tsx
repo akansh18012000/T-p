@@ -711,17 +711,20 @@ export default function GpcMasterScreen() {
       }
       const json = (await res.json()) as SearchApiEnvelope;
       const rows = Array.isArray(json.data) ? json.data : [];
+      // Coerce raw API cells to strings — numeric fields (e.g. the flag columns)
+      // can arrive as numbers despite the string types, which breaks the
+      // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = rows.map((r) => [
-        r.manufacturer ?? "",
-        r.manufacturer_name ?? "",
-        r.manufacture_part_number ?? "",
-        r.gpc_code ?? "",
-        r.gpc_name ?? "",
+        String(r.manufacturer ?? ""),
+        String(r.manufacturer_name ?? ""),
+        String(r.manufacture_part_number ?? ""),
+        String(r.gpc_code ?? ""),
+        String(r.gpc_name ?? ""),
         formatDateFieldForDisplay(r.fiscal_year, "year"),
-        r.bu_lv3_code ?? "",
-        r.bu_lv3_name ?? "",
-        r.overwrite_ban_flg ?? "0",
-        r.delete_flg ?? "0",
+        String(r.bu_lv3_code ?? ""),
+        String(r.bu_lv3_name ?? ""),
+        String(r.overwrite_ban_flg ?? "0"),
+        String(r.delete_flg ?? "0"),
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],

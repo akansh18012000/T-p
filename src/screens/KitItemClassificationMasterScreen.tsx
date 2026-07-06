@@ -387,14 +387,17 @@ export default function KitItemClassificationMasterScreen() {
       }
       const json = (await res.json()) as KitItemCombinedSearchEnvelope;
       const apiRows = Array.isArray(json.data) ? json.data : [];
+      // Coerce raw API cells to strings — numeric fields (e.g. qty) can arrive
+      // as numbers despite the string types, which breaks the string[][] CsvData
+      // contract (cell comparisons, CSV download).
       const mappedRows: string[][] = apiRows.map((r) => [
-        r.kit_manufacture_part_number ?? "",
-        r.kit_manufacturer ?? "",
-        r.cmpnt_mfr_part_number ?? "",
-        r.cmpnt_mfr ?? "",
-        r.cmpnt_mfr_details ?? "",
-        r.qty ?? "",
-        r.delete_flg ?? "0",
+        String(r.kit_manufacture_part_number ?? ""),
+        String(r.kit_manufacturer ?? ""),
+        String(r.cmpnt_mfr_part_number ?? ""),
+        String(r.cmpnt_mfr ?? ""),
+        String(r.cmpnt_mfr_details ?? ""),
+        String(r.qty ?? ""),
+        String(r.delete_flg ?? "0"),
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],

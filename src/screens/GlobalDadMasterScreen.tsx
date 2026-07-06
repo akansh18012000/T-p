@@ -604,23 +604,26 @@ export default function GlobalDadMasterScreen() {
       // Map API rows into the table's column order (GLOBAL_DAD_MASTER_COLUMNS).
       // The API doesn't return the localized name columns, so derive them from
       // the shared lookup maps (locale-aware where the source provides names).
+      // Coerce raw API cells to strings — numeric fields (e.g. pattern_id,
+      // delete_flg_pfm) can arrive as numbers despite the string types, which
+      // breaks the string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = rows.map((r) => {
-        const code = r.local_custom_code ?? "";
-        const itemCls = r.item_cls_code ?? "";
+        const code = String(r.local_custom_code ?? "");
+        const itemCls = String(r.item_cls_code ?? "");
         return [
-          r.system_id ?? "",
-          r.sales_entity_code ?? "",
+          String(r.system_id ?? ""),
+          String(r.sales_entity_code ?? ""),
           code,
           localCustomerNameMap[code] || "",
           itemCls,
           (isJaLanguage
             ? productClassificationNameJpMap[itemCls]
             : productClassificationNameMap[itemCls]) || "",
-          r.bu_3 ?? "",
+          String(r.bu_3 ?? ""),
           formatYearMonth(r.exp_date_from_yyyymm_pfm ?? ""),
           formatYearMonth(r.exp_date_to_yyyymm_pfm ?? ""),
-          r.pattern_id ?? "",
-          r.delete_flg_pfm ?? "0",
+          String(r.pattern_id ?? ""),
+          String(r.delete_flg_pfm ?? "0"),
         ];
       });
       setCsvData({
