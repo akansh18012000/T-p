@@ -95,7 +95,7 @@ import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 
-type GroupWithName = { id: string; name: string };
+type GroupWithName = { id: string; name: string; key: string };
 type CodeWithName = { code: string; name: string };
 
 // Per-row snapshot used by the registration flow to distinguish new rows
@@ -235,9 +235,10 @@ export default function CommonMasterScreen() {
         if (!response.ok) return;
         const data: DimCommonGroupApiItem[] = await response.json();
         setGroupOptions(
-          data.map((item) => ({
+          data.map((item, index) => ({
             id: item.column_group_id,
             name: item.column_name,
+            key: `${item.column_group_id}_${index}`,
           })),
         );
       } catch {
@@ -340,9 +341,8 @@ export default function CommonMasterScreen() {
         .filter((o) =>
           o.id.toLowerCase().includes(groupIdDebounced.toLowerCase()),
         )
-        .map((o) => o.id)
         .slice(0, MAX_VISIBLE_OPTIONS)
-    : groupOptions.map((o) => o.id).slice(0, MAX_VISIBLE_OPTIONS);
+    : groupOptions.slice(0, MAX_VISIBLE_OPTIONS);
 
   const visibleCodeIdOptions = codeDebounced
     ? codeOptions
@@ -888,8 +888,19 @@ export default function CommonMasterScreen() {
                       fullWidth
                       size="small"
                       options={visibleGroupIdOptions}
-                      value={groupId || null}
+                      value={groupOptions.find((o) => o.id === groupId) ?? null}
                       inputValue={groupIdSearchInput}
+                      getOptionLabel={(o) =>
+                        typeof o === "string" ? o : o.id
+                      }
+                      renderOption={(props, o) => {
+                        const { key, ...liProps } = props as typeof props & { key: React.Key };
+                        return (
+                          <li key={o.key} {...liProps}>
+                            {o.id}{o.name ? ` — ${o.name}` : ""}
+                          </li>
+                        );
+                      }}
                       onInputChange={(_e, v) => {
                         setGroupIdSearchInput(v);
                         searchConditionsRef.current.groupId = v;
@@ -903,7 +914,7 @@ export default function CommonMasterScreen() {
                         }
                       }}
                       onChange={(_e, v) => {
-                        const s = v ?? "";
+                        const s = typeof v === "string" ? v : (v?.id ?? "");
                         setGroupId(s);
                         setGroupIdSearchInput(s);
                         searchConditionsRef.current.groupId = s;
