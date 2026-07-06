@@ -160,6 +160,7 @@ const SEARCH_API_URL = "/api/v1/common-master/search";
 
 type CommonMasterCreateRow = {
   column_group_id: string;
+  column_name: string;
   code: string;
   name_en: string;
   name_jp: string;
@@ -717,6 +718,7 @@ export default function CommonMasterScreen() {
       const r = csvData.rows[idx];
       return {
         column_group_id: r[0],
+        column_name: r[1],
         code: r[2],
         name_en: r[3],
         name_jp: r[4],
