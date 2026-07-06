@@ -893,14 +893,9 @@ export default function CommonMasterScreen() {
                       getOptionLabel={(o) =>
                         typeof o === "string" ? o : o.id
                       }
-                      renderOption={(props, o) => {
-                        const { key, ...liProps } = props as typeof props & { key: React.Key };
-                        return (
-                          <li key={o.key} {...liProps}>
-                            {o.id}{o.name ? ` — ${o.name}` : ""}
-                          </li>
-                        );
-                      }}
+                      getOptionKey={(o) =>
+                        typeof o === "string" ? o : o.key
+                      }
                       onInputChange={(_e, v) => {
                         setGroupIdSearchInput(v);
                         searchConditionsRef.current.groupId = v;
