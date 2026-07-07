@@ -2,6 +2,7 @@
  * CSV Utility Functions
  * Handles CSV parsing and stringifying with support for Japanese and Unicode text
  */
+import Encoding from 'encoding-japanese';
 
 export interface CsvData {
   headers: string[];
@@ -71,68 +72,27 @@ export interface DecodedFile {
 /**
  * Read a file and decode it to text, detecting its character encoding first.
  *
- * Browser port of the backend ingestion logic (chardet → normalize → decode).
- * The data is predominantly Japanese, so the realistic choice is between
- * UTF-8 (with/without BOM) and Shift-JIS / CP932. Instead of shipping a
- * statistical detector we decide deterministically — which is actually more
- * reliable than chardet for this binary choice:
- *
- *   1. Honor a leading BOM (UTF-8 / UTF-16 LE / UTF-16 BE).
- *   2. Otherwise try a *strict* UTF-8 decode. If every byte is valid UTF-8 we
- *      use it (plain ASCII is a subset, so ASCII files take this path too).
- *   3. Fall back to Shift-JIS. The browser's TextDecoder maps the "shift-jis"
- *      label to Windows-31J (CP932) — the same superset the backend uses, so
- *      it handles vendor-specific / full-width characters Shift-JIS misses.
+ * Uses encoding-japanese for reliable detection across UTF-8, Shift-JIS/CP932,
+ * EUC-JP, JIS, and UTF-16 — the full set of encodings found in Japanese CSVs.
+ * The library uses statistical analysis on the byte stream rather than simple
+ * heuristics, so it handles files that partially overlap valid UTF-8 sequences.
  */
 export async function readFileWithDetectedEncoding(
   file: Blob,
 ): Promise<DecodedFile> {
   const bytes = new Uint8Array(await file.arrayBuffer());
 
-  // 1. BOM sniffing. TextDecoder strips a leading BOM from the output.
-  if (
-    bytes.length >= 3 &&
-    bytes[0] === 0xef &&
-    bytes[1] === 0xbb &&
-    bytes[2] === 0xbf
-  ) {
-    return { text: new TextDecoder('utf-8').decode(bytes), encoding: 'UTF-8' };
-  }
-  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
-    return {
-      text: new TextDecoder('utf-16le').decode(bytes),
-      encoding: 'UTF-16LE',
-    };
-  }
-  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
-    return {
-      text: new TextDecoder('utf-16be').decode(bytes),
-      encoding: 'UTF-16BE',
-    };
-  }
+  // Detect encoding from the raw bytes.
+  const detected = Encoding.detect(bytes);
+  // 'BINARY', false, or an unrecognised label → fall back to UTF-8.
+  const encoding = detected && detected !== 'BINARY' ? detected : 'UTF8';
 
-  // 2. Non-fatal UTF-8 decode. TextDecoder replaces invalid byte sequences with
-  // U+FFFD. A genuine Shift-JIS file decoded as UTF-8 produces a high density of
-  // replacement characters (every 0x81–0x9F lead byte is an invalid UTF-8 start);
-  // a true UTF-8 file produces zero. Using fatal:false instead of fatal:true
-  // prevents a single stray byte elsewhere in the file (e.g. a Windows-1252 ¥
-  // encoded as 0xA5) from forcing the entire file into the Shift-JIS fallback.
-  const utf8Text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-  let replacementCount = 0;
-  for (let i = 0; i < utf8Text.length; i++) {
-    if (utf8Text.charCodeAt(i) === 0xfffd) replacementCount++;
-  }
-  // Threshold: fewer than 0.1% replacement characters → treat as UTF-8.
-  // Shift-JIS files with Japanese content will far exceed this ratio.
-  if (replacementCount === 0 || replacementCount / utf8Text.length < 0.001) {
-    return { text: utf8Text, encoding: 'UTF-8' };
-  }
+  // Convert to a JS string via encoding-japanese (handles all JIS variants and
+  // strips the BOM when present).
+  const unicodeArray = Encoding.convert(bytes, { to: 'UNICODE', from: encoding });
+  const text = Encoding.codeToString(unicodeArray);
 
-  // 3. Fall back to Shift-JIS → CP932 (Windows-31J).
-  return {
-    text: new TextDecoder('shift-jis').decode(bytes),
-    encoding: 'CP932',
-  };
+  return { text, encoding };
 }
 
 /**
