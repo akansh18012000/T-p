@@ -148,6 +148,7 @@ type CommonMasterSearchResponse = {
 
 type CommonMasterSearchPayload = {
   column_group_id: string;
+  column_name: string;
   user_id: string;
   code: string;
   session_id: string;
@@ -297,6 +298,7 @@ export default function CommonMasterScreen() {
 
   const searchConditionsRef = useRef({
     groupId: "",
+    columnName: "",
     code: "",
     codeName: "",
     deletionFlag: false,
@@ -309,12 +311,14 @@ export default function CommonMasterScreen() {
       // Preferring the selected-value state here would send a stale value after
       // the user edits the input away from a previously picked option.
       groupId: groupIdSearchInput,
+      columnName: selectedGroupOption?.name ?? "",
       code: codeSearchInput,
       codeName,
       deletionFlag,
     };
   }, [
     groupIdSearchInput,
+    selectedGroupOption,
     codeSearchInput,
     codeName,
     deletionFlag,
@@ -489,6 +493,7 @@ export default function CommonMasterScreen() {
     const conditions = searchConditionsRef.current;
     const payload: CommonMasterSearchPayload = {
       column_group_id: conditions.groupId.trim(),
+      column_name: conditions.columnName,
       user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
       code: conditions.code.trim(),
       session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",

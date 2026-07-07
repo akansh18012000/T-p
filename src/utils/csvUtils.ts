@@ -111,20 +111,28 @@ export async function readFileWithDetectedEncoding(
     };
   }
 
-  // 2. Strict UTF-8 attempt (also covers pure ASCII). `fatal: true` throws on
-  // the first byte that isn't valid UTF-8, which is our signal to fall back.
-  // We validate the whole buffer (not just a 10KB sample) so a multibyte
-  // character straddling the sample boundary can't trigger a false negative.
-  try {
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    return { text, encoding: 'UTF-8' };
-  } catch {
-    // 3. Fall back to Shift-JIS → CP932 (Windows-31J).
-    return {
-      text: new TextDecoder('shift-jis').decode(bytes),
-      encoding: 'CP932',
-    };
+  // 2. Non-fatal UTF-8 decode. TextDecoder replaces invalid byte sequences with
+  // U+FFFD. A genuine Shift-JIS file decoded as UTF-8 produces a high density of
+  // replacement characters (every 0x81–0x9F lead byte is an invalid UTF-8 start);
+  // a true UTF-8 file produces zero. Using fatal:false instead of fatal:true
+  // prevents a single stray byte elsewhere in the file (e.g. a Windows-1252 ¥
+  // encoded as 0xA5) from forcing the entire file into the Shift-JIS fallback.
+  const utf8Text = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  let replacementCount = 0;
+  for (let i = 0; i < utf8Text.length; i++) {
+    if (utf8Text.charCodeAt(i) === 0xfffd) replacementCount++;
   }
+  // Threshold: fewer than 0.1% replacement characters → treat as UTF-8.
+  // Shift-JIS files with Japanese content will far exceed this ratio.
+  if (replacementCount === 0 || replacementCount / utf8Text.length < 0.001) {
+    return { text: utf8Text, encoding: 'UTF-8' };
+  }
+
+  // 3. Fall back to Shift-JIS → CP932 (Windows-31J).
+  return {
+    text: new TextDecoder('shift-jis').decode(bytes),
+    encoding: 'CP932',
+  };
 }
 
 /**
