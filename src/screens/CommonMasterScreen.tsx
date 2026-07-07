@@ -906,6 +906,13 @@ export default function CommonMasterScreen() {
                       isOptionEqualToValue={(option, value) =>
                         option.key === value.key
                       }
+                      renderOption={({ key, ...optionProps }, option) => (
+                        <li key={key} {...optionProps}>
+                          {typeof option === "string"
+                            ? option
+                            : `${option.id} - ${option.name}`}
+                        </li>
+                      )}
                       onInputChange={(_e, v) => {
                         setGroupIdSearchInput(v);
                         searchConditionsRef.current.groupId = v;
