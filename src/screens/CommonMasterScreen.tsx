@@ -895,13 +895,16 @@ export default function CommonMasterScreen() {
                       fullWidth
                       size="small"
                       options={visibleGroupIdOptions}
-                      value={groupOptions.find((o) => o.id === groupId) ?? null}
+                      value={selectedGroupOption}
                       inputValue={groupIdSearchInput}
                       getOptionLabel={(o) =>
                         typeof o === "string" ? o : o.id
                       }
                       getOptionKey={(o) =>
                         typeof o === "string" ? o : o.key
+                      }
+                      isOptionEqualToValue={(option, value) =>
+                        option.key === value.key
                       }
                       onInputChange={(_e, v) => {
                         setGroupIdSearchInput(v);
@@ -1316,22 +1319,27 @@ export default function CommonMasterScreen() {
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (
-                                          <StyledCellTextField
-                                            value={cell}
-                                            onChange={(e) =>
-                                              handleCellEdit(
-                                                originalRowIndex,
-                                                colIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            variant="standard"
-                                            fullWidth
-                                            size="small"
-                                            multiline
-                                            maxRows={4}
-                                            InputProps={{ readOnly: !isNewRow(originalRowIndex) }}
-                                          />
+                                          isNewRow(originalRowIndex) ? (
+                                            <StyledCellTextField
+                                              value={cell}
+                                              onChange={(e) =>
+                                                handleCellEdit(
+                                                  originalRowIndex,
+                                                  colIndex,
+                                                  e.target.value,
+                                                )
+                                              }
+                                              variant="standard"
+                                              fullWidth
+                                              size="small"
+                                              multiline
+                                              maxRows={4}
+                                            />
+                                          ) : (
+                                            <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
+                                              {cell}
+                                            </Box>
+                                          )
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}
