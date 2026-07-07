@@ -74,21 +74,24 @@ export interface DecodedFile {
  *
  * Uses encoding-japanese for reliable detection across UTF-8, Shift-JIS/CP932,
  * EUC-JP, JIS, and UTF-16 — the full set of encodings found in Japanese CSVs.
- * The library uses statistical analysis on the byte stream rather than simple
- * heuristics, so it handles files that partially overlap valid UTF-8 sequences.
+ *
+ * Candidate list is explicit to avoid the library's ambiguous 'UNICODE' label,
+ * which it assigns to UTF-16-like byte patterns that can occur in Shift-JIS
+ * files and causes incorrect decoding. UTF-16 files with a real BOM are still
+ * handled via the 'UTF16' candidate.
  */
 export async function readFileWithDetectedEncoding(
   file: Blob,
 ): Promise<DecodedFile> {
   const bytes = new Uint8Array(await file.arrayBuffer());
 
-  // Detect encoding from the raw bytes.
-  const detected = Encoding.detect(bytes);
-  // 'BINARY', false, or an unrecognised label → fall back to UTF-8.
-  const encoding = detected && detected !== 'BINARY' ? detected : 'UTF8';
+  const CANDIDATES = ['UTF8', 'SJIS', 'EUCJP', 'JIS', 'UTF16'] as const;
+  const detected = Encoding.detect(bytes, [...CANDIDATES]);
+  // false or unrecognised → default to UTF-8.
+  const encoding = detected || 'UTF8';
 
-  // Convert to a JS string via encoding-japanese (handles all JIS variants and
-  // strips the BOM when present).
+  // Convert bytes to a Unicode code-point array, then to a JS string.
+  // encoding-japanese handles BOM stripping and all JIS/CP932 variants.
   const unicodeArray = Encoding.convert(bytes, { to: 'UNICODE', from: encoding });
   const text = Encoding.codeToString(unicodeArray);
 
