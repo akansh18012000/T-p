@@ -926,6 +926,7 @@ export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 // ---------------------------------------------------------------------------
 
 export const COMMON_MASTER_HEADERS: string[] = [
+  "Column Id",
   "Group Id",
   "Group Name",
   "Code",
@@ -943,6 +944,7 @@ export const COMMON_MASTER_HEADERS: string[] = [
 
 /** i18n column config for Common Master table */
 export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "columnId", labelKey: "commonMaster.columnId", editable: false },
   { key: "groupId", labelKey: "commonMaster.groupId", editable: true },
   { key: "groupName", labelKey: "commonMaster.groupName", editable: false },
   { key: "code", labelKey: "commonMaster.code", editable: true },
@@ -960,17 +962,18 @@ export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
 
 export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "commonMaster.groupId" },
-  { index: 2, labelKey: "commonMaster.groupName" },
-  { index: 3, labelKey: "commonMaster.code" },
-  { index: 4, labelKey: "commonMaster.nameEnglish" },
-  { index: 5, labelKey: "commonMaster.nameJapanese" },
-  { index: 6, labelKey: "commonMaster.abstract" },
-  { index: 7, labelKey: "commonMaster.displayOrder" },
-  { index: 8, labelKey: "commonMaster.reserve1" },
-  { index: 9, labelKey: "commonMaster.reserve2" },
-  { index: 10, labelKey: "commonMaster.reserve3" },
-  { index: 11, labelKey: "commonMaster.reserve4" },
-  { index: 12, labelKey: "commonMaster.reserve5" },
-  { index: 13, labelKey: "commonMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "commonMaster.columnId" },
+  { index: 2, labelKey: "commonMaster.groupId" },
+  { index: 3, labelKey: "commonMaster.groupName" },
+  { index: 4, labelKey: "commonMaster.code" },
+  { index: 5, labelKey: "commonMaster.nameEnglish" },
+  { index: 6, labelKey: "commonMaster.nameJapanese" },
+  { index: 7, labelKey: "commonMaster.abstract" },
+  { index: 8, labelKey: "commonMaster.displayOrder" },
+  { index: 9, labelKey: "commonMaster.reserve1" },
+  { index: 10, labelKey: "commonMaster.reserve2" },
+  { index: 11, labelKey: "commonMaster.reserve3" },
+  { index: 12, labelKey: "commonMaster.reserve4" },
+  { index: 13, labelKey: "commonMaster.reserve5" },
+  { index: 14, labelKey: "commonMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];

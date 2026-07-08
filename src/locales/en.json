@@ -789,6 +789,7 @@
     "register": "Register"
   },
   "commonMaster": {
+    "columnId": "Column Id",
     "groupId": "Group Id",
     "groupName": "Group Name",
     "code": "Code",

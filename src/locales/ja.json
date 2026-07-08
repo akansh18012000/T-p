@@ -789,6 +789,7 @@
     "register": "登録"
   },
   "commonMaster": {
+    "columnId": "カラムID",
     "groupId": "グループID",
     "groupName": "グループ名",
     "code": "コード",

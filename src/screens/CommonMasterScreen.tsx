@@ -126,6 +126,7 @@ const CODE_API_URL = "/api/v1/common-master/get_dim_common_code";
 
 type CommonMasterSearchItem = {
   id: string | null;
+  column_id: number | string | null;
   column_group_id: string | null;
   display_order: number | string | null;
   column_name: string | null;
@@ -160,6 +161,8 @@ type CommonMasterSearchPayload = {
 const SEARCH_API_URL = "/api/v1/common-master/search";
 
 type CommonMasterCreateRow = {
+  // Sent only for existing (edited) rows; omitted for newly added rows.
+  column_id?: number;
   column_group_id: string;
   column_name: string;
   code: string;
@@ -365,8 +368,9 @@ export default function CommonMasterScreen() {
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
     (h) => h === "Deletion Flag",
   );
-  const groupIdColIndex = 0;
-  const groupNameColIndex = 1;
+  const columnIdColIndex = 0;
+  const groupIdColIndex = 1;
+  const groupNameColIndex = 2;
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
@@ -448,6 +452,7 @@ export default function CommonMasterScreen() {
       // the string types, which breaks the string[][] CsvData contract (cell
       // comparisons, CSV download).
       const rows: string[][] = result.data.map((item) => [
+        item.column_id != null ? String(item.column_id) : "",
         String(item.column_group_id ?? ""),
         String(item.column_name ?? ""),
         String(item.code ?? ""),
@@ -721,20 +726,27 @@ export default function CommonMasterScreen() {
     // separate update call (mirrors GpcMaster).
     const rows: CommonMasterCreateRow[] = targetIndices.map((idx) => {
       const r = csvData.rows[idx];
+      const isNew = rowMetadata[idx] === null;
+      const columnIdValue = r[columnIdColIndex]?.trim();
       return {
-        column_group_id: r[0],
-        column_name: r[1],
-        code: r[2],
-        name_en: r[3],
-        name_jp: r[4],
-        description: r[5],
-        sort_order: r[6],
-        reserve1: r[7],
-        reserve2: r[8],
-        reserve3: r[9],
-        reserve4: r[10],
-        reserve5: r[11],
-        delete_flg_pfm: r[12] === "1" ? 1 : 0,
+        // New rows have no column_id yet — omit the key so the API assigns one;
+        // existing (edited) rows carry their original column_id.
+        ...(!isNew && columnIdValue
+          ? { column_id: Number(columnIdValue) }
+          : {}),
+        column_group_id: r[1],
+        column_name: r[2],
+        code: r[3],
+        name_en: r[4],
+        name_jp: r[5],
+        description: r[6],
+        sort_order: r[7],
+        reserve1: r[8],
+        reserve2: r[9],
+        reserve3: r[10],
+        reserve4: r[11],
+        reserve5: r[12],
+        delete_flg_pfm: r[13] === "1" ? 1 : 0,
       };
     });
 
@@ -1298,7 +1310,11 @@ export default function CommonMasterScreen() {
                                           colIndex + 1,
                                         )}
                                       >
-                                        {colIndex === deletionFlagColIndex ? (
+                                        {colIndex === columnIdColIndex ? (
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
+                                            {cell}
+                                          </Box>
+                                        ) : colIndex === deletionFlagColIndex ? (
                                           <StyledCheckbox
                                             size="small"
                                             checked={cell === "1"}
