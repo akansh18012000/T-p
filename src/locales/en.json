@@ -148,7 +148,7 @@
     "actions": "Actions",
     "download": "Download",
     "noUploadedFiles": "No Uploaded Files",
-    "searchFilesPlaceholder": "Search by uploaded by or upload date",
+    "searchFilesPlaceholder": "Search by file name, uploaded by, or upload date",
     "showingFilesFiltered": "Showing {{filtered}} of {{total}} files",
     "noMatchingFiles": "No files match your search",
     "uploadedBy": "Uploaded By",

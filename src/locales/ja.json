@@ -148,7 +148,7 @@
     "actions": "アクション",
     "download": "ダウンロード",
     "noUploadedFiles": "アップロードされたファイルはありません",
-    "searchFilesPlaceholder": "アップロード者またはアップロード日時で検索",
+    "searchFilesPlaceholder": "ファイル名、アップロード者、アップロード日時で検索",
     "showingFilesFiltered": "{{total}}件中{{filtered}}件を表示",
     "noMatchingFiles": "検索条件に一致するファイルがありません",
     "uploadedBy": "アップロード者",
