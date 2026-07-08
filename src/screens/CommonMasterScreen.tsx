@@ -574,7 +574,13 @@ export default function CommonMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => {
+        const copy = [...base.rows[idx]];
+        // Copied rows become new rows — clear the Column Id so it isn't
+        // carried over (the API assigns a fresh one on create).
+        copy[columnIdColIndex] = "";
+        return copy;
+      });
     const insertIndex = Math.min(pageOffset, base.rows.length);
     const newRows = [
       ...base.rows.slice(0, insertIndex),
