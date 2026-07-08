@@ -793,6 +793,7 @@ export default function SalesDataUploadScreen() {
     const filtered = term
       ? uploadedFiles.filter((file) =>
           [
+            stripUploadIdSuffix(file.file_name),
             file.uploaded_by,
             formatUploadTime(file.upload_time),
           ].some((field) => String(field).toLowerCase().includes(term)),
@@ -1568,6 +1569,7 @@ export default function SalesDataUploadScreen() {
                     <StyledSearchBarInnerBox>
                       <StyledSearchTextField
                         size="small"
+                        sx={{ minWidth: 460 }}
                         placeholder={t("upload.searchFilesPlaceholder")}
                         value={uploadedFilesSearch}
                         onChange={(e) =>
