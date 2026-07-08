@@ -2,7 +2,13 @@
  * CSV Utility Functions
  * Handles CSV parsing and stringifying with support for Japanese and Unicode text
  */
-import Encoding from 'encoding-japanese';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getEncoding(): any {
+  const enc = (window as any).Encoding;
+  if (!enc) throw new Error('encoding-japanese vendor script not loaded');
+  return enc;
+}
 
 export interface CsvData {
   headers: string[];
@@ -83,6 +89,7 @@ export interface DecodedFile {
 export async function readFileWithDetectedEncoding(
   file: Blob,
 ): Promise<DecodedFile> {
+  const Encoding = getEncoding();
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   const CANDIDATES = ['UTF8', 'SJIS', 'EUCJP', 'JIS', 'UTF16'] as const;
