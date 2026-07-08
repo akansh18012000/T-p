@@ -3,11 +3,19 @@
  * Handles CSV parsing and stringifying with support for Japanese and Unicode text
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getEncoding(): any {
-  const enc = (window as any).Encoding;
-  if (!enc) throw new Error('encoding-japanese vendor script not loaded');
-  return enc;
+let _encodingPromise: Promise<any> | null = null;
+
+function loadEncoding(): Promise<any> {
+  if ((window as any).Encoding) return Promise.resolve((window as any).Encoding);
+  if (_encodingPromise) return _encodingPromise;
+  _encodingPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/encoding.min.js';
+    script.onload = () => resolve((window as any).Encoding);
+    script.onerror = () => reject(new Error('Failed to load encoding.min.js from /public'));
+    document.head.appendChild(script);
+  });
+  return _encodingPromise;
 }
 
 export interface CsvData {
@@ -89,7 +97,7 @@ export interface DecodedFile {
 export async function readFileWithDetectedEncoding(
   file: Blob,
 ): Promise<DecodedFile> {
-  const Encoding = getEncoding();
+  const Encoding = await loadEncoding();
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   const CANDIDATES = ['UTF8', 'SJIS', 'EUCJP', 'JIS', 'UTF16'] as const;
