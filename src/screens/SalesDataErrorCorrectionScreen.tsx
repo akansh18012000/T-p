@@ -630,19 +630,15 @@ export default function SalesDataErrorCorrectionScreen() {
 
   const validateMandatoryFields = (): boolean => {
     const errors: Record<string, string> = {};
+    // Send the typed value if present (even when nothing was picked from the
+    // dropdown); otherwise fall back to the selected option.
     const searchSystemId =
-      searchConditionsRef.current.systemIdInput.trim().length >=
-      SYSTEM_ID_MIN_CHARS
-        ? searchConditionsRef.current.systemIdInput.trim()
-        : searchConditionsRef.current.systemId;
+      searchConditionsRef.current.systemIdInput.trim() ||
+      searchConditionsRef.current.systemId;
 
-    if (!searchSystemId || searchSystemId.length < SYSTEM_ID_MIN_CHARS) {
-      errors.systemId =
-        systemIdInput.trim().length > 0
-          ? t("errorCorrection.systemIdMinChars", {
-              count: SYSTEM_ID_MIN_CHARS,
-            })
-          : t("errorCorrection.systemIdRequired");
+    // System Id is mandatory, but there's no minimum-length gate on submit.
+    if (!searchSystemId) {
+      errors.systemId = t("errorCorrection.systemIdRequired");
     }
     if (!salesDate) {
       errors.salesDate = t("errorCorrection.salesDateRequired");
@@ -666,14 +662,12 @@ export default function SalesDataErrorCorrectionScreen() {
     setSelectedRowCodes(new Set());
     apiRowsByCodeRef.current = {};
     try {
-      // Use the typed System Id when it meets the min length, otherwise the
-      // value picked from the autocomplete — so a typed-but-not-selected
-      // System Id is still sent in the payload.
+      // Use the typed System Id whenever the user entered one — so a
+      // typed-but-not-selected value is still sent in the payload — otherwise
+      // the value picked from the autocomplete.
       const searchSystemId =
-        searchConditionsRef.current.systemIdInput.trim().length >=
-        SYSTEM_ID_MIN_CHARS
-          ? searchConditionsRef.current.systemIdInput.trim()
-          : searchConditionsRef.current.systemId;
+        searchConditionsRef.current.systemIdInput.trim() ||
+        searchConditionsRef.current.systemId;
       const salesMonth = salesDate
         ? `${salesDate.getFullYear()}${String(salesDate.getMonth() + 1).padStart(2, "0")}`
         : "";
