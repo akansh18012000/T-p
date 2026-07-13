@@ -831,6 +831,7 @@
     "requiredFieldsMissingMultiple": "Please fill in the missing required fields in the following rows:",
     "requiredFieldsMissingRowItem": "Row {{row}}: {{fields}}",
     "duplicateRowError": "Duplicate data found in row(s) {{rows}}. Please update before registration.",
+    "duplicateRecordError": "A record with Group Id '{{groupId}}' and Code '{{code}}' already exists. Please update the values to register.",
     "registrationFailed": "Registration failed. Please try again.",
     "noChangesToRegister": "No new or updated rows to register.",
     "createdNewRows": "Created new rows.",

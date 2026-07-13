@@ -152,6 +152,7 @@ type CommonMasterSearchPayload = {
   column_name: string;
   user_id: string;
   code: string;
+  code_name: string;
   session_id: string;
   screen_id: string;
   ip_address: string;
@@ -501,6 +502,7 @@ export default function CommonMasterScreen() {
       column_name: conditions.columnName,
       user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
       code: conditions.code.trim(),
+      code_name: conditions.codeName.trim(),
       session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
       screen_id: SCREEN_IDS.COMMON.id,
       ip_address: "192.168.1.101",
@@ -740,18 +742,18 @@ export default function CommonMasterScreen() {
         ...(!isNew && columnIdValue
           ? { column_id: Number(columnIdValue) }
           : {}),
-        column_group_id: r[1],
-        column_name: r[2],
-        code: r[3],
-        name_en: r[4],
-        name_jp: r[5],
-        description: r[6],
-        sort_order: r[7],
-        reserve1: r[8],
-        reserve2: r[9],
-        reserve3: r[10],
-        reserve4: r[11],
-        reserve5: r[12],
+        column_group_id: r[1].trim(),
+        column_name: r[2].trim(),
+        code: r[3].trim(),
+        name_en: r[4].trim(),
+        name_jp: r[5].trim(),
+        description: r[6].trim(),
+        sort_order: r[7].trim(),
+        reserve1: r[8].trim(),
+        reserve2: r[9].trim(),
+        reserve3: r[10].trim(),
+        reserve4: r[11].trim(),
+        reserve5: r[12].trim(),
         delete_flg_pfm: r[13] === "1" ? 1 : 0,
       };
     });
@@ -772,6 +774,32 @@ export default function CommonMasterScreen() {
         body: JSON.stringify(payload),
       });
       if (!response.ok) {
+        // A 409 means the backend rejected a duplicate natural-key
+        // (column_group_id + code) combination; surface a dedicated message
+        // with the offending values instead of the generic failure snackbar.
+        if (response.status === 409) {
+          let groupIdValue = "";
+          let codeValue = "";
+          try {
+            const detail = (await response.json())?.detail;
+            if (typeof detail === "string") {
+              groupIdValue =
+                detail.match(/column_group_id\s+'([^']*)'/)?.[1] ?? "";
+              codeValue = detail.match(/code\s+'([^']*)'/)?.[1] ?? "";
+            }
+          } catch {
+            // Fall back to empty values if the body isn't parseable JSON.
+          }
+          showSnackbar(
+            t("commonMaster.duplicateRecordError", {
+              groupId: groupIdValue,
+              code: codeValue,
+            }),
+            "error",
+            true,
+          );
+          return;
+        }
         throw new Error(`Create API responded ${response.status}`);
       }
 

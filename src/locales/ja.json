@@ -831,6 +831,7 @@
     "requiredFieldsMissingMultiple": "以下の行で未入力の必須項目を入力してください：",
     "requiredFieldsMissingRowItem": "{{row}}行目：{{fields}}",
     "duplicateRowError": "{{rows}}行目に重複データがあります。登録前に更新してください。",
+    "duplicateRecordError": "グループID「{{groupId}}」とコード「{{code}}」の組み合わせのレコードが既に存在します。登録するには値を更新してください。",
     "registrationFailed": "登録に失敗しました。もう一度お試しください。",
     "noChangesToRegister": "登録対象の新規行または更新行がありません。",
     "createdNewRows": "新規行を作成しました。",
