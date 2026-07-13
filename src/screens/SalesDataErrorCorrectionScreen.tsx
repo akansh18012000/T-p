@@ -576,10 +576,11 @@ export default function SalesDataErrorCorrectionScreen() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const DEBOUNCE_MS = 300;
-  const SYSTEM_ID_MIN_CHARS = 3;
 
+  // Debounced dropdown filtering with no minimum-length gate: filter on any
+  // number of typed characters, just after the debounce delay.
   const { debouncedValue: systemIdDebounced } =
-    useDebouncedSearch(systemIdInput, { minLength: SYSTEM_ID_MIN_CHARS, delay: 300 });
+    useDebouncedSearch(systemIdInput, { minLength: 0, delay: 300 });
 
   const systemIdOptions = systemIdDebounced
     ? systemIdAllOptions
@@ -605,22 +606,16 @@ export default function SalesDataErrorCorrectionScreen() {
     searchConditionsRef.current.systemId = systemId;
   }, [systemIdInput, systemId]);
 
-  // Debounce System Id input - updates systemId after user stops typing
+  // Debounce System Id input - updates systemId after user stops typing.
+  // No minimum-length gate: commit the typed value at any length.
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
-    if (
-      systemIdInput.length >= SYSTEM_ID_MIN_CHARS ||
-      systemIdInput.length === 0
-    ) {
-      debounceRef.current = setTimeout(() => {
-        setSystemId(systemIdInput);
-        debounceRef.current = null;
-      }, DEBOUNCE_MS);
-    } else {
-      setSystemId("");
-    }
+    debounceRef.current = setTimeout(() => {
+      setSystemId(systemIdInput);
+      debounceRef.current = null;
+    }, DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
