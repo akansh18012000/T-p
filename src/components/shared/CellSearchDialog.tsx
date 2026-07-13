@@ -23,21 +23,30 @@ const PAGE_SIZE = 100;
 const DEBOUNCE_DELAY_MS = 300;
 const MIN_SEARCH_CHARS = 3;
 
+/**
+ * A search option. Use the object form when the displayed label differs from
+ * the value written back to the cell (e.g. "A0049 - Group Name" shown, but
+ * "A0049" selected). Because each option carries its own label, two options
+ * that share the same value can still display distinct labels.
+ */
+export type CellSearchOption = string | { value: string; label: string };
+
 export interface CellSearchDialogProps {
   /** Whether the dialog is open */
   open: boolean;
   /** Callback when dialog should close */
   onClose: () => void;
-  /** Callback when a value is selected */
+  /** Callback when a value is selected (the option value, never its label) */
   onSelect: (value: string) => void;
-  /** Options to filter on; full list shown on empty input. */
-  options: string[];
   /**
-   * Optional mapping from an option value to the label shown in the list.
-   * The selected value passed to `onSelect` is always the raw option value,
-   * not the label. Filtering matches against both the value and the label.
+   * Optional callback fired alongside `onSelect` with the full chosen option
+   * ({ value, label }). Use this when the label carries information the value
+   * alone can't reconstruct — e.g. two options share a value but have distinct
+   * labels — so the parent can act on the exact option that was picked.
    */
-  getOptionLabel?: (value: string) => string;
+  onSelectOption?: (option: { value: string; label: string }) => void;
+  /** Options to filter on; full list shown on empty input. */
+  options: CellSearchOption[];
   /** Dialog title override */
   title?: string;
   /**
@@ -56,8 +65,8 @@ export function CellSearchDialog({
   open,
   onClose,
   onSelect,
+  onSelectOption,
   options,
-  getOptionLabel,
   title,
   paginated = false,
 }: CellSearchDialogProps) {
@@ -86,19 +95,28 @@ export function CellSearchDialog({
     }
   }, [open]);
 
+  // Normalize to { value, label } up front so the rest of the component
+  // operates on a single shape. Options that share a value keep their own
+  // label, so duplicates render distinctly.
+  const normalizedOptions = useMemo(
+    () =>
+      options.map((opt) =>
+        typeof opt === "string" ? { value: opt, label: opt } : opt,
+      ),
+    [options],
+  );
+
   const query = (paginated ? debouncedValue : inputValue).trim().toLowerCase();
   const results = useMemo(
     () =>
       query
-        ? options.filter((opt) => {
-            const label = getOptionLabel ? getOptionLabel(opt) : opt;
-            return (
-              opt.toLowerCase().includes(query) ||
-              label.toLowerCase().includes(query)
-            );
-          })
-        : options,
-    [options, query, getOptionLabel],
+        ? normalizedOptions.filter(
+            (opt) =>
+              opt.value.toLowerCase().includes(query) ||
+              opt.label.toLowerCase().includes(query),
+          )
+        : normalizedOptions,
+    [normalizedOptions, query],
   );
 
   const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
@@ -118,8 +136,9 @@ export function CellSearchDialog({
     setFocusedIndex(-1);
   }, [page]);
 
-  const handleSelect = (value: string) => {
-    onSelect(value);
+  const handleSelect = (option: { value: string; label: string }) => {
+    onSelect(option.value);
+    onSelectOption?.(option);
     onClose();
   };
 
@@ -207,7 +226,7 @@ export function CellSearchDialog({
               >
                 {visibleResults.map((result, index) => (
                   <ListItemButton
-                    key={`${result}-${index}`}
+                    key={`${result.value}-${index}`}
                     selected={index === focusedIndex}
                     onClick={() => handleSelect(result)}
                     role="option"
@@ -222,9 +241,7 @@ export function CellSearchDialog({
                       },
                     }}
                   >
-                    <ListItemText
-                      primary={getOptionLabel ? getOptionLabel(result) : result}
-                    />
+                    <ListItemText primary={result.label} />
                   </ListItemButton>
                 ))}
               </List>

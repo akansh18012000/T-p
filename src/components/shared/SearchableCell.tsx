@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Box, TextFieldProps } from "@mui/material";
 import { StyledCellTextField } from "./StyledComponents.js";
 import { CellSearchButton } from "./CellSearchButton.js";
-import { CellSearchDialog } from "./CellSearchDialog.js";
+import { CellSearchDialog, type CellSearchOption } from "./CellSearchDialog.js";
 
 export interface SearchableCellProps {
   /** Current cell value */
@@ -14,13 +14,22 @@ export interface SearchableCellProps {
   editable?: boolean;
   /** Whether to show the search button */
   searchable?: boolean;
-  /** Static options array for the search dialog */
-  searchOptions?: string[];
   /**
-   * Optional mapping from an option value to the label shown in the search
-   * dialog. The value written back to the cell is always the raw option value.
+   * Options for the search dialog. Use the object form
+   * (`{ value, label }`) when the displayed label differs from the value
+   * written back to the cell, e.g. showing "A0049 - Group Name" while
+   * selecting "A0049". Two options may share a value and still show
+   * distinct labels.
    */
-  getSearchOptionLabel?: (value: string) => string;
+  searchOptions?: CellSearchOption[];
+  /**
+   * Optional callback fired when an option is chosen from the search dialog,
+   * receiving the full option ({ value, label }). When provided, the plain
+   * `onChange` write is skipped for dialog selections so the parent can take
+   * full control (e.g. writing to several cells at once from the exact option
+   * picked). Free typing still goes through `onChange`.
+   */
+  onSelectOption?: (option: { value: string; label: string }) => void;
   /** Search dialog title override */
   searchTitle?: string;
   /**
@@ -43,7 +52,7 @@ export function SearchableCell({
   editable = true,
   searchable = false,
   searchOptions,
-  getSearchOptionLabel,
+  onSelectOption,
   searchTitle,
   paginated = false,
   textFieldProps = {},
@@ -59,6 +68,10 @@ export function SearchableCell({
   };
 
   const handleSelect = (selectedValue: string) => {
+    // When the parent opts into onSelectOption it writes the cell(s) itself
+    // from the full option; skip the value-only onChange to avoid clobbering
+    // or double-writing.
+    if (onSelectOption) return;
     onChange(selectedValue);
   };
 
@@ -94,8 +107,8 @@ export function SearchableCell({
           open={dialogOpen}
           onClose={handleCloseDialog}
           onSelect={handleSelect}
+          onSelectOption={onSelectOption}
           options={searchOptions}
-          getOptionLabel={getSearchOptionLabel}
           title={searchTitle}
           paginated={paginated}
         />

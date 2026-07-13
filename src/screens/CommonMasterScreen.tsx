@@ -835,6 +835,26 @@ export default function CommonMasterScreen() {
   };
   // AI Generated Code by Deloitte + Cursor (END)
 
+  // Group Id can be non-unique (the same id may map to several group names),
+  // so a selection from the search dialog carries the exact group name rather
+  // than re-deriving it from the id. Writes both the Group Id and Group Name
+  // cells in a single update.
+  const handleGroupSelect = (
+    rowIndex: number,
+    id: string,
+    name: string,
+  ) => {
+    if (!csvData) return;
+    const newRows = csvData.rows.map((row, rIdx) => {
+      if (rIdx !== rowIndex) return row;
+      const newRow = [...row];
+      newRow[groupIdColIndex] = id;
+      newRow[groupNameColIndex] = name;
+      return newRow;
+    });
+    setCsvData({ ...csvData, rows: newRows });
+  };
+
   const handleCellEdit = (
     rowIndex: number,
     colIndex: number,
@@ -1372,14 +1392,25 @@ export default function CommonMasterScreen() {
                                             }
                                             editable={isNewRow(originalRowIndex)}
                                             searchable={isNewRow(originalRowIndex)}
-                                            searchOptions={groupOptions.map((o) => o.id)}
-                                            getSearchOptionLabel={(id) => {
+                                            searchOptions={groupOptions.map((o) => ({
+                                              value: o.id,
+                                              label: `${o.id} - ${o.name}`,
+                                            }))}
+                                            onSelectOption={(option) => {
+                                              // Resolve the exact group (id may
+                                              // be non-unique) by matching the
+                                              // chosen label, then fill both the
+                                              // Group Id and Group Name cells.
                                               const opt = groupOptions.find(
-                                                (o) => o.id === id,
+                                                (o) =>
+                                                  `${o.id} - ${o.name}` ===
+                                                  option.label,
                                               );
-                                              return opt
-                                                ? `${opt.id} - ${opt.name}`
-                                                : id;
+                                              handleGroupSelect(
+                                                originalRowIndex,
+                                                option.value,
+                                                opt ? opt.name : "",
+                                              );
                                             }}
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
