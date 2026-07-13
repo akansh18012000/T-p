@@ -1373,6 +1373,14 @@ export default function CommonMasterScreen() {
                                             editable={isNewRow(originalRowIndex)}
                                             searchable={isNewRow(originalRowIndex)}
                                             searchOptions={groupOptions.map((o) => o.id)}
+                                            getSearchOptionLabel={(id) => {
+                                              const opt = groupOptions.find(
+                                                (o) => o.id === id,
+                                              );
+                                              return opt
+                                                ? `${opt.id} - ${opt.name}`
+                                                : id;
+                                            }}
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (

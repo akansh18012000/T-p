@@ -16,6 +16,11 @@ export interface SearchableCellProps {
   searchable?: boolean;
   /** Static options array for the search dialog */
   searchOptions?: string[];
+  /**
+   * Optional mapping from an option value to the label shown in the search
+   * dialog. The value written back to the cell is always the raw option value.
+   */
+  getSearchOptionLabel?: (value: string) => string;
   /** Search dialog title override */
   searchTitle?: string;
   /**
@@ -38,6 +43,7 @@ export function SearchableCell({
   editable = true,
   searchable = false,
   searchOptions,
+  getSearchOptionLabel,
   searchTitle,
   paginated = false,
   textFieldProps = {},
@@ -89,6 +95,7 @@ export function SearchableCell({
           onClose={handleCloseDialog}
           onSelect={handleSelect}
           options={searchOptions}
+          getOptionLabel={getSearchOptionLabel}
           title={searchTitle}
           paginated={paginated}
         />

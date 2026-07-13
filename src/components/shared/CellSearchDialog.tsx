@@ -32,6 +32,12 @@ export interface CellSearchDialogProps {
   onSelect: (value: string) => void;
   /** Options to filter on; full list shown on empty input. */
   options: string[];
+  /**
+   * Optional mapping from an option value to the label shown in the list.
+   * The selected value passed to `onSelect` is always the raw option value,
+   * not the label. Filtering matches against both the value and the label.
+   */
+  getOptionLabel?: (value: string) => string;
   /** Dialog title override */
   title?: string;
   /**
@@ -51,6 +57,7 @@ export function CellSearchDialog({
   onClose,
   onSelect,
   options,
+  getOptionLabel,
   title,
   paginated = false,
 }: CellSearchDialogProps) {
@@ -82,8 +89,16 @@ export function CellSearchDialog({
   const query = (paginated ? debouncedValue : inputValue).trim().toLowerCase();
   const results = useMemo(
     () =>
-      query ? options.filter((opt) => opt.toLowerCase().includes(query)) : options,
-    [options, query],
+      query
+        ? options.filter((opt) => {
+            const label = getOptionLabel ? getOptionLabel(opt) : opt;
+            return (
+              opt.toLowerCase().includes(query) ||
+              label.toLowerCase().includes(query)
+            );
+          })
+        : options,
+    [options, query, getOptionLabel],
   );
 
   const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
@@ -207,7 +222,9 @@ export function CellSearchDialog({
                       },
                     }}
                   >
-                    <ListItemText primary={result} />
+                    <ListItemText
+                      primary={getOptionLabel ? getOptionLabel(result) : result}
+                    />
                   </ListItemButton>
                 ))}
               </List>
