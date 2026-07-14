@@ -254,16 +254,15 @@ interface GpcMasterCreatePayload {
 
 // Required-field validation scope (user-confirmed):
 //   - 4 editable: manufacturer, mfrPartNumber, gpcCode, validYear
-//   - 2 BU3 (checked after profit-center backfill): bu3Code, bu3Name
 //   - 2 flags (always "0"/"1"): overwritePreventionFlag, deletionFlag
 // Excluded: manufacturerName (1), gpcName (4) — lookup-derived, sent as-is.
+//   BU3 code/name are backfilled from the profit-center lookup but are not
+//   required to create/update a row.
 const REQUIRED_COL_INDICES = [
   COL_MANUFACTURER,
   COL_MFR_PART_NUMBER,
   COL_GPC_CODE,
   COL_VALID_YEAR,
-  COL_BU3_CODE,
-  COL_BU3_NAME,
   GPC_MASTER_COLUMNS.findIndex((c) => c.key === "overwritePreventionFlag"),
   GPC_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag"),
 ] as const;

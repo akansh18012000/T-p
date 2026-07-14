@@ -603,7 +603,7 @@
     "bu3Name": "BU3名",
     "overwritePreventionFlag": "上書き防止フラグ",
     "deletionFlag": "削除フラグ",
-    "bu3NotFound": "{{rows}}行目の有効なBU3コードとBU3名を取得するには、メーカーコード、メーカー品番、GPCコードの正しい組み合わせを入力してください。レコードの作成・更新にはBU3コードとBU3名が必須です。"
+    "bu3NotFound": "{{rows}}行目の有効なBU3コードとBU3名を取得するには、メーカーコード、メーカー品番、GPCコードの正しい組み合わせを入力してください。"
   },
   "cellSearch": {
     "title": "検索",
