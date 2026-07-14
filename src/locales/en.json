@@ -602,7 +602,8 @@
     "bu3Code": "BU3 Code",
     "bu3Name": "BU3 Name",
     "overwritePreventionFlag": "Overwrite Prevention Flag",
-    "deletionFlag": "Deletion Flag"
+    "deletionFlag": "Deletion Flag",
+    "bu3NotFound": "Please enter the correct combination of manufacturer code, manufacturer part number and GPC code for row(s) {{rows}} to get a valid BU3 code and BU3 name. BU3 code and BU3 name are required to create/update a record."
   },
   "cellSearch": {
     "title": "Search",

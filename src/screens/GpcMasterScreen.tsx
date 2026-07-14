@@ -460,6 +460,12 @@ export default function GpcMasterScreen() {
 
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
+  // Mirrors csvData so async callbacks (e.g. profit-center fetch resolution)
+  // can scan the latest committed rows without a stale closure.
+  const csvDataRef = useRef<CsvData | null>(null);
+  useEffect(() => {
+    csvDataRef.current = csvData;
+  }, [csvData]);
   const [searchExecuted, setSearchExecuted] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -476,6 +482,10 @@ export default function GpcMasterScreen() {
     "success" | "error" | "info"
   >("success");
   const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+  // 0-based indices of rows whose profit-center lookup returned no BU3 code.
+  // Accumulated so a single persistent snackbar can list every affected row;
+  // reset when the snackbar is dismissed or a new search runs.
+  const [bu3ErrorRowIndices, setBu3ErrorRowIndices] = useState<number[]>([]);
 
   const showSnackbar = (
     message: React.ReactNode,
@@ -510,6 +520,54 @@ export default function GpcMasterScreen() {
     }
   }, [gpcDataStatus, t]);
 
+  // Merge freshly-failing row indices into the accumulator. Deduped so a row
+  // that fails its lookup twice isn't listed twice.
+  const addBu3ErrorRowIndices = (indices: number[]) => {
+    if (indices.length === 0) return;
+    setBu3ErrorRowIndices((prev) =>
+      Array.from(new Set([...prev, ...indices])),
+    );
+  };
+
+  // Prune any flagged row that has since obtained a valid BU3 code (or was
+  // deleted). Runs whenever the table changes so resolving a row's combination
+  // drops it from the error list.
+  useEffect(() => {
+    if (bu3ErrorRowIndices.length === 0) return;
+    const rows = csvData?.rows ?? [];
+    const stillErrored = bu3ErrorRowIndices.filter((idx) => {
+      const row = rows[idx];
+      if (!row) return false;
+      return (row[COL_BU3_CODE] || "").trim() === "";
+    });
+    if (stillErrored.length !== bu3ErrorRowIndices.length) {
+      setBu3ErrorRowIndices(stillErrored);
+    }
+  }, [csvData, bu3ErrorRowIndices]);
+
+  // Show / refresh the persistent BU3-error snackbar whenever the affected-row
+  // set changes. Growing the set only updates the row numbers in the already
+  // open snackbar (a no-op reopen) rather than stacking a new one; emptying it
+  // (all flagged rows resolved) closes the snackbar.
+  const prevBu3ErrorCountRef = useRef(0);
+  useEffect(() => {
+    const rowNumbers = [...bu3ErrorRowIndices]
+      .sort((a, b) => a - b)
+      .map((i) => i + 1);
+    if (rowNumbers.length > 0) {
+      showSnackbar(
+        t("gpcMaster.bu3NotFound", { rows: formatRowList(rowNumbers) }),
+        "error",
+        true,
+      );
+    } else if (prevBu3ErrorCountRef.current > 0) {
+      // The last flagged row just got a valid BU3 — dismiss the error.
+      setSnackbarOpen(false);
+    }
+    prevBu3ErrorCountRef.current = rowNumbers.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bu3ErrorRowIndices]);
+
   // Row selection mode hooks
   const {
     isSelectingRows,
@@ -538,6 +596,11 @@ export default function GpcMasterScreen() {
   );
   // In-flight fetch promises — dedupes concurrent requests for the same key.
   const inFlightProfitCenterRef = useRef<Record<string, Promise<void>>>({});
+  // Profit-center keys with a fetch currently in flight. Drives the in-cell
+  // green loader on the BU3 Code/Name cells while the lookup runs.
+  const [loadingProfitCenterKeys, setLoadingProfitCenterKeys] = useState<
+    Set<string>
+  >(new Set());
   // Row indices that were created or edited by the user. BU3 auto-lookup
   // only applies to these — untouched search-result rows keep their server
   // BU3 values.
@@ -645,7 +708,15 @@ export default function GpcMasterScreen() {
     const key = buildProfitCenterKey(gpc, manu, mpn);
     if (key in profitCenterCacheRef.current) return;
     if (key in inFlightProfitCenterRef.current) return;
+    // Show the in-cell loader on the BU3 cells of every row sharing this key.
+    setLoadingProfitCenterKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
     inFlightProfitCenterRef.current[key] = (async () => {
+      // Whether the response yielded a usable BU3 (profit-center) code.
+      let hasBu3Code = false;
       try {
         const res = await fetch(PROFIT_CENTERS_API_URL, {
           method: "POST",
@@ -660,7 +731,11 @@ export default function GpcMasterScreen() {
           throw new Error(`Profit centers HTTP ${res.status}`);
         }
         const data = (await res.json()) as ProfitCenterApiRow[];
-        profitCenterCacheRef.current[key] = Array.isArray(data) ? data : [];
+        const rows = Array.isArray(data) ? data : [];
+        profitCenterCacheRef.current[key] = rows;
+        hasBu3Code = rows.some(
+          (r) => (r.profit_center_code ?? "").trim() !== "",
+        );
       } catch (e) {
         console.error("Failed to fetch profit centers:", e);
         // Cache empty so we don't keep retrying for this key in this session
@@ -668,7 +743,28 @@ export default function GpcMasterScreen() {
         profitCenterCacheRef.current[key] = [];
       } finally {
         delete inFlightProfitCenterRef.current[key];
+        setLoadingProfitCenterKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
         applyBu3FromCache();
+      }
+      // The API returned no BU3 code for this combination. BU3 code/name are
+      // required to create/update a record, so flag every row currently
+      // carrying this combination and surface a persistent error listing them.
+      if (!hasBu3Code) {
+        const rows = csvDataRef.current?.rows ?? [];
+        const affected: number[] = [];
+        rows.forEach((r, idx) => {
+          const m = (r[COL_MANUFACTURER] || "").trim();
+          const p = (r[COL_MFR_PART_NUMBER] || "").trim();
+          const g = (r[COL_GPC_CODE] || "").trim();
+          if (m && p && g && buildProfitCenterKey(g, m, p) === key) {
+            affected.push(idx);
+          }
+        });
+        addBu3ErrorRowIndices(affected);
       }
     })();
   };
@@ -698,8 +794,9 @@ export default function GpcMasterScreen() {
     setSearchExecuted(true);
     setSearchLoading(true);
     // New search results replace csvData wholesale — any row indices we'd
-    // been tracking as "touched" are now stale.
+    // been tracking as "touched" or flagged for a BU3 error are now stale.
     touchedRowIndicesRef.current = new Set();
+    setBu3ErrorRowIndices([]);
     try {
       const res = await fetch(GPC_MASTER_SEARCH_API_URL, {
         method: "POST",
@@ -786,6 +883,9 @@ export default function GpcMasterScreen() {
     ];
     shiftIndicesForInsertion(insertIndex, 1);
     shiftTouchedForInsertion(insertIndex, 1);
+    setBu3ErrorRowIndices((prev) =>
+      prev.map((i) => (i >= insertIndex ? i + 1 : i)),
+    );
     markRowsAsNew([insertIndex]);
     markRowsTouched([insertIndex]);
     setCsvData({
@@ -826,6 +926,9 @@ export default function GpcMasterScreen() {
     ];
     shiftIndicesForInsertion(insertIndex, selectedRows.length);
     shiftTouchedForInsertion(insertIndex, selectedRows.length);
+    setBu3ErrorRowIndices((prev) =>
+      prev.map((i) => (i >= insertIndex ? i + selectedRows.length : i)),
+    );
     const insertedIndices = selectedRows.map(
       (_: string[], i: number) => insertIndex + i,
     );
@@ -865,6 +968,9 @@ export default function GpcMasterScreen() {
     setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
     shiftIndicesForDeletion(rowIndex);
     shiftTouchedForDeletion(rowIndex);
+    setBu3ErrorRowIndices((prev) =>
+      prev.filter((i) => i !== rowIndex).map((i) => (i > rowIndex ? i - 1 : i)),
+    );
     showSnackbar(t("common.newRowDeleted"), "success");
   };
 
@@ -1827,6 +1933,32 @@ export default function GpcMasterScreen() {
                                       const isCheckbox = colConfig?.isCheckbox;
                                       const isEditable = colConfig?.editable !== false;
                                       const isSearchable = colConfig?.searchable && isEditable;
+                                      // Show a green loader in the BU3 Code/Name
+                                      // cells while their profit-center lookup runs.
+                                      const isBu3Col =
+                                        colIndex === COL_BU3_CODE ||
+                                        colIndex === COL_BU3_NAME;
+                                      const bu3Manu = (
+                                        row[COL_MANUFACTURER] || ""
+                                      ).trim();
+                                      const bu3Mpn = (
+                                        row[COL_MFR_PART_NUMBER] || ""
+                                      ).trim();
+                                      const bu3Gpc = (
+                                        row[COL_GPC_CODE] || ""
+                                      ).trim();
+                                      const isBu3Loading =
+                                        isBu3Col &&
+                                        bu3Manu !== "" &&
+                                        bu3Mpn !== "" &&
+                                        bu3Gpc !== "" &&
+                                        loadingProfitCenterKeys.has(
+                                          buildProfitCenterKey(
+                                            bu3Gpc,
+                                            bu3Manu,
+                                            bu3Mpn,
+                                          ),
+                                        );
                                       const searchOptions =
                                         colConfig?.key === "manufacturer"
                                           ? manufacturerOptions
@@ -1851,7 +1983,20 @@ export default function GpcMasterScreen() {
                                             colIndex + 1,
                                           )}
                                         >
-                                          {isCheckbox ? (
+                                          {isBu3Loading ? (
+                                            <Box
+                                              sx={{
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                              }}
+                                            >
+                                              <CircularProgress
+                                                size={18}
+                                                color="success"
+                                              />
+                                            </Box>
+                                          ) : isCheckbox ? (
                                             <StyledCheckbox
                                               size="small"
                                               checked={cell === "1"}
@@ -2041,11 +2186,15 @@ export default function GpcMasterScreen() {
         onClose={(_event, reason) => {
           if (reason === "clickaway") return;
           setSnackbarOpen(false);
+          setBu3ErrorRowIndices([]);
         }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <StyledSnackbarAlert
-          onClose={() => setSnackbarOpen(false)}
+          onClose={() => {
+            setSnackbarOpen(false);
+            setBu3ErrorRowIndices([]);
+          }}
           severity={snackbarSeverity}
         >
           {snackbarMessage}
