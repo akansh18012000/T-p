@@ -383,9 +383,11 @@ function LocalItemConversionMasterScreen() {
 
   // Search box inputs and debounced values (min 3 chars, 300 ms — matches GpcMaster)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
+  // No minimum-length gate on System Id: filter on any number of typed
+  // characters (matches SalesDataErrorCorrectionScreen).
   const { debouncedValue: systemIdDebounced } = useDebouncedSearch(
     systemIdSearchInput,
-    { minLength: 3, delay: 300 },
+    { minLength: 0, delay: 300 },
   );
   const [manufacturerCodeSearchInput, setManufacturerCodeSearchInput] =
     useState("");

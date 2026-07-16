@@ -307,9 +307,11 @@ export default function CommonConversionMasterScreen() {
     { minLength: 3, delay: 300 },
   );
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
+  // No minimum-length gate on System Id: filter on any number of typed
+  // characters (matches SalesDataErrorCorrectionScreen).
   const { debouncedValue: systemIdDebounced } = useDebouncedSearch(
     systemIdSearchInput,
-    { minLength: 3, delay: 300 },
+    { minLength: 0, delay: 300 },
   );
 
   const searchConditionsRef = useRef({

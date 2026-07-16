@@ -359,8 +359,12 @@ export default function GlobalDadMasterScreen() {
 
   // Search inputs and debounced (min 3 chars, 1s debounce)
   const [systemIdSearchInput, setSystemIdSearchInput] = useState("");
-  const { debouncedValue: systemIdDebounced } =
-    useDebouncedSearch(systemIdSearchInput);
+  // No minimum-length gate on System Id: filter on any number of typed
+  // characters (matches SalesDataErrorCorrectionScreen).
+  const { debouncedValue: systemIdDebounced } = useDebouncedSearch(
+    systemIdSearchInput,
+    { minLength: 0 },
+  );
   const [localCustomerSearchInput, setLocalCustomerSearchInput] = useState("");
   const { debouncedValue: localCustomerDebounced } =
     useDebouncedSearch(localCustomerSearchInput);
