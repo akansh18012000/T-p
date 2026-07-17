@@ -219,6 +219,9 @@ function FxRateEntryMasterScreen() {
   const overwriteFlagColIndex = 5;
   const deletionFlagColIndex = 6;
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
   const originalRowsRef = useRef<string[][]>([]);
@@ -264,6 +267,7 @@ function FxRateEntryMasterScreen() {
 
   const handleSearch = async () => {
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
     try {
       const conditions = searchConditionsRef.current;
@@ -791,7 +795,7 @@ function FxRateEntryMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 

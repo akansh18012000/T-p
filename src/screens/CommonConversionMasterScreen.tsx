@@ -398,6 +398,9 @@ export default function CommonConversionMasterScreen() {
   );
   const abstractColIndex = 9;
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
@@ -513,6 +516,7 @@ export default function CommonConversionMasterScreen() {
   ) => {
     const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
     try {
       const res = await fetch(COMMON_CONVERSION_SEARCH_API_URL, {
@@ -1072,7 +1076,7 @@ export default function CommonConversionMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 

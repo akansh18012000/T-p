@@ -512,6 +512,9 @@ function LocalItemConversionMasterScreen() {
   const searchSnapshotRef = useRef<string[][]>([]);
   const [isRegistering, setIsRegistering] = useState(false);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -546,6 +549,7 @@ function LocalItemConversionMasterScreen() {
 
   const handleSearch = async () => {
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
     const conditions = searchConditionsRef.current;
     const payload: LocalItemSearchPayload = {
@@ -1164,7 +1168,7 @@ function LocalItemConversionMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 

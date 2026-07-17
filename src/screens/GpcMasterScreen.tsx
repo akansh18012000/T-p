@@ -466,6 +466,9 @@ export default function GpcMasterScreen() {
     csvDataRef.current = csvData;
   }, [csvData]);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
@@ -791,6 +794,7 @@ export default function GpcMasterScreen() {
   ) => {
     const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
     // New search results replace csvData wholesale — any row indices we'd
     // been tracking as "touched" or flagged for a BU3 error are now stale.
@@ -1486,7 +1490,7 @@ export default function GpcMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 

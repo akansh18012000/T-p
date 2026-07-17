@@ -317,6 +317,9 @@ export default function KitItemClassificationMasterScreen() {
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
@@ -367,6 +370,7 @@ export default function KitItemClassificationMasterScreen() {
   const handleSearch = async (options?: { silent?: boolean }) => {
     const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setIsSearching(true);
     try {
       const conditions = searchConditionsRef.current;
@@ -915,7 +919,7 @@ export default function KitItemClassificationMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 

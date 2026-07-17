@@ -553,7 +553,7 @@ function YearMonthMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [searchTerm, rows.length],
+    resetDeps: [searchTerm],
   });
   const hasRows = rows.length > 0;
 

@@ -752,6 +752,9 @@ export default function StandardCostMasterScreen() {
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const [searchExecuted, setSearchExecuted] = useState(false);
+  // Increments on every executed search; drives the pagination reset so a new
+  // search returns to page 1 while local row add/delete does not.
+  const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   // Last search payload, reused by Refresh so it re-runs the same query.
@@ -819,6 +822,7 @@ export default function StandardCostMasterScreen() {
   ) => {
     const silent = options?.silent === true;
     setSearchExecuted(true);
+    setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
     try {
       const res = await fetch(STANDARD_COST_SEARCH_API_URL, {
@@ -1392,7 +1396,7 @@ export default function StandardCostMasterScreen() {
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
-    resetDeps: [csvSearchTerm, searchExecuted, displayData.rows.length],
+    resetDeps: [csvSearchTerm, searchGeneration],
   });
   const hasRows = displayData.rows.length > 0;
 
