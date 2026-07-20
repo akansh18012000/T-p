@@ -17,6 +17,7 @@ import {
 import {
   CheckCircleOutline as CheckCircleOutlineIcon,
   Undo as UndoIcon,
+  Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
@@ -24,6 +25,7 @@ import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
 import { SCREEN_IDS } from "../constants/index.js";
 
 const PNL_APPROVAL_LOG_API_URL = "/api/v1/pnl-approval-log";
+const PNL_REPORT_URL_API_URL = "/api/v1/pnl-report/pnl/get_url";
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -66,6 +68,19 @@ const StyledRollbackButton = styled(Button)(({ theme }) => ({
   "&:hover": {
     borderColor: theme.palette.error.dark,
     backgroundColor: theme.palette.error.main,
+    color: theme.palette.common.white,
+  },
+}));
+
+const StyledReportButton = styled(Button)(({ theme }) => ({
+  borderColor: theme.palette.primary.main,
+  color: theme.palette.primary.main,
+  paddingLeft: theme.spacing(3),
+  paddingRight: theme.spacing(3),
+  marginLeft: "auto",
+  "&:hover": {
+    borderColor: theme.palette.primary.dark,
+    backgroundColor: theme.palette.primary.main,
     color: theme.palette.common.white,
   },
 }));
@@ -182,6 +197,11 @@ interface PnlApprovalLogApiResponse {
   data: PnlApprovalLogApiRow[];
 }
 
+// Shape of the response from GET /api/v1/pnl-report/pnl/get_url.
+interface PnlReportUrlApiResponse {
+  url: string;
+}
+
 // Normalizes an action value to camel/title casing for display
 // ("ROLLBACK" -> "Rollback", "APPROVE" -> "Approve").
 const formatActionLabel = (value: string): string =>
@@ -232,6 +252,8 @@ export default function PlDataApprovalScreen() {
   const [approvalHistory, setApprovalHistory] = useState<ApprovalHistoryRow[]>(
     [],
   );
+  // Power BI dashboard URL fetched in parallel with the approval history.
+  const [dashboardUrl, setDashboardUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   // Which action's POST is in flight (drives the full-page loader message).
   const [actionInProgress, setActionInProgress] =
@@ -268,22 +290,41 @@ export default function PlDataApprovalScreen() {
     }));
   };
 
-  // Load the approval history once on page load. The ref guard early-returns on
-  // React StrictMode's second mount pass so the fetch fires exactly once.
-  const historyFetchedRef = useRef(false);
+  // GET the Power BI dashboard URL and return it.
+  const fetchDashboardUrl = async (): Promise<string> => {
+    const res = await fetch(PNL_REPORT_URL_API_URL, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    const json = (await res.json()) as PnlReportUrlApiResponse;
+    return typeof json?.url === "string" ? json.url.trim() : "";
+  };
+
+  // Load the approval history and the Power BI dashboard URL once on page load,
+  // in parallel. The loader stays visible until both calls settle. The ref
+  // guard early-returns on React StrictMode's second mount pass so the fetches
+  // fire exactly once.
+  const dataFetchedRef = useRef(false);
   useEffect(() => {
-    if (historyFetchedRef.current) return;
-    historyFetchedRef.current = true;
+    if (dataFetchedRef.current) return;
+    dataFetchedRef.current = true;
     (async () => {
       setIsLoading(true);
-      try {
-        const mapped = await fetchHistory();
-        setApprovalHistory(mapped);
-      } catch {
-        setApprovalHistory([]);
-      } finally {
-        setIsLoading(false);
-      }
+      const [historyResult, urlResult] = await Promise.allSettled([
+        fetchHistory(),
+        fetchDashboardUrl(),
+      ]);
+      setApprovalHistory(
+        historyResult.status === "fulfilled" ? historyResult.value : [],
+      );
+      setDashboardUrl(
+        urlResult.status === "fulfilled" ? urlResult.value : "",
+      );
+      setIsLoading(false);
     })();
     // Intentionally empty deps: this fetch must run exactly once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,6 +372,13 @@ export default function PlDataApprovalScreen() {
     }
   };
 
+  // Open the Power BI dashboard in a new browser tab.
+  const handleOpenReport = () => {
+    if (dashboardUrl) {
+      window.open(dashboardUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const isActionInProgress = actionInProgress !== null;
 
   return (
@@ -369,6 +417,14 @@ export default function PlDataApprovalScreen() {
         >
           {t("plDataApproval.rollback")}
         </StyledRollbackButton>
+        <StyledReportButton
+          variant="outlined"
+          startIcon={<AssessmentIcon />}
+          onClick={handleOpenReport}
+          disabled={isActionInProgress || !dashboardUrl}
+        >
+          {t("plDataApproval.checkConsolidatedReport")}
+        </StyledReportButton>
       </StyledActionBox>
 
       {/* P&L Approval Data table */}
