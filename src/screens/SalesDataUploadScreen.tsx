@@ -85,6 +85,7 @@ const StyledHeaderCell = styled(TableCell)(({ theme }) => ({
     theme.palette.primary.main,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.common.white}`,
 }));
 
@@ -441,8 +442,8 @@ const StyledFileIconWrapper = styled(Box)({
 
 const StyledFileIconWrapperSmall = styled(Box)({
   position: "relative",
-  width: 32,
-  height: 32,
+  width: 28,
+  height: 28,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -522,14 +523,14 @@ const StyledStatusChip = styled(Chip)(({ theme }) => {
     border: string;
   };
   return {
-    height: 22,
+    height: 20,
     backgroundColor: success.light,
     color: success.dark,
     fontWeight: 600,
-    fontSize: "0.75rem",
+    fontSize: "0.6875rem",
     border: `1px solid ${success.border}`,
     "& .MuiChip-icon": {
-      fontSize: 14,
+      fontSize: 13,
     },
   };
 });
@@ -575,10 +576,16 @@ const StyledViewButtonSmall = styled(Button)(({ theme }) => ({
   paddingRight: theme.spacing(1.5),
   paddingTop: theme.spacing(0.5),
   paddingBottom: theme.spacing(0.5),
-  fontSize: "0.75rem",
+  fontSize: "0.6875rem",
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
   textTransform: "none",
+  "& .MuiButton-startIcon": {
+    marginRight: 4,
+  },
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 15,
+  },
   "&:hover": {
     backgroundColor: alpha(theme.palette.primary.main, 0.04),
     borderColor: theme.palette.primary.main,
@@ -591,10 +598,16 @@ const StyledDownloadButtonSmall = styled(Button)(({ theme }) => ({
   paddingRight: theme.spacing(1.5),
   paddingTop: theme.spacing(0.5),
   paddingBottom: theme.spacing(0.5),
-  fontSize: "0.75rem",
+  fontSize: "0.6875rem",
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
   textTransform: "none",
+  "& .MuiButton-startIcon": {
+    marginRight: 4,
+  },
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 15,
+  },
   "&:hover": {
     backgroundColor: alpha(theme.palette.primary.main, 0.04),
     borderColor: theme.palette.primary.main,
@@ -1783,7 +1796,7 @@ export default function SalesDataUploadScreen() {
                                   <StyledFileIconWrapperSmall>
                                     <StyledFileIconWithColor
                                       $color={fileInfo.color}
-                                      $fontSize={24}
+                                      $fontSize={20}
                                     >
                                       <IconComponent />
                                     </StyledFileIconWithColor>
