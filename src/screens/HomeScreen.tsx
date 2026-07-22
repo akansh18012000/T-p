@@ -23,10 +23,10 @@ const StyledContentInnerBox = styled(Box)(({ theme }) => ({
   flex: 1,
   minHeight: 0,
   overflow: "hidden",
-  padding: theme.spacing(4),
+  padding: theme.spacing(3),
   backgroundColor:
     (theme.palette.primary as { lightest?: string }).lightest ?? "#D9EFE7",
-  gap: theme.spacing(3),
+  gap: theme.spacing(2),
 }));
 
 const StyledWelcomeBox = styled(Box)({
@@ -47,7 +47,7 @@ const StyledTwoColumnBox = styled(Box)(({ theme }) => ({
   flex: 1,
   display: "flex",
   flexDirection: "row",
-  gap: theme.spacing(4),
+  gap: theme.spacing(3),
   overflow: "hidden",
 }));
 
@@ -76,7 +76,7 @@ const StyledSectionTitle = styled(Typography)(({ theme }) => ({
 
 const StyledSectionAccent = styled(Box)(({ theme }) => ({
   height: "3px",
-  width: "60px",
+  width: "48px",
   backgroundColor: theme.palette.primary.main,
   borderRadius: "2px",
 }));
@@ -103,14 +103,14 @@ const StyledDivider = styled(Box)(({ theme }) => ({
 }));
 
 const StyledMenuCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
+  padding: theme.spacing(1.5),
   cursor: "pointer",
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   backgroundColor: theme.palette.background.paper,
   border: "none",
-  borderRadius: "12px",
-  width: "200px",
-  height: "200px",
+  borderRadius: "10px",
+  width: "135px",
+  height: "135px",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -131,7 +131,7 @@ const StyledMenuCard = styled(Paper)(({ theme }) => ({
   },
   "&:hover": {
     boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.2)}`,
-    transform: "translateY(-8px)",
+    transform: "translateY(-6px)",
     "&::before": {
       opacity: 1,
     },
@@ -139,14 +139,14 @@ const StyledMenuCard = styled(Paper)(({ theme }) => ({
 }));
 
 const StyledMasterMenuCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
+  padding: theme.spacing(1.5),
   cursor: "pointer",
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   backgroundColor: theme.palette.background.paper,
   border: "none",
-  borderRadius: "12px",
-  width: "200px",
-  height: "200px",
+  borderRadius: "10px",
+  width: "135px",
+  height: "135px",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -167,7 +167,7 @@ const StyledMasterMenuCard = styled(Paper)(({ theme }) => ({
   },
   "&:hover": {
     boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.2)}`,
-    transform: "translateY(-8px)",
+    transform: "translateY(-6px)",
     "&::before": {
       opacity: 1,
     },
@@ -178,14 +178,14 @@ const StyledIconBox = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 60,
-  height: 60,
-  borderRadius: "12px",
+  width: 44,
+  height: 44,
+  borderRadius: "10px",
   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.12)} 0%, ${alpha(theme.palette.primary.dark, 0.08)} 100%)`,
-  marginBottom: theme.spacing(2),
+  marginBottom: theme.spacing(1),
   transition: "all 0.3s ease",
   "& .MuiSvgIcon-root": {
-    fontSize: 32,
+    fontSize: 24,
     color: theme.palette.primary.main,
   },
 }));
@@ -193,8 +193,8 @@ const StyledIconBox = styled(Box)(({ theme }) => ({
 const StyledCardLabel = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
   color: theme.palette.secondary.main,
-  fontSize: "0.95rem",
-  lineHeight: 1.4,
+  fontSize: "0.72rem",
+  lineHeight: 1.3,
   wordBreak: "break-word",
   marginBottom: theme.spacing(0.5),
 }));
