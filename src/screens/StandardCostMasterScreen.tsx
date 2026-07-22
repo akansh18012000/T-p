@@ -67,8 +67,13 @@ import {
   findDuplicateUploadFile,
   stripUploadIdSuffix,
   formatDateFieldForDisplay,
+  findDqFailedFile,
+  getDqViolationLines,
+  downloadDqErrorFile,
+  DQ_INLINE_LIMIT,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -1340,6 +1345,36 @@ export default function StandardCostMasterScreen() {
         );
         return;
       }
+
+      // Data-quality validation failure: show error_message + violations
+      // inline (≤ limit) or via a downloadable log (> limit).
+      const dqFile = findDqFailedFile(uploadJson);
+      if (dqFile) {
+        setUploadStatus("idle");
+        const violations = getDqViolationLines(dqFile);
+        const errorMessage =
+          dqFile.error_message ?? t("upload.dqCheckFailedGeneric");
+        showSnackbar(
+          <DqErrorSnackbarContent
+            errorMessage={errorMessage}
+            violations={violations}
+            onDownload={
+              violations.length > DQ_INLINE_LIMIT
+                ? () => {
+                    void downloadDqErrorFile(
+                      dqFile,
+                      t("upload.dqErrorFileName"),
+                    );
+                  }
+                : undefined
+            }
+          />,
+          "error",
+          true,
+        );
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(`Upload API responded ${response.status}`);
       }

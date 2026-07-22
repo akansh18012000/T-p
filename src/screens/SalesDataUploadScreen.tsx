@@ -54,6 +54,13 @@ import {
   type CsvData,
 } from "../utils/csvUtils.js";
 import {
+  findAllDqFailedFiles,
+  getDqViolationLines,
+  downloadDqErrorFileForFiles,
+  DQ_INLINE_LIMIT,
+} from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import {
   StyledSnackbarAlert,
   StyledSearchBarBox,
   StyledSearchBarInnerBox,
@@ -670,6 +677,7 @@ interface UploadResultFile {
   total_rows: number | null;
   duplicate_file_name?: string | null;
   error_message?: string | null;
+  dq_violations?: string[] | null;
 }
 
 interface UploadApiResponse {
@@ -1175,6 +1183,47 @@ export default function SalesDataUploadScreen() {
         json = (await response.json()) as UploadApiResponse;
       } catch {
         json = null;
+      }
+
+      // Data-quality validation failure takes precedence over the per-file
+      // duplicate handling. Rule for this multi-file screen: show violations
+      // inline only when a single file was uploaded and it has ≤ limit errors;
+      // otherwise (more than one file, or > limit errors) auto-download a text
+      // log of every failed file and offer a Download button to re-fetch it.
+      const dqFiles = findAllDqFailedFiles(json);
+      if (dqFiles.length > 0) {
+        const firstFile = dqFiles[0];
+        const violations = getDqViolationLines(firstFile);
+        // With several failed files, a per-file message is misleading — show a
+        // generic count-based headline; the full breakdown is in the download.
+        const errorMessage =
+          dqFiles.length > 1
+            ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
+            : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
+        const useDownload =
+          uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
+        if (useDownload) {
+          void downloadDqErrorFileForFiles(dqFiles, t("upload.dqErrorFileName"));
+        }
+        showSnackbar(
+          <DqErrorSnackbarContent
+            errorMessage={errorMessage}
+            violations={violations}
+            onDownload={
+              useDownload
+                ? () => {
+                    void downloadDqErrorFileForFiles(
+                      dqFiles,
+                      t("upload.dqErrorFileName"),
+                    );
+                  }
+                : undefined
+            }
+          />,
+          "error",
+          true,
+        );
+        return;
       }
 
       const resultFiles =

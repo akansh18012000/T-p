@@ -66,8 +66,13 @@ import { usePermissions } from "../hooks/usePermissions.js";
 import {
   findDuplicateUploadFile,
   stripUploadIdSuffix,
+  findDqFailedFile,
+  getDqViolationLines,
+  downloadDqErrorFile,
+  DQ_INLINE_LIMIT,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 
 // Styled components using theme variables
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
@@ -622,13 +627,13 @@ export default function AdjustmentSalesDetailScreen() {
     new Set(),
   );
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
   const [snackbarSeverity, setSnackbarSeverity] =
     useState<AlertColor>("success");
   const [snackbarPersistent, setSnackbarPersistent] = useState(false);
 
   const showSnackbar = (
-    message: string,
+    message: React.ReactNode,
     severity: AlertColor = "success",
     persistent = false,
   ) => {
@@ -787,6 +792,35 @@ export default function AdjustmentSalesDetailScreen() {
               duplicateFile.duplicate_file_name ?? "",
             ),
           }),
+          "error",
+          true,
+        );
+        return;
+      }
+
+      // Data-quality validation failure: show error_message + violations
+      // inline (≤ limit) or via a downloadable log (> limit).
+      const dqFile = findDqFailedFile(uploadJson);
+      if (dqFile) {
+        setUploadStatus("idle");
+        const violations = getDqViolationLines(dqFile);
+        const errorMessage =
+          dqFile.error_message ?? t("upload.dqCheckFailedGeneric");
+        showSnackbar(
+          <DqErrorSnackbarContent
+            errorMessage={errorMessage}
+            violations={violations}
+            onDownload={
+              violations.length > DQ_INLINE_LIMIT
+                ? () => {
+                    void downloadDqErrorFile(
+                      dqFile,
+                      t("upload.dqErrorFileName"),
+                    );
+                  }
+                : undefined
+            }
+          />,
           "error",
           true,
         );

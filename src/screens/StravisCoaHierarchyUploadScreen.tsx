@@ -37,6 +37,14 @@ import {
   validateCsvColumns,
   readFileWithDetectedEncoding,
 } from "../utils/csvUtils.js";
+import {
+  findAllDqFailedFiles,
+  getDqViolationLines,
+  downloadDqErrorFileForFiles,
+  DQ_INLINE_LIMIT,
+  type UploadApiResponse,
+} from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
@@ -416,6 +424,57 @@ export default function StravisCoaHierarchyUploadScreen() {
         method: "POST",
         body: formData,
       });
+
+      // The backend reports data-quality outcomes in the JSON body even when
+      // the overall status is FAILED, so parse it before reacting to the HTTP
+      // status.
+      let uploadJson: UploadApiResponse | null = null;
+      try {
+        uploadJson = (await response.json()) as UploadApiResponse;
+      } catch {
+        uploadJson = null;
+      }
+
+      // Data-quality validation failure. Rule for this multi-file screen: show
+      // violations inline only when a single file was uploaded and it has
+      // ≤ limit errors; otherwise (more than one file, or > limit errors)
+      // auto-download a text log of every failed file and offer a Download
+      // button to re-fetch it.
+      const dqFiles = findAllDqFailedFiles(uploadJson);
+      if (dqFiles.length > 0) {
+        const firstFile = dqFiles[0];
+        const violations = getDqViolationLines(firstFile);
+        // With several failed files, a per-file message is misleading — show a
+        // generic count-based headline; the full breakdown is in the download.
+        const errorMessage =
+          dqFiles.length > 1
+            ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
+            : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
+        const useDownload =
+          uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
+        if (useDownload) {
+          void downloadDqErrorFileForFiles(dqFiles, t("upload.dqErrorFileName"));
+        }
+        showSnackbar(
+          <DqErrorSnackbarContent
+            errorMessage={errorMessage}
+            violations={violations}
+            onDownload={
+              useDownload
+                ? () => {
+                    void downloadDqErrorFileForFiles(
+                      dqFiles,
+                      t("upload.dqErrorFileName"),
+                    );
+                  }
+                : undefined
+            }
+          />,
+          "error",
+          true,
+        );
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`Upload API responded ${response.status}`);
