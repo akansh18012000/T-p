@@ -52,14 +52,14 @@ const StyledSidebarBox = styled(Box)(({ theme }) => ({
 }));
 
 const StyledLogoBox = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
+  marginBottom: theme.spacing(1.5),
 }));
 
 const StyledLogoInnerBox = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing(1.5),
-  marginBottom: theme.spacing(2),
+  marginBottom: theme.spacing(1),
 }));
 
 const StyledList = styled(List)(({ theme }) => ({
@@ -78,22 +78,22 @@ const StyledList = styled(List)(({ theme }) => ({
 
 const StyledListItem = styled(ListItem)(({ theme }) => ({
   display: "block",
-  marginBottom: theme.spacing(1),
+  marginBottom: theme.spacing(0.25),
 }));
 
 const StyledSectionButton = styled(ListItemButton)(({ theme }) => ({
   paddingLeft: theme.spacing(2),
   paddingRight: theme.spacing(2),
-  paddingTop: theme.spacing(1),
-  paddingBottom: theme.spacing(1),
+  paddingTop: theme.spacing(0.75),
+  paddingBottom: theme.spacing(0.75),
 }));
 
 const StyledMenuItemButton = styled(ListItemButton)<{
   $isActive: boolean;
 }>(({ theme, $isActive }) => ({
   paddingLeft: theme.spacing(4),
-  paddingTop: theme.spacing(1),
-  paddingBottom: theme.spacing(1),
+  paddingTop: theme.spacing(0.5),
+  paddingBottom: theme.spacing(0.5),
   fontSize: "0.75rem",
   color: $isActive ? theme.palette.primary.main : theme.palette.grey![500],
   backgroundColor: $isActive

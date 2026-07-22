@@ -78,8 +78,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   // AI Generated Code by Deloitte + Cursor (END)
 
   const defaultSidebarProps = {
-    width: 300,
-    collapsedWidth: 60,
+    width: 260,
+    collapsedWidth: 52,
     showLogo: true,
     logoSrc: terumoLogo,
     logoAlt: "Terumo",

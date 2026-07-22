@@ -16,14 +16,24 @@ const muiGridV5LikeConfig = {
  * content top-offset (AppLayout) and the sidebar top/height (AppSidebar) all
  * derive from this so the header, content and drawer always line up.
  */
-export const HEADER_HEIGHT = 46;
+export const HEADER_HEIGHT = 40;
 
 /**
  * Base spacing unit, in px. Reduced from MUI's default 8 as part of the global
  * density pass — every `theme.spacing(n)` call site (and MUI component internal
  * padding) shrinks proportionally.
  */
-const SPACING_UNIT = 6.5;
+const SPACING_UNIT = 5.5;
+
+/**
+ * Root `<html>` font-size, in px (browser default is 16). Lowered as the global
+ * density multiplier: because the whole app sizes text in `rem` (the typography
+ * variants below + hard-coded `rem` literals in styled components), this one
+ * value scales all text down uniformly without touching each call site. Applied
+ * via the `MuiCssBaseline` `html` override below. NOTE: `rem` only — px-based
+ * dimensions (spacing, header, fixed widths) are shrunk separately.
+ */
+const ROOT_FONT_SIZE_PX = 14;
 
 export const terumoTheme = {
   palette: {
@@ -181,6 +191,15 @@ export const terumoTheme = {
   },
   components: {
     MuiGrid: muiGridV5LikeConfig,
+    // Global density multiplier: shrink the root font-size so every `rem`-based
+    // text size in the app scales down together (see ROOT_FONT_SIZE_PX).
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          fontSize: `${ROOT_FONT_SIZE_PX}px`,
+        },
+      },
+    },
     // Density pass: default the common interactive components to their compact
     // ("small") size and shrink the header. Screens that pass an explicit
     // `size` prop still win over these defaults.
