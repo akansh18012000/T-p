@@ -121,7 +121,7 @@ const StyledBodyCell = styled(TableCell)(({ theme }) => ({
 
 // Layout and container styled components
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
-  borderRadius: "16px",
+  borderRadius: "12px",
   overflow: "hidden",
   border: `1px solid ${theme.palette.grey![200]}`,
   backgroundColor: theme.palette.background.paper,
@@ -131,7 +131,7 @@ const StyledMainPaper = styled(Paper)(({ theme }) => ({
 }));
 
 const StyledPageHeaderBox = styled(Box)(({ theme }) => ({
-  padding: 24,
+  padding: theme.spacing(3),
   borderBottom: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.paper,
 }));
@@ -141,21 +141,28 @@ const StyledPageTitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![800],
 }));
 
-const StyledContentBox = styled(Box)({
-  padding: 24,
-});
+const StyledContentBox = styled(Box)(({ theme }) => ({
+  paddingTop: theme.spacing(1),
+  paddingRight: theme.spacing(3),
+  paddingBottom: theme.spacing(3),
+  paddingLeft: theme.spacing(3),
+}));
 
 
 const StyledTabsWrapper = styled(Box)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
-  marginBottom: 24,
+  marginBottom: theme.spacing(2),
 }));
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
+  minHeight: 36,
   "& .MuiTab-root": {
+    minHeight: 36,
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
     textTransform: "none",
     fontWeight: 600,
-    fontSize: "1rem",
+    fontSize: "0.8125rem",
     color: theme.palette.grey![500],
     "&.Mui-selected": {
       color: theme.palette.primary.main,
@@ -163,17 +170,17 @@ const StyledTabs = styled(Tabs)(({ theme }) => ({
   },
   "& .MuiTabs-indicator": {
     backgroundColor: theme.palette.primary.main,
-    height: 3,
+    height: 2,
   },
 }));
 
-const StyledUploadSectionBox = styled(Box)({
+const StyledUploadSectionBox = styled(Box)(({ theme }) => ({
   display: "flex",
-  gap: 24,
+  gap: theme.spacing(3),
   alignItems: "flex-start",
   marginLeft: "auto",
   marginRight: "auto",
-});
+}));
 
 const StyledUploadZoneWrapper = styled(Box)<{ $hasFiles: boolean }>(
   ({ $hasFiles }) => ({
@@ -181,9 +188,9 @@ const StyledUploadZoneWrapper = styled(Box)<{ $hasFiles: boolean }>(
   }),
 );
 
-const StyledDownloadTemplateWrapper = styled(Box)({
-  marginBottom: 16,
-});
+const StyledDownloadTemplateWrapper = styled(Box)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+}));
 
 const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
   borderColor: theme.palette.primary.main,
@@ -191,6 +198,13 @@ const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
   borderRadius: "8px",
   fontWeight: 600,
   textTransform: "none",
+  fontSize: "0.6875rem",
+  "& .MuiButton-startIcon": {
+    marginRight: 4,
+  },
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 12,
+  },
   "&:hover": {
     backgroundColor: alpha(theme.palette.primary.main, 0.04),
     borderColor: theme.palette.primary.dark,
@@ -205,8 +219,8 @@ const StyledDragDropZone = styled(Box)<{
   border: $dragActive
     ? `3px dashed ${theme.palette.primary.main}`
     : `2px dashed ${theme.palette.grey![300]}`,
-  borderRadius: "16px",
-  padding: 32,
+  borderRadius: "12px",
+  padding: theme.spacing(2.5),
   textAlign: "center",
   backgroundColor: $dragActive
     ? alpha(theme.palette.primary.main, 0.05)
@@ -215,7 +229,7 @@ const StyledDragDropZone = styled(Box)<{
   cursor: $disabled ? "not-allowed" : "pointer",
   position: "relative",
   overflow: "hidden",
-  minHeight: $hasFiles ? "400px" : "auto",
+  minHeight: $hasFiles ? "340px" : "auto",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -234,17 +248,17 @@ const StyledDragDropZone = styled(Box)<{
       }),
 }));
 
-const StyledDragDropInner = styled(Box)({
+const StyledDragDropInner = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 16,
-});
+  gap: theme.spacing(1),
+}));
 
 const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
   ({ $dragActive, theme }) => ({
-    width: 80,
-    height: 80,
+    width: 56,
+    height: 56,
     borderRadius: "50%",
     background: $dragActive
       ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
@@ -259,7 +273,7 @@ const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
 const StyledCloudUploadIcon = styled(CloudUploadOutlined)<{
   $dragActive: boolean;
 }>(({ $dragActive, theme }) => ({
-  fontSize: 40,
+  fontSize: 28,
   color: $dragActive ? theme.palette.common.white : theme.palette.primary.main,
   transition: "all 0.3s ease",
 }));
@@ -267,12 +281,12 @@ const StyledCloudUploadIcon = styled(CloudUploadOutlined)<{
 const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.secondary.main,
-  marginBottom: 4,
+  marginBottom: theme.spacing(0.5),
 }));
 
 const StyledDragDropSubtitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![500],
-  marginBottom: 16,
+  marginBottom: theme.spacing(3),
 }));
 
 const StyledBrowseButton = styled(Button)(({ theme }) => ({
@@ -280,11 +294,15 @@ const StyledBrowseButton = styled(Button)(({ theme }) => ({
   color: theme.palette.common.white,
   textTransform: "none",
   fontWeight: 600,
-  paddingLeft: 32,
-  paddingRight: 32,
-  paddingTop: 8,
-  paddingBottom: 8,
+  fontSize: "0.6875rem",
+  paddingLeft: theme.spacing(3),
+  paddingRight: theme.spacing(3),
+  paddingTop: theme.spacing(1),
+  paddingBottom: theme.spacing(1),
   borderRadius: "8px",
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 15,
+  },
   boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
   "&:hover": {
     background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
@@ -292,14 +310,14 @@ const StyledBrowseButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const StyledSupportedFormatsWrapper = styled(Box)({
-  marginTop: 16,
-});
+const StyledSupportedFormatsWrapper = styled(Box)(({ theme }) => ({
+  marginTop: theme.spacing(3),
+}));
 
 const StyledSupportedFormatsText = styled(Typography)(({ theme }) => ({
   color: theme.palette.disabled!.text,
   display: "block",
-  marginBottom: 8,
+  marginBottom: theme.spacing(0.25),
 }));
 
 const StyledFilesListWrapper = styled(Box)({
@@ -307,33 +325,33 @@ const StyledFilesListWrapper = styled(Box)({
   minWidth: 0,
 });
 
-const StyledFilesListHeader = styled(Box)({
+const StyledFilesListHeader = styled(Box)(({ theme }) => ({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 12,
-});
+  marginBottom: theme.spacing(1.5),
+}));
 
 const StyledFilesListTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.secondary.main,
 }));
 
-const StyledActionButtonsBox = styled(Box)({
+const StyledActionButtonsBox = styled(Box)(({ theme }) => ({
   display: "flex",
-  gap: 8,
-});
+  gap: theme.spacing(1),
+}));
 
 const StyledUploadButton = styled(Button)(({ theme }) => ({
-  paddingLeft: 16,
-  paddingRight: 16,
-  paddingTop: 6,
-  paddingBottom: 6,
+  paddingLeft: theme.spacing(2),
+  paddingRight: theme.spacing(2),
+  paddingTop: theme.spacing(0.75),
+  paddingBottom: theme.spacing(0.75),
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
   color: theme.palette.common.white,
   fontWeight: 600,
   textTransform: "none",
-  fontSize: "0.875rem",
+  fontSize: "0.75rem",
   borderRadius: "8px",
   boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
   "&:hover": {
@@ -346,15 +364,15 @@ const StyledUploadButton = styled(Button)(({ theme }) => ({
 }));
 
 const StyledCancelButton = styled(Button)(({ theme }) => ({
-  paddingLeft: 16,
-  paddingRight: 16,
-  paddingTop: 6,
-  paddingBottom: 6,
+  paddingLeft: theme.spacing(2),
+  paddingRight: theme.spacing(2),
+  paddingTop: theme.spacing(0.75),
+  paddingBottom: theme.spacing(0.75),
   borderColor: theme.palette.grey![200],
   color: theme.palette.grey![500],
   fontWeight: 600,
   textTransform: "none",
-  fontSize: "0.875rem",
+  fontSize: "0.75rem",
   borderRadius: "8px",
   "&:hover": {
     borderColor: theme.palette.error.red!,
@@ -366,7 +384,7 @@ const StyledCancelButton = styled(Button)(({ theme }) => ({
 const StyledTableContainerWrapper = styled(Box)(({ theme }) => ({
   border: `2px solid ${theme.palette.grey![200]}`,
   borderRadius: "12px",
-  height: "400px",
+  height: "340px",
   overflow: "auto",
   "&::-webkit-scrollbar": {
     width: "6px",
@@ -405,16 +423,16 @@ const StyledTableContainerViewTabWrapper = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StyledFileCellContent = styled(Box)({
+const StyledFileCellContent = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  gap: 12,
-});
+  gap: theme.spacing(1.5),
+}));
 
 const StyledFileIconWrapper = styled(Box)({
   position: "relative",
-  width: 40,
-  height: 40,
+  width: 34,
+  height: 34,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -516,24 +534,35 @@ const StyledStatusChip = styled(Chip)(({ theme }) => {
   };
 });
 
-const StyledActionCellBox = styled(Box)({
+const StyledActionCellBox = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 4,
-});
+  gap: theme.spacing(0.5),
+}));
 
-const StyledActionCellBoxRow = styled(Box)({
+const StyledActionCellBoxRow = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  gap: 8,
+  gap: theme.spacing(1),
   justifyContent: "center",
-});
+}));
 
 const StyledViewButton = styled(Button)(({ theme }) => ({
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
   textTransform: "none",
+  fontSize: "0.6875rem",
+  paddingLeft: theme.spacing(1.5),
+  paddingRight: theme.spacing(1.5),
+  paddingTop: theme.spacing(0.5),
+  paddingBottom: theme.spacing(0.5),
+  "& .MuiButton-startIcon": {
+    marginRight: 4,
+  },
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 15,
+  },
   "&:hover": {
     borderColor: theme.palette.primary.dark,
     backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -542,10 +571,10 @@ const StyledViewButton = styled(Button)(({ theme }) => ({
 
 const StyledViewButtonSmall = styled(Button)(({ theme }) => ({
   minWidth: "auto",
-  paddingLeft: 12,
-  paddingRight: 12,
-  paddingTop: 4,
-  paddingBottom: 4,
+  paddingLeft: theme.spacing(1.5),
+  paddingRight: theme.spacing(1.5),
+  paddingTop: theme.spacing(0.5),
+  paddingBottom: theme.spacing(0.5),
   fontSize: "0.75rem",
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
@@ -558,10 +587,10 @@ const StyledViewButtonSmall = styled(Button)(({ theme }) => ({
 
 const StyledDownloadButtonSmall = styled(Button)(({ theme }) => ({
   minWidth: "auto",
-  paddingLeft: 12,
-  paddingRight: 12,
-  paddingTop: 4,
-  paddingBottom: 4,
+  paddingLeft: theme.spacing(1.5),
+  paddingRight: theme.spacing(1.5),
+  paddingTop: theme.spacing(0.5),
+  paddingBottom: theme.spacing(0.5),
   fontSize: "0.75rem",
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
@@ -574,18 +603,22 @@ const StyledDownloadButtonSmall = styled(Button)(({ theme }) => ({
 
 const StyledDeleteIconButton = styled(IconButton)(({ theme }) => ({
   color: theme.palette.grey![500],
+  padding: theme.spacing(0.5),
+  "& .MuiSvgIcon-root": {
+    fontSize: 16,
+  },
   "&:hover": {
     color: theme.palette.error.red500!,
     backgroundColor: theme.palette.error.red500Light!,
   },
 }));
 
-const StyledViewTabHeader = styled(Box)({
+const StyledViewTabHeader = styled(Box)(({ theme }) => ({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 24,
-});
+  marginBottom: theme.spacing(3),
+}));
 
 const StyledViewTabTitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.secondary.main,
@@ -605,10 +638,10 @@ const StyledEmptyStateBox = styled(Box)(({ theme }) => ({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  paddingTop: 64,
-  paddingBottom: 64,
-  paddingLeft: 24,
-  paddingRight: 24,
+  paddingTop: theme.spacing(8),
+  paddingBottom: theme.spacing(8),
+  paddingLeft: theme.spacing(3),
+  paddingRight: theme.spacing(3),
   textAlign: "center",
   backgroundColor: theme.palette.background.default,
   borderRadius: "12px",
@@ -616,14 +649,14 @@ const StyledEmptyStateBox = styled(Box)(({ theme }) => ({
 }));
 
 const StyledEmptyStateIcon = styled(DescriptionOutlined)(({ theme }) => ({
-  fontSize: 48,
+  fontSize: 36,
   color: theme.palette.grey![400],
-  marginBottom: 16,
+  marginBottom: theme.spacing(2),
 }));
 
 const StyledEmptyStateTitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![500],
-  marginBottom: 8,
+  marginBottom: theme.spacing(1),
 }));
 
 const StyledEmptyStateSubtitle = styled(Typography)(({ theme }) => ({
@@ -1400,7 +1433,23 @@ export default function SalesDataUploadScreen() {
           {/* Tab Panel 0: Upload */}
           {activeTab === 0 && (
             <Box>
-              <Alert severity="info" sx={{ marginBottom: 2 }}>
+              <Alert
+                severity="info"
+                sx={{
+                  marginBottom: 2,
+                  alignItems: "flex-start",
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  "& .MuiAlert-icon": {
+                    marginRight: 1,
+                    alignItems: "center",
+                    "& .MuiSvgIcon-root": { fontSize: "1.15rem" },
+                  },
+                  "& .MuiAlert-message": {
+                    fontSize: "0.75rem",
+                  },
+                }}
+              >
                 {t("upload.templateInstructions")}
               </Alert>
               {/* Modern Drag & Drop File Upload Section */}
@@ -1538,7 +1587,7 @@ export default function SalesDataUploadScreen() {
                                           <>
                                             <StyledFileIconWithColor
                                               $color={fileInfo.color}
-                                              $fontSize={32}
+                                              $fontSize={26}
                                             >
                                               <IconComponent />
                                             </StyledFileIconWithColor>
