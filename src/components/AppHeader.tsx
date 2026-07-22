@@ -35,8 +35,9 @@ const StyledControlsBox = styled(Box)(({ theme }) => ({
 
 const StyledAvatar = styled(Avatar)(({ theme }) => ({
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  width: 40,
-  height: 40,
+  width: 28,
+  height: 28,
+  fontSize: "0.7rem",
 }));
 
 const StyledUserText = styled(Typography)(({ theme }) => ({
@@ -47,6 +48,23 @@ const StyledUserText = styled(Typography)(({ theme }) => ({
 const StyledLanguageSelect = styled(Select)(({ theme }) => ({
   color: theme.palette.secondary.main,
   backgroundColor: theme.palette.grey![100],
+  fontSize: "0.7rem",
+  // Compact the control so it fits the shorter header: tighter padding,
+  // smaller caret, and less right padding since the icon is smaller.
+  "& .MuiSelect-select.MuiSelect-select": {
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    paddingLeft: theme.spacing(1),
+    // MUI reserves ~32px on the right for the caret via its own
+    // `.MuiSelect-select` rule; force 20px to override it.
+    paddingRight: "20px !important",
+    minHeight: "unset",
+    lineHeight: 1.4,
+  },
+  "& .MuiSelect-icon": {
+    fontSize: "1rem",
+    right: theme.spacing(0.5),
+  },
   "& .MuiOutlinedInput-notchedOutline": {
     borderColor: theme.palette.grey![200],
   },
@@ -61,6 +79,31 @@ const StyledLanguageSelect = styled(Select)(({ theme }) => ({
 const StyledMenuIconButton = styled(IconButton)(({ theme }) => ({
   marginRight: theme.spacing(2),
 }));
+
+// Compact rows for the language dropdown menu so the popup matches the small
+// control. The self-referencing `&.MuiMenuItem-root` selector raises the
+// specificity above MUI's own rule so the smaller font/padding wins regardless
+// of stylesheet injection order. Horizontal padding matches the control (left
+// 6.5px / right 20px) so the options line up under the control text.
+const StyledLanguageMenuItem = styled(MenuItem)(({ theme }) => ({
+  "&.MuiMenuItem-root": {
+    fontSize: "0.7rem",
+    minHeight: "unset",
+    paddingTop: theme.spacing(0.5),
+    paddingBottom: theme.spacing(0.5),
+    paddingLeft: theme.spacing(1),
+    paddingRight: "20px",
+  },
+}));
+
+// Drop the list's default padding. The popup width is left to MUI's default,
+// which sizes the menu to the control (anchor) width.
+const languageMenuProps = {
+  MenuListProps: {
+    dense: true,
+    sx: { paddingTop: 0, paddingBottom: 0 },
+  },
+} as const;
 
 interface AppHeaderProps {
   title?: string; // Ignored - app title is always "Performance Management"
@@ -127,9 +170,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onChange={(e) => handleLanguageChange(String(e.target.value))}
               size="small"
               variant="outlined"
+              MenuProps={languageMenuProps}
             >
-              <MenuItem value="en">{t("login.languageEnglish")}</MenuItem>
-              <MenuItem value="ja">{t("login.languageJapanese")}</MenuItem>
+              <StyledLanguageMenuItem value="en">
+                {t("login.languageEnglish")}
+              </StyledLanguageMenuItem>
+              <StyledLanguageMenuItem value="ja">
+                {t("login.languageJapanese")}
+              </StyledLanguageMenuItem>
             </StyledLanguageSelect>
           )}
         </StyledControlsBox>

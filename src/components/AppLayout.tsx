@@ -13,6 +13,7 @@ import type { MenuSection } from "./AppSidebar";
 import { AppBreadcrumbs } from "./AppBreadcrumbs";
 // AI Generated Code by Deloitte + Cursor (END)
 import terumoLogo from "../assets/logo.png";
+import { HEADER_HEIGHT } from "../config/theme.js";
 
 const StyledRootBox = styled(Box)<{ $isHomePage?: boolean }>(
   ({ theme, $isHomePage }) => ({
@@ -28,7 +29,8 @@ const StyledMainBox = styled(Box)<{ $noPadding?: boolean }>(
   ({ theme, $noPadding }) => ({
     flexGrow: 1,
     padding: $noPadding ? 0 : theme.spacing(3),
-    marginTop: theme.spacing(8),
+    // Offset for the fixed AppHeader — must match the header height.
+    marginTop: HEADER_HEIGHT,
     minWidth: 0,
     overflow: "hidden",
   }),
@@ -76,8 +78,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   // AI Generated Code by Deloitte + Cursor (END)
 
   const defaultSidebarProps = {
-    width: 360,
-    collapsedWidth: 72,
+    width: 300,
+    collapsedWidth: 60,
     showLogo: true,
     logoSrc: terumoLogo,
     logoAlt: "Terumo",

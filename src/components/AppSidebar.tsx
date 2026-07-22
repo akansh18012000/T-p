@@ -20,6 +20,7 @@ import {
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
+import { HEADER_HEIGHT } from "../config/theme.js";
 
 const StyledDrawer = styled(Drawer)<{ $open: boolean; $width: number }>(
   ({ theme, $open, $width }) => ({
@@ -29,8 +30,8 @@ const StyledDrawer = styled(Drawer)<{ $open: boolean; $width: number }>(
     "& .MuiDrawer-paper": {
       width: $open ? $width : 0,
       boxSizing: "border-box",
-      top: 64,
-      height: "calc(100% - 64px)",
+      top: HEADER_HEIGHT,
+      height: `calc(100% - ${HEADER_HEIGHT}px)`,
       backgroundColor: theme.palette.background.paper,
       borderRight: $open ? `1px solid ${theme.palette.grey![200]}` : "none",
       transition: "width 0.3s",
@@ -93,7 +94,7 @@ const StyledMenuItemButton = styled(ListItemButton)<{
   paddingLeft: theme.spacing(4),
   paddingTop: theme.spacing(1),
   paddingBottom: theme.spacing(1),
-  fontSize: "0.85rem",
+  fontSize: "0.75rem",
   color: $isActive ? theme.palette.primary.main : theme.palette.grey![500],
   backgroundColor: $isActive
     ? alpha(theme.palette.primary.main, 0.08)
@@ -108,10 +109,10 @@ const StyledMenuItemButton = styled(ListItemButton)<{
 }));
 
 const StyledListItemIcon = styled(ListItemIcon)({
-  minWidth: 36,
+  minWidth: 30,
   color: "inherit",
   "& .MuiSvgIcon-root": {
-    fontSize: 20,
+    fontSize: 18,
   },
 });
 
@@ -134,19 +135,19 @@ const StyledFooterVersion = styled(Typography)(({ theme }) => ({
 
 const StyledFooterTitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![400],
-  fontSize: "0.75rem",
+  fontSize: "0.6875rem",
 }));
 
 const StyledSectionLabel = styled(Typography)<{ $expanded: boolean }>(
   ({ theme, $expanded }) => ({
     fontWeight: 600,
-    fontSize: "0.95rem",
+    fontSize: "0.8125rem",
     color: $expanded ? theme.palette.primary.main : theme.palette.grey![700],
   }),
 );
 
 const StyledMenuItemLabel = styled(Typography)({
-  fontSize: "0.85rem",
+  fontSize: "0.75rem",
 });
 
 export interface MenuItem {
@@ -231,7 +232,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   <img
                     src={logoSrc}
                     alt={logoAlt}
-                    style={{ height: "40px", width: "auto" }}
+                    style={{ height: "34px", width: "auto" }}
                   />
                 </StyledLogoInnerBox>
               )}

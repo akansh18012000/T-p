@@ -460,7 +460,9 @@ export const StyledEmptyStateSubtitle = styled(Typography)(({ theme }) => ({
 export const FREEZE_COLUMN_DATA_WIDTH = 160;
 
 export const StyledResultTableContainer = styled(TableContainer)({
-  maxHeight: "calc(100vh - 420px)",
+  // Offset reflects the (now smaller) header + breadcrumb + page-header chrome
+  // after the density pass; retune alongside HEADER_HEIGHT if chrome changes.
+  maxHeight: "calc(100vh - 380px)",
   overflow: "auto",
   width: "100%",
   maxWidth: "100%",

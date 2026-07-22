@@ -2,14 +2,28 @@
  * Terumo Branding & Theme Configuration
  * Based on official Terumo color palette
  */
-// AI Generated Code by Deloitte + Cursor (BEGIN)
 /** MUI v7 Grid uses gap-based layout; these defaults align overflow behavior with v5 Grid. */
 const muiGridV5LikeConfig = {
   defaultProps: {
     disableEqualOverflow: true,
   },
 };
-// AI Generated Code by Deloitte + Cursor (END)
+
+/**
+ * Fixed height of the app header (MUI AppBar/Toolbar), in px.
+ * Reduced from MUI's default 64px as part of the global density pass.
+ * Single source of truth: the Toolbar min-height override below, the main
+ * content top-offset (AppLayout) and the sidebar top/height (AppSidebar) all
+ * derive from this so the header, content and drawer always line up.
+ */
+export const HEADER_HEIGHT = 46;
+
+/**
+ * Base spacing unit, in px. Reduced from MUI's default 8 as part of the global
+ * density pass — every `theme.spacing(n)` call site (and MUI component internal
+ * padding) shrinks proportionally.
+ */
+const SPACING_UNIT = 6.5;
 
 export const terumoTheme = {
   palette: {
@@ -104,39 +118,107 @@ export const terumoTheme = {
       border: "#00ACC1", // Cyan border for info
     },
   },
+  spacing: SPACING_UNIT,
   typography: {
     fontFamily:
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+    // Density pass: the full variant scale is reduced to ~85% of the previous
+    // sizes, and the variants the app actually uses but never defined (h5, h6,
+    // subtitle1/2, button, caption, overline) are now set explicitly so they no
+    // longer fall back to MUI's larger defaults.
     h1: {
-      fontSize: "2.5rem",
+      fontSize: "1.875rem",
       fontWeight: 700,
     },
     h2: {
-      fontSize: "2rem",
+      fontSize: "1.5rem",
       fontWeight: 700,
     },
     h3: {
-      fontSize: "1.5rem",
+      fontSize: "1.125rem",
       fontWeight: 600,
     },
     h4: {
-      fontSize: "1.25rem",
+      fontSize: "0.9375rem",
       fontWeight: 600,
     },
+    h5: {
+      fontSize: "0.9375rem",
+      fontWeight: 600,
+    },
+    h6: {
+      fontSize: "0.875rem",
+      fontWeight: 600,
+    },
+    subtitle1: {
+      fontSize: "0.8125rem",
+      fontWeight: 400,
+    },
+    subtitle2: {
+      fontSize: "0.75rem",
+      fontWeight: 500,
+    },
     body1: {
-      fontSize: "1rem",
+      fontSize: "0.8125rem",
       fontWeight: 400,
     },
     body2: {
-      fontSize: "0.875rem",
+      fontSize: "0.75rem",
+      fontWeight: 400,
+    },
+    button: {
+      fontSize: "0.75rem",
+      fontWeight: 500,
+    },
+    caption: {
+      fontSize: "0.6875rem",
+      fontWeight: 400,
+    },
+    overline: {
+      fontSize: "0.6875rem",
       fontWeight: 400,
     },
   },
-  // AI Generated Code by Deloitte + Cursor (BEGIN)
   components: {
     MuiGrid: muiGridV5LikeConfig,
+    // Density pass: default the common interactive components to their compact
+    // ("small") size and shrink the header. Screens that pass an explicit
+    // `size` prop still win over these defaults.
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          minHeight: HEADER_HEIGHT,
+          "@media (min-width:600px)": {
+            minHeight: HEADER_HEIGHT,
+          },
+        },
+      },
+    },
+    MuiButton: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiTextField: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiSelect: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiFormControl: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiIconButton: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiCheckbox: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiChip: {
+      defaultProps: { size: "small" as const },
+    },
+    MuiTable: {
+      defaultProps: { size: "small" as const },
+    },
   },
-  // AI Generated Code by Deloitte + Cursor (END)
 };
 
 export const terumoColors = {
