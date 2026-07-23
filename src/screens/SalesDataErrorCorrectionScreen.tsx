@@ -118,6 +118,7 @@ const StyledTableHeaderCell = styled(TableCell)<{
   backgroundColor: theme.palette.table!.headerBg,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.common.white}`,
   wordBreak: "break-word",
   overflowWrap: "break-word",
@@ -142,6 +143,7 @@ const StyledTableHeaderCellSortable = styled(TableCell)<{
 }>(({ theme, $isFrozen, $leftOffset, $isLastFrozen }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   fontWeight: 600,
+  fontSize: "0.75rem",
   color: theme.palette.common.white,
   border: `1px solid ${theme.palette.common.white}`,
   width: FREEZE_COLUMN_DATA_WIDTH,
@@ -220,7 +222,7 @@ const StyledBodyCell = styled(TableCell)<{
   $isLastFrozen?: boolean;
 }>(({ theme, $isFrozen, $leftOffset, $rowIndex, $isLastFrozen }) => ({
   border: `1px solid ${theme.palette.common.white}`,
-  padding: "8px",
+  padding: theme.spacing(1),
   width: FREEZE_COLUMN_DATA_WIDTH,
   minWidth: FREEZE_COLUMN_DATA_WIDTH,
   maxWidth: FREEZE_COLUMN_DATA_WIDTH,
@@ -445,6 +447,21 @@ function mapApiRowToErrorData(
     description: raw.description ?? "",
   };
 }
+
+// Compact sizing for the Search Condition fields — shorter field height and
+// smaller label/value text than the shared `size="small"` default, to match
+// the signed-off density mockup. Kept screen-local: per the density-pass plan
+// the shared StyledComponents aren't retuned from an individual screen.
+// Only the font is customized. Field height and label centering are left to
+// MUI's `size="small"` defaults, which keep every field (plain TextField, date
+// picker, and Autocomplete) at the same height with the placeholder/value text
+// vertically centered — overriding the padding is what previously broke both.
+const DENSE_FIELD_SX = {
+  "& .MuiInputBase-input": { fontSize: "0.875rem" },
+  "& .MuiInputLabel-root": { fontSize: "0.875rem" },
+} as const;
+
+const DENSE_AUTOCOMPLETE_SX = DENSE_FIELD_SX;
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
 function defaultSalesDate(): Date {
@@ -1061,7 +1078,7 @@ export default function SalesDataErrorCorrectionScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSearchTitle variant="h6">
+            <StyledSearchTitle variant="h6" sx={{ fontSize: "1rem" }}>
               {t("errorCorrection.searchCondition")}
             </StyledSearchTitle>
             {searchConditionExpanded ? (
@@ -1107,6 +1124,7 @@ export default function SalesDataErrorCorrectionScreen() {
                         placeholder={t("errorCorrection.enterCharsToSearch")}
                         error={!!fieldErrors.systemId}
                         required
+                        sx={DENSE_AUTOCOMPLETE_SX}
                         InputProps={{
                           ...params.InputProps,
                           endAdornment: (
@@ -1165,6 +1183,7 @@ export default function SalesDataErrorCorrectionScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -1177,6 +1196,7 @@ export default function SalesDataErrorCorrectionScreen() {
                   <StyledInputTextField
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("errorCorrection.corporateCode")}
                     value={corporateCode}
                     onChange={(e) => setCorporateCode(e.target.value)}
@@ -1217,6 +1237,7 @@ export default function SalesDataErrorCorrectionScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -1229,6 +1250,7 @@ export default function SalesDataErrorCorrectionScreen() {
                   <StyledInputTextField
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("errorCorrection.salesBaseCode")}
                     value={salesBaseCode}
                     onChange={(e) => setSalesBaseCode(e.target.value)}
@@ -1240,6 +1262,7 @@ export default function SalesDataErrorCorrectionScreen() {
                   <StyledInputTextField
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("errorCorrection.localOrganizationCode")}
                     value={localOrganizationCode}
                     onChange={(e) => setLocalOrganizationCode(e.target.value)}
@@ -1251,13 +1274,18 @@ export default function SalesDataErrorCorrectionScreen() {
                   <StyledInputTextField
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("errorCorrection.localItemCode")}
                     value={localItemCode}
                     onChange={(e) => setLocalItemCode(e.target.value)}
                   />
                   {/* Prefix Match / Partial Match - mandatory, radio buttons */}
                   <Box sx={{ mt: 1 }}>
-                    <StyledFormLabel component="legend" required>
+                    <StyledFormLabel
+                      component="legend"
+                      required
+                      sx={{ fontSize: "0.75rem", marginBottom: "4px" }}
+                    >
                       {t("errorCorrection.matchType")}
                     </StyledFormLabel>
                     <RadioGroup
@@ -1269,7 +1297,7 @@ export default function SalesDataErrorCorrectionScreen() {
                       sx={{
                         gap: 2,
                         "& .MuiFormControlLabel-label": {
-                          fontSize: "0.875rem",
+                          fontSize: "0.75rem",
                         },
                       }}
                     >
@@ -1304,6 +1332,12 @@ export default function SalesDataErrorCorrectionScreen() {
                   }}
                   disabled={loading}
                   startIcon={<SearchIcon />}
+                  sx={{
+                    paddingTop: "5px",
+                    paddingBottom: "5px",
+                    fontSize: "0.75rem",
+                    "& .MuiButton-startIcon > *": { fontSize: "16px" },
+                  }}
                 >
                   {t("errorCorrection.search")}
                 </StyledSearchButton>
