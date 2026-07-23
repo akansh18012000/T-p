@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const DEFAULT_INDEX_WIDTH = 48;
-const DEFAULT_DATA_WIDTH = 160;
+const DEFAULT_DATA_WIDTH = 120;
 const DEFAULT_DELETION_FLAG_WIDTH = 110;
 
 export interface ColumnConfig {

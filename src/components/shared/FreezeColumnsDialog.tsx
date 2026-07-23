@@ -85,13 +85,15 @@ export function FreezeColumnsDialog({
     <Dialog
       open={open}
       onClose={() => handleCancel()}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth
       disableEscapeKeyDown={false}
     >
-      <DialogTitle>{t("freezeColumns.title")}</DialogTitle>
+      <DialogTitle sx={{ fontSize: "1rem", fontWeight: 600, pb: 1 }}>
+        {t("freezeColumns.title")}
+      </DialogTitle>
       <DialogContent>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, pt: 0.5 }}>
           {errorMessage && (
             <Alert severity="error" sx={{ mb: 1 }}>
               {errorMessage}
@@ -100,8 +102,14 @@ export function FreezeColumnsDialog({
           {columns.map((col) => (
             <FormControlLabel
               key={col.index}
+              sx={{
+                m: 0,
+                "& .MuiFormControlLabel-label": { fontSize: "0.8125rem" },
+              }}
               control={
                 <Checkbox
+                  size="small"
+                  sx={{ p: 0.5 }}
                   checked={selectedIndices.has(col.index)}
                   onChange={(e) => handleToggle(col.index, e.target.checked)}
                 />
@@ -112,12 +120,14 @@ export function FreezeColumnsDialog({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleUnselectAll}>
+        <Button size="small" onClick={handleUnselectAll}>
           {t("freezeColumns.unselectAll")}
         </Button>
         <Box sx={{ flex: 1 }} />
-        <Button onClick={handleCancel}>{t("freezeColumns.cancel")}</Button>
-        <Button variant="contained" onClick={handleSave}>
+        <Button size="small" onClick={handleCancel}>
+          {t("freezeColumns.cancel")}
+        </Button>
+        <Button size="small" variant="contained" onClick={handleSave}>
           {t("freezeColumns.save")}
         </Button>
       </DialogActions>

@@ -1,4 +1,4 @@
-import { styled, alpha } from "@mui/material/styles";
+import { styled, alpha, type Theme } from "@mui/material/styles";
 import {
   Box,
   Typography,
@@ -270,7 +270,42 @@ export const StyledResultsPaper = StyledResultPaper;
 export const StyledTablePagination = styled(TablePagination)(({ theme }) => ({
   borderTop: `1px solid ${theme.palette.divider}`,
   backgroundColor: theme.palette.background.default,
+  padding: theme.spacing(2),
   flexShrink: 0,
+  // Compact "Rows per page" controls to match the density pass.
+  "& .MuiTablePagination-toolbar": {
+    minHeight: 40,
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(1),
+  },
+  "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+    fontSize: "0.6875rem",
+    lineHeight: 1.5,
+    margin: 0,
+  },
+  // Vertically center the "10" value with the label: the smaller font left the
+  // select glyph floating at the top of MUI's default line-box.
+  "& .MuiTablePagination-input": {
+    display: "inline-flex",
+    alignItems: "center",
+  },
+  "& .MuiTablePagination-select": {
+    fontSize: "0.6875rem",
+    display: "flex",
+    alignItems: "center",
+    paddingTop: 0,
+    paddingBottom: 0,
+    minHeight: "auto",
+  },
+  "& .MuiTablePagination-selectIcon": {
+    top: "50%",
+    transform: "translateY(-50%)",
+  },
+  "& .MuiTablePagination-actions": {
+    marginLeft: theme.spacing(1),
+    "& .MuiIconButton-root": { padding: theme.spacing(0.5) },
+    "& .MuiSvgIcon-root": { fontSize: "1.125rem" },
+  },
 }));
 // AI Generated Code by Deloitte + Cursor (END)
 
@@ -318,7 +353,22 @@ export const StyledAddRowButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+// Compact sizing shared by the toolbar/action buttons (Refresh, Download,
+// Register, Add, Save, Upload, …) across every results/master screen — part of
+// the density pass. Screens passing an explicit sx still win.
+const COMPACT_ACTION_BUTTON_SX = (theme: Theme) => ({
+  fontSize: "0.6875rem",
+  paddingTop: theme.spacing(0.5),
+  paddingBottom: theme.spacing(0.5),
+  paddingLeft: theme.spacing(1.5),
+  paddingRight: theme.spacing(1.5),
+  minWidth: "auto",
+  "& .MuiButton-startIcon": { marginRight: theme.spacing(0.5) },
+  "& .MuiButton-startIcon > *": { fontSize: "16px" },
+});
+
 export const StyledSecondaryButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   borderColor: theme.palette.grey![500],
   color: theme.palette.grey![500],
   "&:hover": {
@@ -329,6 +379,7 @@ export const StyledSecondaryButton = styled(Button)(({ theme }) => ({
 }));
 
 export const StyledPrimaryContainedButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   backgroundColor: theme.palette.primary.main,
   "&:hover": { backgroundColor: theme.palette.primary.dark },
 }));
@@ -457,7 +508,7 @@ export const StyledEmptyStateSubtitle = styled(Typography)(({ theme }) => ({
 // Tables
 // ---------------------------------------------------------------------------
 
-export const FREEZE_COLUMN_DATA_WIDTH = 160;
+export const FREEZE_COLUMN_DATA_WIDTH = 120;
 
 export const StyledResultTableContainer = styled(TableContainer)({
   // Offset reflects the (now smaller) header + breadcrumb + page-header chrome
@@ -475,7 +526,12 @@ export const StyledResultTableContainer = styled(TableContainer)({
 });
 
 export const StyledResultTable = styled(Table)({
-  tableLayout: "auto",
+  // Fixed layout so declared column widths are honored exactly and long
+  // headers/values wrap within them (instead of expanding the column to fit on
+  // one line) — this is what makes the results tables render dense with a
+  // horizontal scrollbar. Switch back to "auto" only if a table must size
+  // columns to content.
+  tableLayout: "fixed",
   minWidth: "max-content",
 });
 
@@ -531,9 +587,11 @@ export const StyledTableHeaderCell = styled(TableCell)<{
               width: FREEZE_COLUMN_DATA_WIDTH,
               minWidth: FREEZE_COLUMN_DATA_WIDTH,
               maxWidth: FREEZE_COLUMN_DATA_WIDTH,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              // Wrap long headers within the fixed column width (see
+              // StyledResultTable tableLayout: "fixed") rather than truncating.
+              whiteSpace: "normal",
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
             }),
       }),
 }));
@@ -683,11 +741,14 @@ export const StyledCheckbox = styled(Checkbox)(({ theme }) => ({
 }));
 
 export const StyledCellTextField = styled(TextField)({
+  // Inherit the surrounding TableCell font so an editable cell's value matches
+  // the plain (uneditable) cell text exactly, instead of rendering larger.
   "& .MuiInput-input": {
-    fontSize: "0.875rem",
+    fontSize: "inherit",
   },
   "& .MuiInput-root": {
     alignItems: "flex-start",
+    fontSize: "inherit",
   },
 });
 

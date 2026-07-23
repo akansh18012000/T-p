@@ -114,9 +114,12 @@ import {
   StyledResultTableContainer,
   StyledResultTable,
   StyledTablePagination,
+  FREEZE_COLUMN_DATA_WIDTH,
 } from "../components/shared/StyledComponents.js";
 
-const DATA_COLUMN_WIDTH = 160;
+// Tie to the shared results-table column width so this screen's local table
+// stays in step with the density pass (and with useFreezeColumns' offsets).
+const DATA_COLUMN_WIDTH = FREEZE_COLUMN_DATA_WIDTH;
 
 // Screen-specific table header (borderBottom vs full border)
 const StyledTableHeaderCell = styled(TableCell)<{
@@ -173,9 +176,11 @@ const StyledTableHeaderCell = styled(TableCell)<{
                 width: DATA_COLUMN_WIDTH,
                 minWidth: DATA_COLUMN_WIDTH,
                 maxWidth: DATA_COLUMN_WIDTH,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                // Wrap long headers within the fixed column width (table uses
+                // tableLayout: "fixed") instead of truncating with an ellipsis.
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
               }),
         }),
   }),
@@ -307,11 +312,13 @@ const StyledCheckbox = styled(Checkbox)(({ theme }) => ({
 }));
 
 const StyledCellTextField = styled(TextField)({
+  // Inherit the surrounding cell font so editable values match uneditable text.
   "& .MuiInput-input": {
-    fontSize: "0.875rem",
+    fontSize: "inherit",
   },
   "& .MuiInput-root": {
     alignItems: "flex-start",
+    fontSize: "inherit",
   },
 });
 

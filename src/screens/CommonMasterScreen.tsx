@@ -1369,7 +1369,7 @@ export default function CommonMasterScreen() {
                                         )}
                                       >
                                         {colIndex === columnIdColIndex ? (
-                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
                                             {cell}
                                           </Box>
                                         ) : colIndex === deletionFlagColIndex ? (
@@ -1436,7 +1436,7 @@ export default function CommonMasterScreen() {
                                               maxRows={4}
                                             />
                                           ) : (
-                                            <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
+                                            <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
                                               {cell}
                                             </Box>
                                           )

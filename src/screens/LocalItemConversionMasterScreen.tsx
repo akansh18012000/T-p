@@ -1812,7 +1812,7 @@ function LocalItemConversionMasterScreen() {
                                                 sx={{
                                                   py: 0.5,
                                                   px: 0.5,
-                                                  fontSize: "0.875rem",
+                                                  fontSize: "inherit",
                                                 }}
                                               >
                                                 {cell}

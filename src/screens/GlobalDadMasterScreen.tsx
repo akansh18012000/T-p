@@ -263,9 +263,11 @@ const ScrollableTableHeaderCell = styled(StyledTableHeaderCell)(
           width: FREEZE_COLUMN_DATA_WIDTH,
           minWidth: FREEZE_COLUMN_DATA_WIDTH,
           maxWidth: FREEZE_COLUMN_DATA_WIDTH,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          // Wrap long headers within the fixed column width (table now uses
+          // tableLayout: "fixed") instead of truncating with an ellipsis.
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
         }
       : {},
 );

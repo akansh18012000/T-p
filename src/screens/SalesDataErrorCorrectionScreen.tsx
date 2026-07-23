@@ -696,16 +696,79 @@ export default function SalesDataErrorCorrectionScreen() {
         local_item_code_match: matchType,
         sales_date: salesDateStr,
       };
-      const res = await fetch(SALES_DATA_CORRECTION_SEARCH_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      // AI Generated Code by Deloitte + Cursor (BEGIN)
+      const json = await Promise.resolve<SalesDataCorrectionSearchResponse>({
+        total: 6,
+        data: [
+          {
+            system_id: "TAH", creation_date: "2025-11-28", creation_datetime: "143132",
+            company_code: "C0018", sales_entity_code: "1300", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "IC1100", inter_tran_first_party_code: "C0003",
+            destination_country: "US", quantity: 10, sales_currency_tran: "USD", sales_amnt_tran: 1000,
+            sales_currency_book: "USD", sales_amnt_book: 2000, sales_cost_book: 613635.9,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2025-12-01 10:22:43.819059+00:00",
+          },
+          {
+            system_id: "TAH", creation_date: "2025-11-28", creation_datetime: "143132",
+            company_code: "C0018", sales_entity_code: "1300", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "IC1100", inter_tran_first_party_code: "C0003",
+            destination_country: "US", quantity: 10, sales_currency_tran: "USD", sales_amnt_tran: 1000,
+            sales_currency_book: "USD", sales_amnt_book: 2000, sales_cost_book: 613635.9,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2025-11-30 17:16:29.588383+00:00",
+          },
+          {
+            system_id: "TAH", creation_date: "2026-06-22", creation_datetime: "+122530-01-01 00:00:00",
+            company_code: "C0003", sales_entity_code: "1100", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "0000360690", inter_tran_first_party_code: null,
+            destination_country: "US", quantity: 2, sales_currency_tran: "USD", sales_amnt_tran: 20,
+            sales_currency_book: "USD", sales_amnt_book: 40, sales_cost_book: 122727.18,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2026-06-25 10:40:52.743913+00:00",
+          },
+          {
+            system_id: "TAH", creation_date: "2026-06-22", creation_datetime: "+122530-01-01 00:00:00",
+            company_code: "C0018", sales_entity_code: "1300", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "IC1100", inter_tran_first_party_code: "C0003",
+            destination_country: "US", quantity: 10, sales_currency_tran: "USD", sales_amnt_tran: 1000,
+            sales_currency_book: "USD", sales_amnt_book: 2000, sales_cost_book: 613635.9,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2026-06-25 10:40:52.743913+00:00",
+          },
+          {
+            system_id: "TAH", creation_date: "2025-11-28", creation_datetime: "143132",
+            company_code: "C0003", sales_entity_code: "1100", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "0000360690", inter_tran_first_party_code: null,
+            destination_country: "US", quantity: 2, sales_currency_tran: "USD", sales_amnt_tran: 20,
+            sales_currency_book: "USD", sales_amnt_book: 40, sales_cost_book: 122727.18,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2025-11-30 17:16:29.588383+00:00",
+          },
+          {
+            system_id: "TAH", creation_date: "2025-11-28", creation_datetime: "143132",
+            company_code: "C0003", sales_entity_code: "1100", local_organization_code: "",
+            sales_month: "202510", sales_date: "2025-10-08", local_item_code: "01000-00-US",
+            item_code: null, item_cls_code: "", bu_layer_3: "D037", local_item_class: "",
+            prod_fact_code: null, local_custom_code: "0000360690", inter_tran_first_party_code: null,
+            destination_country: "US", quantity: 2, sales_currency_tran: "USD", sales_amnt_tran: 20,
+            sales_currency_book: "USD", sales_amnt_book: 40, sales_cost_book: 122727.18,
+            reserve1: "", reserve2: "", reserve3: "", data_cls_type: "",
+            description: "販売データ取込（自動連携）", update_datetime: "2025-12-01 10:22:43.819059+00:00",
+          },
+        ],
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-      const json = (await res.json()) as SalesDataCorrectionSearchResponse;
+      // AI Generated Code by Deloitte + Cursor (END)
       const rows = Array.isArray(json?.data) ? json.data : [];
       const mapped = rows.map((raw, i) => mapApiRowToErrorData(raw, i));
       // Keep the original API rows (keyed by rowCode) so the delete call can
@@ -1352,7 +1415,7 @@ export default function SalesDataErrorCorrectionScreen() {
             <StyledResultsPaper elevation={0}>
               <StyledToolbar>
                 <StyledToolbarTitleBox>
-                  <StyledToolbarTitle variant="h6">
+                  <StyledToolbarTitle variant="h6" sx={{ fontSize: "1rem" }}>
                     {t("errorCorrection.resultData")}
                   </StyledToolbarTitle>
                 </StyledToolbarTitleBox>

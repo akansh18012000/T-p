@@ -83,7 +83,7 @@ export function SearchableCell({
 
   if (!editable) {
     return (
-      <Box sx={{ py: 0.5, px: 0.5, fontSize: "0.875rem" }}>
+      <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
         {value}
       </Box>
     );
