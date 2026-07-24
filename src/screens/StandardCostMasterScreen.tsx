@@ -145,6 +145,7 @@ const StyledTableHeaderCell = styled(TableCell)<{
     backgroundColor: theme.palette.table!.headerBg,
     color: theme.palette.common.white,
     fontWeight: 600,
+    fontSize: "0.75rem",
     border: `1px solid ${theme.palette.grey![200]}`,
 
     ...($isFrozen && {

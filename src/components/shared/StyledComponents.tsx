@@ -569,6 +569,7 @@ export const StyledTableHeaderCell = styled(TableCell)<{
   backgroundColor: theme.palette.table!.headerBg,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.grey![200]}`,
 
   /* AI Generated Code by Deloitte + Cursor (BEGIN) */
@@ -746,6 +747,7 @@ export const StyledFileListTableHeaderRow = styled(TableRow)(({ theme }) => ({
 
 export const StyledFileListTableHeaderCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 600,
+  fontSize: "0.75rem",
   color: theme.palette.common.white,
 }));
 
@@ -1260,6 +1262,7 @@ export const StyledDeleteActionHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.grey![200]}`,
 }));
 

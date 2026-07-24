@@ -91,6 +91,7 @@ import { usePermissions } from "../hooks/usePermissions.js";
 const StyledTableHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   fontWeight: 600,
+  fontSize: "0.75rem",
   color: theme.palette.common.white,
   border: `1px solid ${theme.palette.common.white}`,
   minWidth: 0,
@@ -101,7 +102,7 @@ const StyledTableHeaderCell = styled(TableCell)(({ theme }) => ({
 }));
 
 const StyledTableHeaderTypography = styled(Typography)(({ theme }) => ({
-  fontSize: "0.875rem",
+  fontSize: "0.75rem",
   fontWeight: 600,
   color: theme.palette.common.white,
 }));
@@ -115,6 +116,7 @@ const StyledTableHeaderIndexCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.common.white}`,
   position: "sticky",
   left: 0,
@@ -145,6 +147,7 @@ const StyledTableHeaderDeleteCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   color: theme.palette.common.white,
   fontWeight: 600,
+  fontSize: "0.75rem",
   border: `1px solid ${theme.palette.common.white}`,
   textAlign: "center",
 }));

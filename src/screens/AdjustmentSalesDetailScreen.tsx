@@ -312,6 +312,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
 const StyledTableHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.table!.headerBg,
   fontWeight: 600,
+  fontSize: "0.75rem",
   color: theme.palette.common.white,
   border: `1px solid ${theme.palette.grey![200]}`,
   minWidth: 120,
@@ -392,6 +393,7 @@ const StyledTableContainerScroll = styled(TableContainer)({
 const StyledCsvHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.grey![100],
   fontWeight: 600,
+  fontSize: "0.75rem",
   minWidth: 50,
   position: "sticky",
   left: 0,
@@ -402,12 +404,14 @@ const StyledCsvHeaderCell = styled(TableCell)(({ theme }) => ({
 const StyledCsvHeaderCellWide = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.grey![100],
   fontWeight: 600,
+  fontSize: "0.75rem",
   minWidth: 120,
   border: `1px solid ${theme.palette.grey![200]}`,
 }));
 
 const StyledCsvHeaderCellFlag = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.grey![100],
+  fontSize: "0.75rem",
   width: 80,
   border: `1px solid ${theme.palette.grey![200]}`,
 }));
