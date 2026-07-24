@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import {
   Box,
-  Button,
   Grid,
   TableBody,
   TableHead,
@@ -24,7 +23,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -81,6 +81,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -250,6 +251,7 @@ const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
+
 
 export default function CommonConversionMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -1135,9 +1137,9 @@ export default function CommonConversionMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("commonConversionMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1183,6 +1185,7 @@ export default function CommonConversionMasterScreen() {
                             "& .MuiInputBase-root.Mui-disabled": {
                               backgroundColor: theme.palette.common.white,
                             },
+                            ...DENSE_FIELD_SX,
                           })}
                           InputProps={{
                             ...params.InputProps,
@@ -1243,6 +1246,7 @@ export default function CommonConversionMasterScreen() {
                           "& .MuiInputBase-root.Mui-disabled": {
                             backgroundColor: theme.palette.common.white,
                           },
+                          ...DENSE_FIELD_SX,
                         })}
                         InputProps={{
                           ...params.InputProps,
@@ -1264,6 +1268,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.preConversionCode1")}
+                    sx={DENSE_FIELD_SX}
                     value={preconversionCode1}
                     onChange={(e) => {
                       setPreconversionCode1(e.target.value);
@@ -1277,6 +1282,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.preConversionName1")}
+                    sx={DENSE_FIELD_SX}
                     value={preconversionCode1Name}
                     onChange={(e) => {
                       setPreconversionCode1Name(e.target.value);
@@ -1290,6 +1296,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.preConversionCode2")}
+                    sx={DENSE_FIELD_SX}
                     value={preconversionCode2}
                     onChange={(e) => {
                       setPreconversionCode2(e.target.value);
@@ -1303,6 +1310,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.preConversionName2")}
+                    sx={DENSE_FIELD_SX}
                     value={preconversionCode2Name}
                     onChange={(e) => {
                       setPreconversionCode2Name(e.target.value);
@@ -1316,6 +1324,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.convertedCode")}
+                    sx={DENSE_FIELD_SX}
                     value={convertedCode}
                     onChange={(e) => {
                       setConvertedCode(e.target.value);
@@ -1329,6 +1338,7 @@ export default function CommonConversionMasterScreen() {
                     fullWidth
                     size="small"
                     label={t("commonConversionMaster.convertedName")}
+                    sx={DENSE_FIELD_SX}
                     value={convertedCodeName}
                     onChange={(e) => {
                       setConvertedCodeName(e.target.value);
@@ -1375,9 +1385,9 @@ export default function CommonConversionMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("commonConversionMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton
@@ -1689,7 +1699,7 @@ export default function CommonConversionMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">{t("commonConversionMaster.uploadFile")}</StyledSectionTitle>
+            <StyledPanelTitle variant="h6">{t("commonConversionMaster.uploadFile")}</StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1778,16 +1788,15 @@ export default function CommonConversionMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("commonConversionMaster.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}

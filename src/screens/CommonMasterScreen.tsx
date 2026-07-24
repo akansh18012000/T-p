@@ -46,7 +46,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -201,6 +202,7 @@ const paginatedListboxSlotProps = {
     style: { maxHeight: 320, overflow: "auto" as const },
   },
 };
+
 
 export default function CommonMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -946,9 +948,9 @@ export default function CommonMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("commonMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1020,6 +1022,7 @@ export default function CommonMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
+                          sx={DENSE_FIELD_SX}
                           label={t("commonMaster.groupId")}
                           placeholder={t("commonMaster.enterCharsToSearch")}
                           InputProps={{
@@ -1086,12 +1089,13 @@ export default function CommonMasterScreen() {
                         sx={
                           codeOptionsLoading
                             ? {
+                                ...DENSE_FIELD_SX,
                                 "& .MuiInputBase-root.Mui-disabled": {
                                   backgroundColor: (theme) =>
                                     theme.palette.background.paper,
                                 },
                               }
-                            : undefined
+                            : DENSE_FIELD_SX
                         }
                         label={t("commonMaster.code")}
                         placeholder={t("commonMaster.enterCharsToSearch")}
@@ -1115,6 +1119,7 @@ export default function CommonMasterScreen() {
                     fullWidth
                     size="small"
                     disabled={!groupId}
+                    sx={DENSE_FIELD_SX}
                     label={t("commonMaster.codeName")}
                     value={codeName}
                     onChange={(e) => {
@@ -1161,9 +1166,9 @@ export default function CommonMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("commonMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton

@@ -10,7 +10,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
-  Button,
   Grid,
   TableBody,
   TableHead,
@@ -30,7 +29,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -86,6 +86,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledFormControlLabel,
@@ -179,6 +180,7 @@ const SEARCH_IP_ADDRESS = "192.168.1.101";
 const LOCAL_ITEM_SEARCH_API_URL = "/api/v1/local-item/search";
 const LOCAL_ITEM_CREATE_API_URL = "/api/v1/local-item/create";
 const SEARCH_SCREEN_ID = SCREEN_IDS.LOCAL_ITEM.id;
+
 
 // Column indices into LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS, used by
 // the registration flow for required-field validation and payload mapping.
@@ -1227,9 +1229,9 @@ function LocalItemConversionMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("localItemConversion.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1267,6 +1269,7 @@ function LocalItemConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("localItemConversion.systemId")}
                         placeholder={t(
                           "localItemConversion.searchPlaceholderMinChars",
@@ -1324,6 +1327,7 @@ function LocalItemConversionMasterScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -1334,6 +1338,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("localItemConversion.localItemCode")}
                     value={localItemCode}
                     onChange={(e) => {
@@ -1374,6 +1379,7 @@ function LocalItemConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("localItemConversion.manufacturerCode")}
                         placeholder={t(
                           "localItemConversion.searchPlaceholderMinChars",
@@ -1397,6 +1403,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("localItemConversion.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => {
@@ -1434,6 +1441,7 @@ function LocalItemConversionMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("localItemConversion.manufacturerPartNumberLabel")}
                         placeholder={t(
                           "localItemConversion.searchPlaceholderMinChars",
@@ -1892,9 +1900,9 @@ function LocalItemConversionMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("localItemConversion.uploadFile")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1984,16 +1992,15 @@ function LocalItemConversionMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("localItemConversion.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}

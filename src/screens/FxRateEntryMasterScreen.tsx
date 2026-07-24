@@ -9,7 +9,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
-  Button,
   Grid,
   TableBody,
   TableHead,
@@ -27,7 +26,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -82,6 +82,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -136,6 +137,7 @@ const CURRENCY_TYPE_OPTIONS = [
 
 const FX_RATE_SEARCH_API_URL = "/api/v1/monthly-avg-rt-combined/search";
 const FX_RATE_CREATE_API_URL = "/api/v1/monthly-avg-rt-combined/create";
+
 
 interface FxRateSearchEnvelope {
   total: number;
@@ -849,9 +851,9 @@ function FxRateEntryMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("fxRateEntryMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -898,6 +900,7 @@ function FxRateEntryMasterScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -905,7 +908,7 @@ function FxRateEntryMasterScreen() {
                   </LocalizationProvider>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small">
+                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
                     <InputLabel>{t("fxRateEntryMaster.currencyType")}</InputLabel>
                     <Select
                       value={currencyType}
@@ -928,7 +931,7 @@ function FxRateEntryMasterScreen() {
                   </StyledFormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small">
+                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
                     <InputLabel>{t("fxRateEntryMaster.fromCurrency")}</InputLabel>
                     <Select
                       value={fromCurrency}
@@ -951,7 +954,7 @@ function FxRateEntryMasterScreen() {
                   </StyledFormControl>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small">
+                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
                     <InputLabel>{t("fxRateEntryMaster.toCurrency")}</InputLabel>
                     <Select
                       value={toCurrency}
@@ -1008,9 +1011,9 @@ function FxRateEntryMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("fxRateEntryMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton
@@ -1294,7 +1297,7 @@ function FxRateEntryMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">{t("fxRateEntryMaster.uploadFile")}</StyledSectionTitle>
+            <StyledPanelTitle variant="h6">{t("fxRateEntryMaster.uploadFile")}</StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1386,16 +1389,15 @@ function FxRateEntryMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("fxRateEntryMaster.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}

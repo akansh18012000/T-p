@@ -80,7 +80,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -115,11 +116,15 @@ import {
   StyledResultTable,
   StyledTablePagination,
   FREEZE_COLUMN_DATA_WIDTH,
+  StyledUploadButton,
+  StyledViewButton,
+  StyledCancelUploadButton,
 } from "../components/shared/StyledComponents.js";
 
 // Tie to the shared results-table column width so this screen's local table
 // stays in step with the density pass (and with useFreezeColumns' offsets).
 const DATA_COLUMN_WIDTH = FREEZE_COLUMN_DATA_WIDTH;
+
 
 // Screen-specific table header (borderBottom vs full border)
 const StyledTableHeaderCell = styled(TableCell)<{
@@ -433,27 +438,6 @@ const StyledFileNameText = styled(Typography)(({ theme }) => ({
 
 const StyledFileSizeText = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![400],
-}));
-
-const StyledUploadButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  fontWeight: 600,
-  textTransform: "none",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledViewButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  textTransform: "none",
-  fontWeight: 600,
-  "&:hover": {
-    borderColor: theme.palette.primary.dark,
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
 }));
 
 const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
@@ -1462,9 +1446,9 @@ export default function StandardCostMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("standardCostMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1500,6 +1484,7 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("standardCostMaster.manufacturerPartNumber")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1543,6 +1528,7 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("standardCostMaster.manufacturer")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1564,6 +1550,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("standardCostMaster.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => setManufacturerName(e.target.value)}
@@ -1595,6 +1582,7 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("standardCostMaster.locationCode")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1616,6 +1604,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("standardCostMaster.locationName")}
                     value={locationName}
                     onChange={(e) => setLocationName(e.target.value)}
@@ -1647,6 +1636,7 @@ export default function StandardCostMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("standardCostMaster.corporateCode")}
                         placeholder={t("standardCostMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1668,6 +1658,7 @@ export default function StandardCostMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("standardCostMaster.corporateName")}
                     value={corporateName}
                     onChange={(e) => setCorporateName(e.target.value)}
@@ -1706,6 +1697,7 @@ export default function StandardCostMasterScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -1737,9 +1729,9 @@ export default function StandardCostMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("standardCostMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton
@@ -2029,7 +2021,7 @@ export default function StandardCostMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">{t("standardCostMaster.uploadFile")}</StyledSectionTitle>
+            <StyledPanelTitle variant="h6">{t("standardCostMaster.uploadFile")}</StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -2119,16 +2111,15 @@ export default function StandardCostMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("standardCostMaster.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}

@@ -95,6 +95,15 @@ export const StyledSectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
 }));
 
+// Panel/section header title at 1rem — the density-pass size used by the
+// Search Condition (and Result Data) titles on SalesDataErrorCorrectionScreen.
+// Shared by the results/master screens for their collapsible Search Condition /
+// Upload File panels and Result Data toolbar title so the 1rem size lives in one
+// place instead of a per-screen `sx={{ fontSize: "1rem" }}` override.
+export const StyledPanelTitle = styled(StyledSectionTitle)({
+  fontSize: "1rem",
+});
+
 export const StyledSectionTitleWithIcon = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
@@ -173,6 +182,17 @@ export const StyledFormLabel = styled(FormLabel)(({ theme }) => ({
 }));
 
 export const StyledInputTextField = StyledInputBase;
+
+// Compact, font-only sizing for search-condition input fields (label + value at
+// 0.875rem), matching SalesDataErrorCorrectionScreen. No padding/height override
+// so MUI's size="small" keeps every field the same height with its text centered.
+// Apply via `sx={DENSE_FIELD_SX}` on a TextField / Autocomplete input / a
+// FormControl-wrapped Select, or spread `...DENSE_FIELD_SX` into a DatePicker's
+// slotProps.textField.sx (or any other existing sx).
+export const DENSE_FIELD_SX = {
+  "& .MuiInputBase-input": { fontSize: "0.875rem" },
+  "& .MuiInputLabel-root": { fontSize: "0.875rem" },
+} as const;
 
 export const StyledReferenceInput = styled(TextField)({
   minWidth: 150,
@@ -935,6 +955,7 @@ export const StyledFileIconWrapper = StyledIconWrapper;
 export const StyledFileBadge = StyledBadgeBox;
 
 export const StyledUploadButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
   color: theme.palette.common.white,
   fontWeight: 600,
@@ -945,6 +966,7 @@ export const StyledUploadButton = styled(Button)(({ theme }) => ({
 }));
 
 export const StyledViewButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
   textTransform: "none",
@@ -960,6 +982,15 @@ export const StyledViewButtonWithMargin = styled(StyledViewButton)(
     marginRight: theme.spacing(1),
   }),
 );
+
+// Compact "Cancel Upload" button for the selected-file row on the upload panels.
+// Same dense sizing as the other action buttons (COMPACT_ACTION_BUTTON_SX),
+// pushed to the end of the flex row. Replaces the per-screen inline
+// `<Button sx={{ marginLeft: "auto" }}>`; use with `variant="outlined"`.
+export const StyledCancelUploadButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
+  marginLeft: "auto",
+}));
 
 export const StyledProgressBox = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(2),
@@ -1108,31 +1139,31 @@ export const StyledUploadSectionContent = styled(Box)(({ theme }) => ({
 
 export const StyledSnackbarAlert = styled(Alert)(({ theme }) => ({
   width: "100%",
-  minWidth: 380,
-  fontSize: "1.05rem",
-  padding: theme.spacing(1.5, 2.5),
-  borderRadius: 10,
+  minWidth: 300,
+  fontSize: "0.8125rem",
+  padding: theme.spacing(0.75, 1.5),
+  borderRadius: 8,
   boxShadow: theme.shadows[6],
   alignItems: "center",
   "& .MuiAlert-icon": {
-    fontSize: "1.75rem",
-    marginRight: theme.spacing(1.5),
+    fontSize: "1.25rem",
+    marginRight: theme.spacing(1),
     padding: 0,
   },
   "& .MuiAlert-message": {
-    fontSize: "1.05rem",
+    fontSize: "0.8125rem",
     fontWeight: 500,
-    padding: theme.spacing(0.5, 0),
+    padding: theme.spacing(0.25, 0),
   },
   "& .MuiAlert-action": {
     paddingTop: 0,
     marginRight: 0,
     alignItems: "center",
     "& .MuiIconButton-root": {
-      padding: theme.spacing(0.75),
+      padding: theme.spacing(0.5),
     },
     "& .MuiSvgIcon-root": {
-      fontSize: "1.5rem",
+      fontSize: "1.125rem",
     },
   },
 }));

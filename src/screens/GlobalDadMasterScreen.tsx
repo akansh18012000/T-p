@@ -57,7 +57,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledSectionContent,
   StyledExpandIcon,
   StyledExpandMoreIcon,
@@ -102,6 +103,7 @@ import {
   StyledResultTable,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
+
 
 // Cap how many options are handed to MUI's Autocomplete; it eagerly builds one
 // element per option, so very large lists stall the dropdown on open. These
@@ -1050,6 +1052,7 @@ export default function GlobalDadMasterScreen() {
         "& input::selection": {
           backgroundColor: "transparent",
         },
+        ...DENSE_FIELD_SX,
       },
     },
   });
@@ -1068,9 +1071,9 @@ export default function GlobalDadMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("globalDadMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1108,6 +1111,7 @@ export default function GlobalDadMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("globalDadMaster.systemId")}
                         placeholder={t("globalDadMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1129,6 +1133,7 @@ export default function GlobalDadMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("globalDadMaster.salesLocationCode")}
                     value={salesLocationCode}
                     onChange={(e) => {
@@ -1166,6 +1171,7 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
+                          sx={DENSE_FIELD_SX}
                           label={t("globalDadMaster.localCustomerCode")}
                           placeholder={t("globalDadMaster.enterCharsToSearch")}
                           InputProps={{
@@ -1219,6 +1225,7 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
+                          sx={DENSE_FIELD_SX}
                           label={t("globalDadMaster.productClassification")}
                           placeholder={t("globalDadMaster.enterCharsToSearch")}
                           InputProps={{
@@ -1272,6 +1279,7 @@ export default function GlobalDadMasterScreen() {
                       renderInput={(params) => (
                         <StyledAutocompleteInput
                           {...params}
+                          sx={DENSE_FIELD_SX}
                           label={t("globalDadMaster.transferDestinationBU3")}
                           placeholder={t("globalDadMaster.enterCharsToSearch")}
                           InputProps={{
@@ -1301,6 +1309,7 @@ export default function GlobalDadMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("globalDadMaster.patternId")}
                     value={patternId}
                     onChange={(e) => {
@@ -1387,9 +1396,9 @@ export default function GlobalDadMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("globalDadMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton

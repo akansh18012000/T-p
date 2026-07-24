@@ -44,6 +44,7 @@ import {
   StyledExpandMoreIcon,
   StyledSectionContent,
   StyledInputBase,
+  DENSE_FIELD_SX,
   StyledFormControl,
   StyledSearchTextField,
   StyledSearchButton,
@@ -516,7 +517,7 @@ function AdjustmentDataFileDeletionScreen() {
             <StyledSectionContent>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small">
+                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
                     <InputLabel>
                       {t("adjustmentDataFileDeletion.correctionType")}
                     </InputLabel>
@@ -581,6 +582,7 @@ function AdjustmentDataFileDeletionScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                           // AI Generated Code by Deloitte + Cursor (END)
                         },
@@ -605,6 +607,7 @@ function AdjustmentDataFileDeletionScreen() {
                       "& .MuiInputBase-root": {
                         backgroundColor: "background.paper",
                       },
+                      ...DENSE_FIELD_SX,
                     }}
                     // AI Generated Code by Deloitte + Cursor (END)
                   />

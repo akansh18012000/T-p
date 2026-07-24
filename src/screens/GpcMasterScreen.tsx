@@ -9,7 +9,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
-  Button,
   Grid,
   TableBody,
   TableHead,
@@ -26,7 +25,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -79,6 +79,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -139,6 +140,7 @@ const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
 const SEARCH_SESSION_ID = "d2e58f5d-8422-4611-8640-89db58ebe2e1";
 const SEARCH_SCREEN_ID = "18f33db0-df38-4c32-88d9-93ca963f2159";
 const SEARCH_IP_ADDRESS = "192.168.1.101";
+
 
 interface ProfitCenterApiRow {
   item_code: string;
@@ -1549,9 +1551,9 @@ export default function GpcMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("gpcMaster.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1588,6 +1590,7 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("gpcMaster.manufacturer")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1609,6 +1612,7 @@ export default function GpcMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("gpcMaster.manufacturerName")}
                     value={manufacturerName}
                     onChange={(e) => setManufacturerName(e.target.value)}
@@ -1639,6 +1643,7 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("gpcMaster.manufacturerPartNumber")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1682,6 +1687,7 @@ export default function GpcMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("gpcMaster.gpcCode")}
                         placeholder={t("gpcMaster.enterCharsToSearch")}
                         InputProps={{
@@ -1703,6 +1709,7 @@ export default function GpcMasterScreen() {
                   <StyledInputBase
                     fullWidth
                     size="small"
+                    sx={DENSE_FIELD_SX}
                     label={t("gpcMaster.gpcName")}
                     value={gpcName}
                     onChange={(e) => setGpcName(e.target.value)}
@@ -1741,6 +1748,7 @@ export default function GpcMasterScreen() {
                             "& input::selection": {
                               backgroundColor: "transparent",
                             },
+                            ...DENSE_FIELD_SX,
                           },
                         },
                       }}
@@ -1772,9 +1780,9 @@ export default function GpcMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("gpcMaster.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton
@@ -2108,7 +2116,7 @@ export default function GpcMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">{t("gpcMaster.uploadFile")}</StyledSectionTitle>
+            <StyledPanelTitle variant="h6">{t("gpcMaster.uploadFile")}</StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -2200,16 +2208,15 @@ export default function GpcMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("gpcMaster.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}

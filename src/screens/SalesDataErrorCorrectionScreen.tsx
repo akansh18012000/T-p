@@ -66,6 +66,7 @@ import {
   StyledSearchSection,
   StyledSearchHeader,
   StyledSearchTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSearchContent,
@@ -447,21 +448,6 @@ function mapApiRowToErrorData(
     description: raw.description ?? "",
   };
 }
-
-// Compact sizing for the Search Condition fields — shorter field height and
-// smaller label/value text than the shared `size="small"` default, to match
-// the signed-off density mockup. Kept screen-local: per the density-pass plan
-// the shared StyledComponents aren't retuned from an individual screen.
-// Only the font is customized. Field height and label centering are left to
-// MUI's `size="small"` defaults, which keep every field (plain TextField, date
-// picker, and Autocomplete) at the same height with the placeholder/value text
-// vertically centered — overriding the padding is what previously broke both.
-const DENSE_FIELD_SX = {
-  "& .MuiInputBase-input": { fontSize: "0.875rem" },
-  "& .MuiInputLabel-root": { fontSize: "0.875rem" },
-} as const;
-
-const DENSE_AUTOCOMPLETE_SX = DENSE_FIELD_SX;
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
 function defaultSalesDate(): Date {
@@ -1187,7 +1173,7 @@ export default function SalesDataErrorCorrectionScreen() {
                         placeholder={t("errorCorrection.enterCharsToSearch")}
                         error={!!fieldErrors.systemId}
                         required
-                        sx={DENSE_AUTOCOMPLETE_SX}
+                        sx={DENSE_FIELD_SX}
                         InputProps={{
                           ...params.InputProps,
                           endAdornment: (

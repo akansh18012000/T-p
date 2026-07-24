@@ -8,7 +8,6 @@ import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import {
   Box,
   Typography,
-  Button,
   Paper,
   TextField,
   Grid,
@@ -27,7 +26,8 @@ import {
   StyledPageTitle,
   StyledSectionWrapper,
   StyledSectionHeader,
-  StyledSectionTitle,
+  StyledPanelTitle,
+  DENSE_FIELD_SX,
   StyledExpandIcon,
   StyledExpandMoreIcon,
   StyledSectionContent,
@@ -79,6 +79,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
@@ -189,6 +190,7 @@ const DEFAULT_CSV_HEADERS = KIT_ITEM_CLASSIFICATION_MASTER_HEADERS;
 // uncapped list stalls/blanks the dropdown on open. Showing the first chunk and
 // letting the user type to narrow (MUI's built-in filter) is enough.
 const MAX_VISIBLE_OPTIONS = 1000;
+
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
@@ -978,9 +980,9 @@ export default function KitItemClassificationMasterScreen() {
             $expanded={searchConditionExpanded}
             onClick={() => setSearchConditionExpanded(!searchConditionExpanded)}
           >
-            <StyledSectionTitle variant="h6">
+            <StyledPanelTitle variant="h6">
               {t("kitItemClassification.searchCondition")}
-            </StyledSectionTitle>
+            </StyledPanelTitle>
             {searchConditionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1016,6 +1018,7 @@ export default function KitItemClassificationMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("kitItemClassification.kitManufacturerPartNumber")}
                         placeholder={t("kitItemClassification.enterCharsToSearch")}
                         InputProps={{
@@ -1060,6 +1063,7 @@ export default function KitItemClassificationMasterScreen() {
                     renderInput={(params) => (
                       <StyledAutocompleteInput
                         {...params}
+                        sx={DENSE_FIELD_SX}
                         label={t("kitItemClassification.kitManufacturer")}
                         placeholder={t("kitItemClassification.enterCharsToSearch")}
                         InputProps={{
@@ -1102,9 +1106,9 @@ export default function KitItemClassificationMasterScreen() {
                     ) : (
                     <StyledToolbar>
                       <StyledToolbarTitleBox>
-                        <StyledSectionTitle variant="h6">
+                        <StyledPanelTitle variant="h6">
                           {t("kitItemClassification.resultData")}
-                        </StyledSectionTitle>
+                        </StyledPanelTitle>
                       </StyledToolbarTitleBox>
                       <StyledToolbarButtonsBox>
                         <AddRowMenuButton
@@ -1389,7 +1393,7 @@ export default function KitItemClassificationMasterScreen() {
             $expanded={uploadSectionExpanded}
             onClick={() => setUploadSectionExpanded(!uploadSectionExpanded)}
           >
-            <StyledSectionTitle variant="h6">{t("kitItemClassification.uploadFile")}</StyledSectionTitle>
+            <StyledPanelTitle variant="h6">{t("kitItemClassification.uploadFile")}</StyledPanelTitle>
             {uploadSectionExpanded ? (
               <StyledExpandIcon />
             ) : (
@@ -1481,16 +1485,15 @@ export default function KitItemClassificationMasterScreen() {
                     >
                       {t("upload.view")}
                     </StyledViewButton>
-                    <Button
+                    <StyledCancelUploadButton
                       variant="outlined"
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
                       disabled={uploadStatus === "uploading"}
-                      sx={{ marginLeft: "auto" }}
                     >
                       {t("kitItemClassification.cancelUpload")}
-                    </Button>
+                    </StyledCancelUploadButton>
                   </StyledFileInfoBox>
                 </StyledSelectedFileBox>
               )}
