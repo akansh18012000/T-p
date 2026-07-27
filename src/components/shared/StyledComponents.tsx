@@ -732,7 +732,7 @@ export const StyledTableDataCell = styled(TableCell)<{
 }));
 
 export const StyledTableHeaderText = styled(Typography)(({ theme }) => ({
-  fontSize: "0.875rem",
+  fontSize: "inherit",
   fontWeight: 600,
   color: theme.palette.common.white,
   whiteSpace: "normal",
