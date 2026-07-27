@@ -21,7 +21,11 @@ import {
 } from "@mui/icons-material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
-import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
+import {
+  StyledSnackbarAlert,
+  StyledPrimaryContainedButton,
+  COMPACT_ACTION_BUTTON_SX,
+} from "../components/shared/StyledComponents.js";
 import { SCREEN_IDS } from "../constants/index.js";
 
 const PNL_APPROVAL_LOG_API_URL = "/api/v1/pnl-approval-log";
@@ -50,21 +54,14 @@ const StyledActionBox = styled(Box)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.grey![200]}`,
   backgroundColor: theme.palette.background.default,
   display: "flex",
-  gap: theme.spacing(2),
-}));
-
-const StyledApproveButton = styled(Button)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  paddingLeft: theme.spacing(3),
-  paddingRight: theme.spacing(3),
-  "&:hover": { backgroundColor: theme.palette.primary.dark },
+  alignItems: "center",
+  gap: theme.spacing(1),
 }));
 
 const StyledRollbackButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   borderColor: theme.palette.error.main,
   color: theme.palette.error.main,
-  paddingLeft: theme.spacing(3),
-  paddingRight: theme.spacing(3),
   "&:hover": {
     borderColor: theme.palette.error.dark,
     backgroundColor: theme.palette.error.main,
@@ -73,10 +70,9 @@ const StyledRollbackButton = styled(Button)(({ theme }) => ({
 }));
 
 const StyledReportButton = styled(Button)(({ theme }) => ({
+  ...COMPACT_ACTION_BUTTON_SX(theme),
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
-  paddingLeft: theme.spacing(3),
-  paddingRight: theme.spacing(3),
   marginLeft: "auto",
   "&:hover": {
     borderColor: theme.palette.primary.dark,
@@ -401,14 +397,14 @@ export default function PlDataApprovalScreen() {
 
       {/* Approve / Rollback actions */}
       <StyledActionBox>
-        <StyledApproveButton
+        <StyledPrimaryContainedButton
           variant="contained"
           startIcon={<CheckCircleOutlineIcon />}
           onClick={() => handleAction("Approve")}
           disabled={isActionInProgress}
         >
           {t("plDataApproval.approve")}
-        </StyledApproveButton>
+        </StyledPrimaryContainedButton>
         <StyledRollbackButton
           variant="outlined"
           startIcon={<UndoIcon />}

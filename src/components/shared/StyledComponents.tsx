@@ -376,7 +376,7 @@ export const StyledAddRowButton = styled(Button)(({ theme }) => ({
 // Compact sizing shared by the toolbar/action buttons (Refresh, Download,
 // Register, Add, Save, Upload, …) across every results/master screen — part of
 // the density pass. Screens passing an explicit sx still win.
-const COMPACT_ACTION_BUTTON_SX = (theme: Theme) => ({
+export const COMPACT_ACTION_BUTTON_SX = (theme: Theme) => ({
   fontSize: "0.6875rem",
   paddingTop: theme.spacing(0.5),
   paddingBottom: theme.spacing(0.5),
