@@ -5,14 +5,13 @@ import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useTranslation } from "react-i18next";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
-import { styled, alpha } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
   Typography,
-  Button,
   TextField,
   Grid,
   TableBody,
@@ -35,7 +34,6 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
-  DescriptionOutlined as DescriptionOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
@@ -119,6 +117,19 @@ import {
   StyledUploadButton,
   StyledViewButton,
   StyledCancelUploadButton,
+  StyledDragDropZone,
+  StyledUploadIconCircle,
+  StyledCloudUploadIcon,
+  StyledDragDropTitle,
+  StyledDragDropSubtitle,
+  StyledBrowseFilesButton,
+  StyledSupportedFormatText,
+  StyledFileInfoBox,
+  StyledFileInfoInner,
+  StyledDescriptionIcon,
+  StyledFileNameText,
+  StyledFileSizeText,
+  StyledSelectedFileBox,
 } from "../components/shared/StyledComponents.js";
 
 // Tie to the shared results-table column width so this screen's local table
@@ -327,123 +338,6 @@ const StyledCellTextField = styled(TextField)({
     fontSize: "inherit",
   },
 });
-
-const StyledDragDropZone = styled(Box)<{
-  $dragActive: boolean;
-  $disabled?: boolean;
-}>(({ $dragActive, $disabled, theme }) => ({
-  border: $dragActive
-    ? `3px dashed ${theme.palette.primary.main}`
-    : `2px dashed ${theme.palette.grey![300]}`,
-  borderRadius: "16px",
-  padding: theme.spacing(4),
-  textAlign: "center",
-  backgroundColor: $dragActive
-    ? alpha(theme.palette.primary.main, 0.05)
-    : theme.palette.background.paper,
-  cursor: $disabled ? "not-allowed" : "pointer",
-  transition: "all 0.3s ease",
-  // When disabled (e.g. view-only roles), block both browse-click and
-  // drag-and-drop by removing pointer events, and dim the zone.
-  ...($disabled
-    ? {
-        opacity: 0.5,
-        pointerEvents: "none" as const,
-      }
-    : {
-        "&:hover": {
-          borderColor: theme.palette.primary.main,
-          backgroundColor: alpha(theme.palette.primary.main, 0.02),
-        },
-      }),
-}));
-
-const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    width: 80,
-    height: 80,
-    borderRadius: "50%",
-    background: $dragActive
-      ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-      : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 100%)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: "auto",
-    marginRight: "auto",
-    marginBottom: theme.spacing(2),
-  }),
-);
-
-const StyledCloudUploadIcon = styled(CloudUploadOutlinedIcon)<{
-  $dragActive: boolean;
-}>(({ $dragActive, theme }) => ({
-  fontSize: 40,
-  color: $dragActive ? theme.palette.common.white : theme.palette.primary.main,
-}));
-
-const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 600,
-  color: theme.palette.secondary.main,
-  marginBottom: theme.spacing(0.5),
-}));
-
-const StyledDragDropSubtitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledBrowseFilesButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  textTransform: "none",
-  fontWeight: 600,
-  paddingLeft: theme.spacing(4),
-  paddingRight: theme.spacing(4),
-  paddingTop: theme.spacing(1),
-  paddingBottom: theme.spacing(1),
-  borderRadius: "8px",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledSupportedFormatText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-  display: "block",
-  marginTop: theme.spacing(2),
-}));
-
-const StyledFileInfoBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(2),
-  flexWrap: "wrap",
-}));
-
-const StyledFileInfoInner = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(1.5),
-}));
-
-const StyledDescriptionIcon = styled(DescriptionOutlinedIcon)(({ theme }) => ({
-  color: theme.palette.grey![400],
-  fontSize: 32,
-}));
-
-const StyledFileNameText = styled(Typography)(({ theme }) => ({
-  fontWeight: 500,
-  color: theme.palette.grey![700],
-}));
-
-const StyledFileSizeText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-}));
-
-const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-}));
 
 const StyledSnackbarAlert = styled(Alert)({
   width: "100%",

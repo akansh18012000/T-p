@@ -59,6 +59,26 @@ import {
 import {
   StyledTablePagination,
   StyledSnackbarAlert,
+  StyledUploadSectionBox,
+  StyledUploadFlexBox,
+  UPLOAD_INFO_ALERT_SX,
+  StyledDownloadTemplateButton,
+  StyledDragDropZone,
+  StyledUploadIconCircle,
+  StyledCloudUploadIcon,
+  StyledDragDropTitle,
+  StyledDragDropSubtitle,
+  StyledBrowseFilesButton,
+  StyledSupportedFormatText,
+  StyledFileInfoBox,
+  StyledFileInfoInner,
+  StyledFileIcon,
+  StyledFileNameText,
+  StyledFileSizeText,
+  StyledSelectedFileBox,
+  StyledUploadButton,
+  StyledViewButton,
+  StyledCancelUploadButton,
 } from "../components/shared/StyledComponents.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { getAdjustmentUploadScreenId } from "../constants/screenIds.js";
@@ -101,7 +121,7 @@ const StyledContentBox = styled(Box)(({ theme }) => ({
 }));
 
 const StyledFormControl = styled(FormControl)(({ theme }) => ({
-  minWidth: 280,
+  minWidth: 200,
   "& .MuiOutlinedInput-notchedOutline": {
     borderColor: theme.palette.grey![200],
     borderWidth: "1.5px",
@@ -121,9 +141,7 @@ const StyledFormControl = styled(FormControl)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
   },
   "& .MuiSelect-select": {
-    paddingTop: theme.spacing(1.25),
-    paddingBottom: theme.spacing(1.25),
-    fontSize: "1rem",
+    fontSize: "0.75rem",
     fontWeight: 500,
     display: "flex",
     alignItems: "center",
@@ -134,7 +152,7 @@ const StyledFormControl = styled(FormControl)(({ theme }) => ({
 const StyledInputLabel = styled(InputLabel)(({ theme }) => ({
   color: theme.palette.grey![500],
   fontWeight: 600,
-  fontSize: "1rem",
+  fontSize: "0.75rem",
   "&.Mui-focused": { color: theme.palette.primary.main },
 }));
 
@@ -144,162 +162,6 @@ const StyledSectionBox = styled(Box)(({ theme }) => ({
 
 const StyledDivider = styled(Divider)(({ theme }) => ({
   marginBottom: theme.spacing(3),
-}));
-
-const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  borderRadius: "8px",
-  fontWeight: 600,
-  textTransform: "none",
-  "&:hover": {
-    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-    borderColor: theme.palette.primary.dark,
-  },
-}));
-
-const StyledUploadSectionBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  gap: theme.spacing(3),
-  alignItems: "flex-start",
-  marginLeft: "auto",
-  marginRight: "auto",
-}));
-
-const StyledUploadFlexBox = styled(Box)({
-  flex: 1,
-});
-
-const StyledDragDropZone = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    border: $dragActive
-      ? `3px dashed ${theme.palette.primary.main}`
-      : `2px dashed ${theme.palette.grey![300]}`,
-    borderRadius: "16px",
-    padding: theme.spacing(4),
-    textAlign: "center",
-    backgroundColor: $dragActive
-      ? alpha(theme.palette.primary.main, 0.05)
-      : theme.palette.background.default,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      borderColor: theme.palette.primary.main,
-      backgroundColor: alpha(theme.palette.primary.main, 0.02),
-    },
-  }),
-);
-
-const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    width: 80,
-    height: 80,
-    borderRadius: "50%",
-    background: $dragActive
-      ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-      : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.dark, 0.05)} 100%)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: "auto",
-    marginRight: "auto",
-    marginBottom: theme.spacing(2),
-  }),
-);
-
-const StyledCloudUploadIcon = styled(CloudUploadOutlinedIcon)<{
-  $dragActive: boolean;
-}>(({ $dragActive, theme }) => ({
-  fontSize: 40,
-  color: $dragActive ? theme.palette.common.white : theme.palette.primary.main,
-}));
-
-const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 600,
-  color: theme.palette.grey![700],
-  marginBottom: theme.spacing(0.5),
-}));
-
-const StyledDragDropSubtitle = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![500],
-  marginBottom: theme.spacing(2),
-}));
-
-const StyledBrowseButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  textTransform: "none",
-  fontWeight: 600,
-  paddingLeft: theme.spacing(4),
-  paddingRight: theme.spacing(4),
-  paddingTop: theme.spacing(1),
-  paddingBottom: theme.spacing(1),
-  borderRadius: "8px",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledSupportedFormatsText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-  display: "block",
-  marginTop: theme.spacing(2),
-}));
-
-const StyledFileRowBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(2),
-  flexWrap: "wrap",
-}));
-
-const StyledFileInfoBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: theme.spacing(1.5),
-}));
-
-const StyledFileIconWithColor = styled(Box)<{ $color: string }>(
-  ({ $color }) => ({
-    "& .MuiSvgIcon-root": {
-      color: $color,
-      fontSize: 32,
-    },
-  }),
-);
-
-const StyledFileNameText = styled(Typography)(({ theme }) => ({
-  fontWeight: 500,
-  color: theme.palette.grey![700],
-}));
-
-const StyledFileSizeText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
-}));
-
-const StyledUploadButton = styled(Button)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-  color: theme.palette.common.white,
-  fontWeight: 600,
-  textTransform: "none",
-  "&:hover": {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
-  },
-}));
-
-const StyledViewButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  textTransform: "none",
-  fontWeight: 600,
-  "&:hover": {
-    borderColor: theme.palette.primary.dark,
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
-}));
-
-const StyledSelectedFileBox = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(3),
 }));
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
@@ -1173,7 +1035,10 @@ export default function AdjustmentSalesDetailScreen() {
               {/* File Upload Section */}
               <StyledUploadSectionBox>
                 <StyledUploadFlexBox>
-                  <Alert severity="info" sx={{ marginBottom: 2 }}>
+                  <Alert
+                    severity="info"
+                    sx={{ marginBottom: 2, ...UPLOAD_INFO_ALERT_SX }}
+                  >
                     {t("adjustmentSalesDetail.fileNameFormatHint")}
                   </Alert>
                   {!uploadedCsvData ? (
@@ -1206,7 +1071,7 @@ export default function AdjustmentSalesDetailScreen() {
                         <StyledDragDropSubtitle variant="body2">
                           {t("upload.orClickToBrowse")}
                         </StyledDragDropSubtitle>
-                        <StyledBrowseButton
+                        <StyledBrowseFilesButton
                           variant="contained"
                           startIcon={<CloudUploadOutlinedIcon />}
                           onClick={(e) => {
@@ -1215,21 +1080,21 @@ export default function AdjustmentSalesDetailScreen() {
                           }}
                         >
                           {t("upload.browseFiles")}
-                        </StyledBrowseButton>
-                        <StyledSupportedFormatsText variant="caption">
+                        </StyledBrowseFilesButton>
+                        <StyledSupportedFormatText variant="caption">
                           {t("upload.supportedFormats")}
-                        </StyledSupportedFormatsText>
+                        </StyledSupportedFormatText>
                       </StyledDragDropZone>
 
                       {selectedFile && (
                         <StyledSelectedFileBox>
-                          <StyledFileRowBox>
-                            <StyledFileInfoBox>
-                              <StyledFileIconWithColor
+                          <StyledFileInfoBox>
+                            <StyledFileInfoInner>
+                              <StyledFileIcon
                                 $color={getFileIcon(selectedFile.name).color}
                               >
                                 <DescriptionOutlinedIcon />
-                              </StyledFileIconWithColor>
+                              </StyledFileIcon>
                               <Box>
                                 <StyledFileNameText variant="body2">
                                   {selectedFile.name}
@@ -1241,7 +1106,7 @@ export default function AdjustmentSalesDetailScreen() {
                                   )}
                                 </StyledFileSizeText>
                               </Box>
-                            </StyledFileInfoBox>
+                            </StyledFileInfoInner>
                             <StyledUploadButton
                               variant="contained"
                               size="small"
@@ -1263,19 +1128,21 @@ export default function AdjustmentSalesDetailScreen() {
                                 {t("upload.view")}
                               </StyledViewButton>
                             )}
-                            <Button
+                            <StyledCancelUploadButton
                               variant="outlined"
                               size="small"
                               startIcon={<CloseIcon />}
                               onClick={handleUploadCancel}
                               disabled={uploadStatus === "uploading"}
-                              sx={{ marginLeft: "auto" }}
                             >
                               {t("adjustmentSalesDetail.cancelUpload")}
-                            </Button>
-                          </StyledFileRowBox>
+                            </StyledCancelUploadButton>
+                          </StyledFileInfoBox>
                           {!isFileNameValid && (
-                            <Alert severity="info" sx={{ marginTop: 2 }}>
+                            <Alert
+                              severity="info"
+                              sx={{ marginTop: 2, ...UPLOAD_INFO_ALERT_SX }}
+                            >
                               {t(
                                 "adjustmentSalesDetail.fileNameFormatError",
                               )}

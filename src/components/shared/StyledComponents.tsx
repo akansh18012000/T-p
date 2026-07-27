@@ -418,6 +418,16 @@ export const StyledDeleteContainedButton = StyledRemoveButton;
 export const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
   borderColor: theme.palette.primary.main,
   color: theme.palette.primary.main,
+  borderRadius: "8px",
+  fontWeight: 600,
+  textTransform: "none",
+  fontSize: "0.6875rem",
+  "& .MuiButton-startIcon": {
+    marginRight: 4,
+  },
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 12,
+  },
   "&:hover": {
     backgroundColor: alpha(theme.palette.primary.main, 0.04),
     borderColor: theme.palette.primary.dark,
@@ -778,6 +788,39 @@ export const StyledCellTextField = styled(TextField)({
 // Drag & drop / file upload
 // ---------------------------------------------------------------------------
 
+// Two-column-capable row (drag-drop zone + optional file list) used by every
+// upload screen. `StyledUploadFlexBox` is the flexible column that holds the
+// zone/file rows.
+export const StyledUploadSectionBox = styled(Box)(({ theme }) => ({
+  display: "flex",
+  gap: theme.spacing(3),
+  alignItems: "flex-start",
+  marginLeft: "auto",
+  marginRight: "auto",
+}));
+
+export const StyledUploadFlexBox = styled(Box)({
+  flex: 1,
+});
+
+// Font-only compaction (icon 1.15rem, message 0.75rem, tight vertical padding)
+// for the info `Alert`s on upload screens (template instructions, file-name-
+// format hints). Apply via `sx={{ marginBottom: 2, ...UPLOAD_INFO_ALERT_SX }}`
+// on an `<Alert severity="info">`.
+export const UPLOAD_INFO_ALERT_SX = {
+  alignItems: "flex-start",
+  paddingTop: 1,
+  paddingBottom: 1,
+  "& .MuiAlert-icon": {
+    marginRight: 1,
+    alignItems: "center",
+    "& .MuiSvgIcon-root": { fontSize: "1.15rem" },
+  },
+  "& .MuiAlert-message": {
+    fontSize: "0.75rem",
+  },
+} as const;
+
 export const StyledDragDropZone = styled(Box)<{
   $dragActive: boolean;
   $disabled?: boolean;
@@ -785,12 +828,12 @@ export const StyledDragDropZone = styled(Box)<{
   border: $dragActive
     ? `3px dashed ${theme.palette.primary.main}`
     : `2px dashed ${theme.palette.grey![300]}`,
-  borderRadius: "16px",
-  padding: theme.spacing(4),
+  borderRadius: "12px",
+  padding: theme.spacing(2.5),
   textAlign: "center",
   backgroundColor: $dragActive
     ? alpha(theme.palette.primary.main, 0.05)
-    : theme.palette.background.paper,
+    : theme.palette.background.default,
   cursor: $disabled ? "not-allowed" : "pointer",
   transition: "all 0.3s ease",
   // When disabled (e.g. view-only roles), block both browse-click and
@@ -811,7 +854,7 @@ export const StyledDragDropZone = styled(Box)<{
 export const StyledCloudUploadIcon = styled(CloudUploadOutlinedIcon)<{
   $dragActive: boolean;
 }>(({ $dragActive, theme }) => ({
-  fontSize: 40,
+  fontSize: 28,
   color: $dragActive ? theme.palette.common.white : theme.palette.primary.main,
 }));
 
@@ -833,8 +876,8 @@ export const StyledFileSizeText = styled(Typography)(({ theme }) => ({
 
 export const StyledUploadIconCircle = styled(Box)<{ $dragActive: boolean }>(
   ({ $dragActive, theme }) => ({
-    width: 80,
-    height: 80,
+    width: 56,
+    height: 56,
     borderRadius: "50%",
     background: $dragActive
       ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
@@ -856,7 +899,7 @@ export const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
 
 export const StyledDragDropSubtitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.grey![500],
-  marginBottom: theme.spacing(2),
+  marginBottom: theme.spacing(3),
 }));
 
 export const StyledBrowseFilesButton = styled(Button)(({ theme }) => ({
@@ -864,18 +907,24 @@ export const StyledBrowseFilesButton = styled(Button)(({ theme }) => ({
   color: theme.palette.common.white,
   textTransform: "none",
   fontWeight: 600,
-  paddingLeft: theme.spacing(4),
-  paddingRight: theme.spacing(4),
+  fontSize: "0.6875rem",
+  paddingLeft: theme.spacing(3),
+  paddingRight: theme.spacing(3),
   paddingTop: theme.spacing(1),
   paddingBottom: theme.spacing(1),
   borderRadius: "8px",
+  "& .MuiButton-startIcon .MuiSvgIcon-root": {
+    fontSize: 15,
+  },
+  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
   "&:hover": {
     background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`,
+    boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`,
   },
 }));
 
 export const StyledSupportedFormatText = styled(Typography)(({ theme }) => ({
-  color: theme.palette.grey![400],
+  color: theme.palette.disabled!.text,
   display: "block",
   marginTop: theme.spacing(2),
 }));

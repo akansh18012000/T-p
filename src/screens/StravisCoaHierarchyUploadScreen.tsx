@@ -2,11 +2,10 @@ import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
-import { styled, alpha } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import {
   Box,
   Typography,
-  Button,
   Paper,
   Snackbar,
   Alert,
@@ -51,8 +50,14 @@ import {
   StyledHeaderBox,
   StyledHeaderTitle,
   StyledContentBox,
+  StyledUploadSectionBox,
+  StyledUploadFlexBox,
+  UPLOAD_INFO_ALERT_SX,
+  StyledDownloadTemplateButton,
+  StyledDragDropZone,
   StyledUploadIconCircle,
   StyledCloudUploadIcon,
+  StyledDragDropTitle,
   StyledDragDropSubtitle,
   StyledBrowseFilesButton,
   StyledSupportedFormatText,
@@ -63,6 +68,7 @@ import {
   StyledFileSizeText,
   StyledUploadButton,
   StyledViewButton,
+  StyledCancelUploadButton,
   StyledSelectedFileBox,
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
@@ -99,69 +105,6 @@ const StyledMainPaper = styled(Paper)(({ theme }) => ({
   maxWidth: 1800,
   marginLeft: "auto",
   marginRight: "auto",
-}));
-
-const StyledUploadSectionBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  gap: theme.spacing(3),
-  alignItems: "flex-start",
-  marginLeft: "auto",
-  marginRight: "auto",
-}));
-
-const StyledUploadFlexBox = styled(Box)({
-  flex: 1,
-});
-
-const StyledDragDropZone = styled(Box)<{ $dragActive: boolean }>(
-  ({ $dragActive, theme }) => ({
-    border: $dragActive
-      ? `3px dashed ${theme.palette.primary.main}`
-      : `2px dashed ${theme.palette.grey![300]}`,
-    borderRadius: "16px",
-    padding: theme.spacing(4),
-    textAlign: "center",
-    backgroundColor: $dragActive
-      ? alpha(theme.palette.primary.main, 0.05)
-      : theme.palette.background.default,
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      borderColor: theme.palette.primary.main,
-      backgroundColor: alpha(theme.palette.primary.main, 0.02),
-    },
-  }),
-);
-
-const StyledDragDropTitle = styled(Typography)(({ theme }) => ({
-  fontWeight: 600,
-  color: theme.palette.grey![700],
-  marginBottom: theme.spacing(0.5),
-}));
-
-const StyledDownloadTemplateButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  borderRadius: "8px",
-  fontWeight: 600,
-  textTransform: "none",
-  "&:hover": {
-    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-    borderColor: theme.palette.primary.dark,
-  },
-}));
-
-// Per-row "Cancel Upload" button, pushed to the right edge of each file row.
-const StyledCancelUploadButton = styled(Button)(({ theme }) => ({
-  marginLeft: "auto",
-  textTransform: "none",
-  fontWeight: 600,
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  "&:hover": {
-    borderColor: theme.palette.primary.dark,
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
 }));
 
 const StyledBottomActionBox = styled(Box)(({ theme }) => ({
@@ -574,7 +517,7 @@ export default function StravisCoaHierarchyUploadScreen() {
         <StyledContentBox>
           <StyledUploadSectionBox>
             <StyledUploadFlexBox>
-              <Alert severity="info">
+              <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
                 {t("stravisCoaHierarchyUpload.templateInfo")}
               </Alert>
 
@@ -592,7 +535,7 @@ export default function StravisCoaHierarchyUploadScreen() {
 
               <StyledSectionDivider />
 
-              <Alert severity="info">
+              <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
                 {t("stravisCoaHierarchyUpload.fileNameFormatHint")}
               </Alert>
 
