@@ -265,13 +265,14 @@ interface GpcMasterCreatePayload {
 // Excluded: manufacturerName (1), gpcName (4) — lookup-derived, sent as-is.
 //   BU3 code/name are backfilled from the profit-center lookup but are not
 //   required to create/update a row.
+//   Checkbox columns (overwritePreventionFlag, deletionFlag) are excluded —
+//   an unchecked box is a meaningful "0", not a missing value, and the payload
+//   builder defaults them to "0" when the cell is empty.
 const REQUIRED_COL_INDICES = [
   COL_MANUFACTURER,
   COL_MFR_PART_NUMBER,
   COL_GPC_CODE,
   COL_VALID_YEAR,
-  GPC_MASTER_COLUMNS.findIndex((c) => c.key === "overwritePreventionFlag"),
-  GPC_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag"),
 ] as const;
 
 const DEFAULT_CSV_HEADERS = GPC_MASTER_HEADERS;
@@ -1152,7 +1153,13 @@ export default function GpcMasterScreen() {
         )
       ) {
         duplicateRows.add(idx + 1);
+        return;
       }
+      const collidesWithOther = targetIndices.some((otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === rowsForValidation[otherIdx][i]);
+      });
+      if (collidesWithOther) duplicateRows.add(idx + 1);
     });
     editedRowIndices.forEach((idx) => {
       const row = rowsForValidation[idx];

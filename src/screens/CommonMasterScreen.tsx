@@ -710,7 +710,13 @@ export default function CommonMasterScreen() {
         )
       ) {
         duplicateRows.add(idx + 1);
+        return;
       }
+      const collidesWithOther = targetIndices.some((otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === csvData.rows[otherIdx][i]);
+      });
+      if (collidesWithOther) duplicateRows.add(idx + 1);
     });
     editedRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];

@@ -432,7 +432,13 @@ function YearMonthMasterScreen() {
         )
       ) {
         duplicateRows.add(idx + 1);
+        return;
       }
+      const collidesWithOther = targetIndices.some((otherIdx) => {
+        if (otherIdx === idx) return false;
+        return EDITABLE_COL_INDICES.every((c) => row[c] === rows[otherIdx][c]);
+      });
+      if (collidesWithOther) duplicateRows.add(idx + 1);
     });
     editedRowIndices.forEach((idx) => {
       const row = rows[idx];

@@ -512,12 +512,19 @@ function FxRateEntryMasterScreen() {
 
     const getKey = (row: string[]) =>
       [row[0], row[1], row[2], row[3]].map((v) => String(v ?? "").trim()).join("|");
+    const allTargetIndices = [...createdRowIndices, ...updatedRowIndices];
     const duplicateRowNumbers: number[] = [];
     createdRows.forEach((row, idx) => {
       const key = getKey(row);
       if (originalRowsRef.current.some((orig) => getKey(orig) === key)) {
         duplicateRowNumbers.push(createdRowIndices[idx] + 1);
+        return;
       }
+      const collidesWithOther = allTargetIndices.some((tableIdx) => {
+        if (tableIdx === createdRowIndices[idx]) return false;
+        return getKey(csvData.rows[tableIdx]) === key;
+      });
+      if (collidesWithOther) duplicateRowNumbers.push(createdRowIndices[idx] + 1);
     });
     updatedRows.forEach((row, idx) => {
       const key = getKey(row);
@@ -528,7 +535,13 @@ function FxRateEntryMasterScreen() {
         )
       ) {
         duplicateRowNumbers.push(updatedRowIndices[idx] + 1);
+        return;
       }
+      const collidesWithOther = allTargetIndices.some((tableIdx) => {
+        if (tableIdx === updatedRowIndices[idx]) return false;
+        return getKey(csvData.rows[tableIdx]) === key;
+      });
+      if (collidesWithOther) duplicateRowNumbers.push(updatedRowIndices[idx] + 1);
     });
     if (duplicateRowNumbers.length > 0) {
       duplicateRowNumbers.sort((a, b) => a - b);

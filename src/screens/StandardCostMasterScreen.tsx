@@ -445,9 +445,12 @@ const COL_STANDARD_COST = STANDARD_COST_MASTER_COLUMNS.findIndex(
   (c) => c.key === "standardCost",
 );
 
-// Required-field validation scope: the editable code/value columns plus the two
-// flag columns. The lookup-derived name columns (manufacturerName, locationName,
-// corporateName) are sent as-is and excluded here.
+// Required-field validation scope: the editable code/value columns.
+// Checkbox columns (overwritePreventionFlag, deletionFlag) are excluded — an
+// unchecked box is a meaningful "0", not a missing value, and the payload
+// builder defaults them to "0" when the cell is empty.
+// Lookup-derived name columns (manufacturerName, locationName, corporateName)
+// are sent as-is and also excluded here.
 const REQUIRED_COL_INDICES = [
   COL_MFR_PART_NUMBER,
   COL_MANUFACTURER,
@@ -456,10 +459,6 @@ const REQUIRED_COL_INDICES = [
   COL_EFFECTIVE_START,
   COL_CURRENCY,
   COL_STANDARD_COST,
-  STANDARD_COST_MASTER_COLUMNS.findIndex(
-    (c) => c.key === "overwritePreventionFlag",
-  ),
-  STANDARD_COST_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag"),
 ] as const;
 
 function getEmptyCsvData(): CsvData {
@@ -960,7 +959,13 @@ export default function StandardCostMasterScreen() {
         )
       ) {
         duplicateRows.add(idx + 1);
+        return;
       }
+      const collidesWithOther = targetIndices.some((otherIdx) => {
+        if (otherIdx === idx) return false;
+        return row.every((cell, i) => cell === rows[otherIdx][i]);
+      });
+      if (collidesWithOther) duplicateRows.add(idx + 1);
     });
     editedRowIndices.forEach((idx) => {
       const row = rows[idx];
