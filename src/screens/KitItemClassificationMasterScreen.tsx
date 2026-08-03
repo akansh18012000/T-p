@@ -127,6 +127,7 @@ import {
   downloadDqErrorFile,
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
+  cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -458,7 +459,9 @@ export default function KitItemClassificationMasterScreen() {
 
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
-    const emptyRow = base.headers.map(() => "");
+    const emptyRow = base.headers.map((_, i) =>
+      KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
+    );
 
     if (insertAtPagePosition && base.rows.length > 0) {
       const insertIndex = pageOffset;
@@ -556,7 +559,7 @@ export default function KitItemClassificationMasterScreen() {
         return;
       }
       const current = csvData.rows[idx];
-      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      const changed = current.some((cell, i) => !cellsMatch(cell, meta.original[i]));
       if (changed) editedRowIndices.push(idx);
     });
 
@@ -615,7 +618,7 @@ export default function KitItemClassificationMasterScreen() {
       const row = csvData.rows[idx];
       if (
         searchSnapshotRef.current.some((snap) =>
-          row.every((cell, i) => cell === snap[i]),
+          row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -625,7 +628,7 @@ export default function KitItemClassificationMasterScreen() {
       // are caught even when neither exists in the snapshot yet.
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === csvData.rows[otherIdx][i]);
+        return row.every((cell, i) => cellsMatch(cell, csvData.rows[otherIdx][i]));
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -633,7 +636,7 @@ export default function KitItemClassificationMasterScreen() {
       const row = csvData.rows[idx];
       const collides = csvData.rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === other[i]);
+        return row.every((cell, i) => cellsMatch(cell, other[i]));
       });
       if (collides) duplicateRows.add(idx + 1);
     });

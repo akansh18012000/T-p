@@ -92,6 +92,7 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
+import { cellsMatch } from "../utils/commonUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -531,7 +532,9 @@ export default function CommonMasterScreen() {
 
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
-    const emptyRow = base.headers.map(() => "");
+    const emptyRow = base.headers.map((_, i) =>
+      COMMON_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
+    );
 
     if (insertAtPagePosition && base.rows.length > 0) {
       const insertIndex = pageOffset;
@@ -641,7 +644,7 @@ export default function CommonMasterScreen() {
         return;
       }
       const current = csvData.rows[idx];
-      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      const changed = current.some((cell, i) => !cellsMatch(cell, meta.original[i]));
       if (changed) editedRowIndices.push(idx);
     });
 
@@ -706,7 +709,7 @@ export default function CommonMasterScreen() {
       if (!row) return;
       if (
         snapshotRows.some((snap) =>
-          row.every((cell, i) => cell === snap[i]),
+          row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -714,7 +717,7 @@ export default function CommonMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === csvData.rows[otherIdx][i]);
+        return row.every((cell, i) => cellsMatch(cell, csvData.rows[otherIdx][i]));
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -723,7 +726,7 @@ export default function CommonMasterScreen() {
       if (!row) return;
       const collides = csvData.rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === other[i]);
+        return row.every((cell, i) => cellsMatch(cell, other[i]));
       });
       if (collides) duplicateRows.add(idx + 1);
     });

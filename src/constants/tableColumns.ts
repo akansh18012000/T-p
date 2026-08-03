@@ -9,6 +9,8 @@ export interface I18nColumnConfig {
   labelKey: string;
   /** If false, cell is read-only. Default true. */
   editable?: boolean;
+  /** If true, renders as checkbox (value "0"/"1"). */
+  isCheckbox?: boolean;
   /** i18n key for an info popover shown beside this column's header. */
   infoTextKey?: string;
 }
@@ -639,8 +641,8 @@ export const FX_RATE_ENTRY_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "toCurrency", labelKey: "fxRateEntryMaster.toCurrency", editable: true },
   { key: "currencyType", labelKey: "fxRateEntryMaster.currencyType", editable: true },
   { key: "currencyExchangeRate", labelKey: "fxRateEntryMaster.currencyExchangeRate", editable: true },
-  { key: "overwritePreventionFlag", labelKey: "fxRateEntryMaster.overwritePreventionFlag", editable: true, infoTextKey: "tableCommon.overwritePreventionFlagInfo" },
-  { key: "deletionFlag", labelKey: "fxRateEntryMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
+  { key: "overwritePreventionFlag", labelKey: "fxRateEntryMaster.overwritePreventionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.overwritePreventionFlagInfo" },
+  { key: "deletionFlag", labelKey: "fxRateEntryMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -898,7 +900,7 @@ export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "reserve3", labelKey: "commonConversionMaster.reserve3", editable: true },
   { key: "reserve4", labelKey: "commonConversionMaster.reserve4", editable: true },
   { key: "reserve5", labelKey: "commonConversionMaster.reserve5", editable: true },
-  { key: "deletionFlag", labelKey: "commonConversionMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
+  { key: "deletionFlag", labelKey: "commonConversionMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
@@ -957,7 +959,7 @@ export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
   { key: "reserve3", labelKey: "commonMaster.reserve3", editable: true },
   { key: "reserve4", labelKey: "commonMaster.reserve4", editable: true },
   { key: "reserve5", labelKey: "commonMaster.reserve5", editable: true },
-  { key: "deletionFlag", labelKey: "commonMaster.deletionFlag", editable: true, infoTextKey: "tableCommon.deletionFlagInfo" },
+  { key: "deletionFlag", labelKey: "commonMaster.deletionFlag", editable: true, isCheckbox: true, infoTextKey: "tableCommon.deletionFlagInfo" },
 ];
 
 export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [

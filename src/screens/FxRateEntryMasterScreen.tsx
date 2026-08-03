@@ -350,7 +350,7 @@ function FxRateEntryMasterScreen() {
   const handleAddRow = (insertAtPagePosition = true) => {
     const base = csvData || getEmptyCsvData();
     const emptyRow = base.headers.map((_, idx) =>
-      idx === overwriteFlagColIndex || idx === deletionFlagColIndex ? "0" : "",
+      FX_RATE_ENTRY_MASTER_COLUMNS[idx]?.isCheckbox ? "0" : "",
     );
     
     if (insertAtPagePosition && base.rows.length > 0) {

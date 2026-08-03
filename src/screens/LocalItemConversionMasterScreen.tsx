@@ -154,6 +154,7 @@ import {
   downloadDqErrorFile,
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
+  cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 
@@ -754,7 +755,7 @@ function LocalItemConversionMasterScreen() {
         return;
       }
       const current = csvData.rows[idx];
-      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      const changed = current.some((cell, i) => !cellsMatch(cell, meta.original[i]));
       if (changed) editedRowIndices.push(idx);
     });
 
@@ -816,7 +817,7 @@ function LocalItemConversionMasterScreen() {
       if (!row) return;
       if (
         searchSnapshotRef.current.some((snap) =>
-          row.every((cell, i) => cell === snap[i]),
+          row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -824,7 +825,7 @@ function LocalItemConversionMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === csvData.rows[otherIdx][i]);
+        return row.every((cell, i) => cellsMatch(cell, csvData.rows[otherIdx][i]));
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -833,7 +834,7 @@ function LocalItemConversionMasterScreen() {
       if (!row) return;
       const collides = csvData.rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === other[i]);
+        return row.every((cell, i) => cellsMatch(cell, other[i]));
       });
       if (collides) duplicateRows.add(idx + 1);
     });

@@ -127,6 +127,7 @@ import {
   downloadDqErrorFile,
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
+  cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 
@@ -884,7 +885,9 @@ export default function GpcMasterScreen() {
   // Add row menu handlers
   const handleAddEmptyRow = () => {
     const base = csvData || getEmptyCsvData();
-    const newRow = base.headers.map(() => "");
+    const newRow = base.headers.map((_, i) =>
+      GPC_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
+    );
     // Insert new row at appropriate position based on current page
     const insertIndex = Math.min(pageOffset, base.rows.length);
     const newRows = [
@@ -1070,7 +1073,7 @@ export default function GpcMasterScreen() {
         return;
       }
       const current = csvData.rows[idx];
-      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      const changed = current.some((cell, i) => !cellsMatch(cell, meta.original[i]));
       if (changed) editedRowIndices.push(idx);
     });
 
@@ -1149,7 +1152,7 @@ export default function GpcMasterScreen() {
       if (!row) return;
       if (
         searchSnapshotRef.current.some((snap) =>
-          row.every((cell, i) => cell === snap[i]),
+          row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -1166,7 +1169,7 @@ export default function GpcMasterScreen() {
       if (!row) return;
       const collides = rowsForValidation.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === other[i]);
+        return row.every((cell, i) => cellsMatch(cell, other[i]));
       });
       if (collides) duplicateRows.add(idx + 1);
     });

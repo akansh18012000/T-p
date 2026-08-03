@@ -26,7 +26,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
-import { formatDateTimeForDisplay } from "../utils/commonUtils.js";
+import { formatDateTimeForDisplay, cellsMatch } from "../utils/commonUtils.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import {
@@ -363,7 +363,7 @@ function YearMonthMasterScreen() {
         return;
       }
       const current = rows[idx];
-      const changed = current.some((cell, i) => cell !== meta.original[i]);
+      const changed = current.some((cell, i) => !cellsMatch(cell, meta.original[i]));
       if (changed) editedRowIndices.push(idx);
     });
 
@@ -428,7 +428,7 @@ function YearMonthMasterScreen() {
       if (!row) return;
       if (
         searchSnapshotRef.current.some((snap) =>
-          EDITABLE_COL_INDICES.every((c) => row[c] === snap[c]),
+          EDITABLE_COL_INDICES.every((c) => cellsMatch(row[c], snap[c])),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -436,7 +436,7 @@ function YearMonthMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return EDITABLE_COL_INDICES.every((c) => row[c] === rows[otherIdx][c]);
+        return EDITABLE_COL_INDICES.every((c) => cellsMatch(row[c], rows[otherIdx][c]));
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -445,7 +445,7 @@ function YearMonthMasterScreen() {
       if (!row) return;
       const collides = rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return EDITABLE_COL_INDICES.every((c) => row[c] === other[c]);
+        return EDITABLE_COL_INDICES.every((c) => cellsMatch(row[c], other[c]));
       });
       if (collides) duplicateRows.add(idx + 1);
     });

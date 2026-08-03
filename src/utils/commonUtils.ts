@@ -2,6 +2,22 @@
 // not import commonUtils, so this one-way import introduces no cycle.
 import { downloadCsvWithPicker } from "./csvUtils.js";
 
+/**
+ * Compare two CSV cell values for duplicate-detection purposes.
+ * When both values are non-empty and parse as finite numbers, comparison is
+ * numeric so that "1" and "1.0" are treated as equal. Otherwise falls back
+ * to an exact string comparison.
+ */
+export function cellsMatch(a: string, b: string): boolean {
+  if (a === b) return true;
+  const numA = Number(a);
+  const numB = Number(b);
+  if (a.trim() !== "" && b.trim() !== "" && isFinite(numA) && isFinite(numB)) {
+    return numA === numB;
+  }
+  return false;
+}
+
 export function formatDateTimeForDisplay(value: string | null | undefined): string {
   if (!value) return "";
   return value.split(".")[0];
