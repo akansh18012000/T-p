@@ -668,7 +668,7 @@ export default function CommonMasterScreen() {
       const triggerDownload = () => {
         const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
         const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
-        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+        void downloadCsvWithPicker(blob, "validation_errors_common_master.txt");
       };
       showSnackbar(
         <DqErrorSnackbarContent
