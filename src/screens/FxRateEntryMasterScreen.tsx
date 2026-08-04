@@ -468,7 +468,6 @@ function FxRateEntryMasterScreen() {
       return;
     }
 
-    try {
     const targetIndices = [...createdRowIndices, ...updatedRowIndices];
     const violations = runDqValidation(csvData.rows, DQ_SCREEN_CONFIG, targetIndices, originalRowsRef.current, t);
     if (violations.length > 0) {
@@ -478,7 +477,6 @@ function FxRateEntryMasterScreen() {
         const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
         void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
       };
-      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
       showSnackbar(
         <DqErrorSnackbarContent
           errorMessage={errorMessage}

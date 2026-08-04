@@ -39,9 +39,10 @@ export function DqErrorSnackbarContent({
           </Box>
           <Button
             size="small"
+            variant="outlined"
             startIcon={<GetApp />}
             onClick={onDownload}
-            sx={{ mt: 0.5, color: "inherit" }}
+            sx={{ mt: 0.5, color: "inherit", borderColor: "inherit" }}
           >
             {t("upload.dqDownloadButton")}
           </Button>

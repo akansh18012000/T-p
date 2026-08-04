@@ -800,7 +800,6 @@ export default function GlobalDadMasterScreen() {
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
 
-    try {
     const violations = runDqValidation(rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
     if (violations.length > 0) {
       const errorMessage = t("dq.violationsFound");
@@ -809,7 +808,6 @@ export default function GlobalDadMasterScreen() {
         const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
         void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
       };
-      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
       showSnackbar(
         <DqErrorSnackbarContent
           errorMessage={errorMessage}
