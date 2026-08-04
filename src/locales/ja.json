@@ -1026,5 +1026,17 @@
       "next": "次へ",
       "pageInfo": "{{count}}件中 {{current}} / {{total}} ページ"
     }
+  },
+  "dq": {
+    "nullViolation": "行{{row}}: {{field}}は必須です",
+    "regexViolation": "行{{row}}: {{field}}の形式が正しくありません",
+    "decimalViolation": "行{{row}}: {{field}}は有効な数値でなければなりません",
+    "nonNegativeViolation": "行{{row}}: {{field}}は0以上でなければなりません",
+    "positiveViolation": "行{{row}}: {{field}}は0より大きくなければなりません",
+    "supportedValuesViolation": "行{{row}}: {{field}}の値が無効です",
+    "fiscalPeriodViolation": "行{{row}}: {{field}}は{{otherField}}の会計年度内でなければなりません",
+    "duplicateKeyViolation": "行{{row}}: キー値が重複しています",
+    "violationsFound": "入力内容にエラーがあります。以下を修正して再度お試しください。",
+    "violationsFileName": "検証エラー"
   }
 }

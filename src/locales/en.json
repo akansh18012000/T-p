@@ -1026,5 +1026,17 @@
       "next": "Next",
       "pageInfo": "Page {{current}} of {{total}} ({{count}} items)"
     }
+  },
+  "dq": {
+    "nullViolation": "Row {{row}}: {{field}} is required",
+    "regexViolation": "Row {{row}}: {{field}} has an invalid format",
+    "decimalViolation": "Row {{row}}: {{field}} must be a valid number",
+    "nonNegativeViolation": "Row {{row}}: {{field}} must be 0 or greater",
+    "positiveViolation": "Row {{row}}: {{field}} must be greater than 0",
+    "supportedValuesViolation": "Row {{row}}: {{field}} has an invalid value",
+    "fiscalPeriodViolation": "Row {{row}}: {{field}} must fall within the fiscal year in {{otherField}}",
+    "duplicateKeyViolation": "Row {{row}}: duplicate key value",
+    "violationsFound": "Validation errors found. Please correct the following and try again.",
+    "violationsFileName": "validation_errors"
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
@@ -73,6 +73,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -446,21 +447,27 @@ const COL_STANDARD_COST = STANDARD_COST_MASTER_COLUMNS.findIndex(
   (c) => c.key === "standardCost",
 );
 
-// Required-field validation scope: the editable code/value columns.
-// Checkbox columns (overwritePreventionFlag, deletionFlag) are excluded — an
-// unchecked box is a meaningful "0", not a missing value, and the payload
-// builder defaults them to "0" when the cell is empty.
-// Lookup-derived name columns (manufacturerName, locationName, corporateName)
-// are sent as-is and also excluded here.
-const REQUIRED_COL_INDICES = [
-  COL_MFR_PART_NUMBER,
-  COL_MANUFACTURER,
-  COL_LOCATION_CODE,
-  COL_CORPORATE_CODE,
-  COL_EFFECTIVE_START,
-  COL_CURRENCY,
-  COL_STANDARD_COST,
-] as const;
+const COL_MAX_LENGTHS: Record<number, number> = {
+  [COL_MFR_PART_NUMBER]: 40,
+  [COL_MANUFACTURER]:    10,
+  [COL_LOCATION_CODE]:   5,
+  [COL_CORPORATE_CODE]:  5,
+  [COL_EFFECTIVE_START]: 6,
+};
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: COL_MFR_PART_NUMBER, labelKey: STANDARD_COST_MASTER_COLUMNS[COL_MFR_PART_NUMBER].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: COL_MANUFACTURER,    labelKey: STANDARD_COST_MASTER_COLUMNS[COL_MANUFACTURER].labelKey,    rules: [{ type: "null" }, { type: "length", maxLength: 10 }] },
+    { colIndex: COL_LOCATION_CODE,   labelKey: STANDARD_COST_MASTER_COLUMNS[COL_LOCATION_CODE].labelKey,   rules: [{ type: "null" }, { type: "length", maxLength: 5 }] },
+    { colIndex: COL_CORPORATE_CODE,  labelKey: STANDARD_COST_MASTER_COLUMNS[COL_CORPORATE_CODE].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 5 }] },
+    { colIndex: COL_EFFECTIVE_START, labelKey: STANDARD_COST_MASTER_COLUMNS[COL_EFFECTIVE_START].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 6 }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
+    { colIndex: COL_CURRENCY,        labelKey: STANDARD_COST_MASTER_COLUMNS[COL_CURRENCY].labelKey,        rules: [{ type: "null" }] },
+    { colIndex: COL_STANDARD_COST,   labelKey: STANDARD_COST_MASTER_COLUMNS[COL_STANDARD_COST].labelKey,   rules: [{ type: "null" }, { type: "decimal" }, { type: "nonNegative" }] },
+    { colIndex: 10,                  labelKey: STANDARD_COST_MASTER_COLUMNS[10].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1"] }] },
+    { colIndex: 11,                  labelKey: STANDARD_COST_MASTER_COLUMNS[11].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1", "9"] }] },
+  ],
+};
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
@@ -908,44 +915,25 @@ export default function StandardCostMasterScreen() {
     const targetIndices = [...newRowIndices, ...editedRowIndices];
     const rows = csvData.rows;
 
-    // 2. Required-field validation.
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = rows[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !String(row[c] ?? "").trim(),
-      ).map((c) => t(STANDARD_COST_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      let message: React.ReactNode;
-      if (missingByRow.length === 1) {
-        message = t("standardCostMaster.requiredFieldsMissingSingle", {
-          row: missingByRow[0].row,
-          fields: missingByRow[0].fields.join(", "),
-        });
-      } else {
-        message = (
-          <Box component="span">
-            {t("standardCostMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("standardCostMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>
-        );
-      }
-      showSnackbar(message, "error", true);
+    try {
+    const violations = runDqValidation(rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -1021,8 +1009,7 @@ export default function StandardCostMasterScreen() {
       ip_address: SEARCH_IP_ADDRESS,
     };
 
-    // 5. POST and refresh.
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const res = await fetch(STANDARD_COST_REGISTER_API_URL, {
         method: "POST",
@@ -1891,6 +1878,11 @@ export default function StandardCostMasterScreen() {
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
                                               paginated
+                                              textFieldProps={
+                                                COL_MAX_LENGTHS[colIndex] !== undefined
+                                                  ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } }
+                                                  : undefined
+                                              }
                                             />
                                           )}
                                         </StyledTableDataCell>

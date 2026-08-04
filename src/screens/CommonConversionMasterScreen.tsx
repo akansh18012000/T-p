@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
@@ -126,6 +126,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { usePermissions } from "../hooks/usePermissions.js";
@@ -236,16 +237,31 @@ interface CommonConversionCreatePayload {
   ip_address: string;
 }
 
-// Required-field validation scope (user-confirmed): Item ID, Item Name,
-// System ID, Converted Code, Converted Name. Indices are derived from the
-// column config so they stay correct if the column order changes.
-const REQUIRED_COL_INDICES = [
-  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "itemId"),
-  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "itemName"),
-  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "systemId"),
-  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "convertedCode"),
-  COMMON_CONVERSION_MASTER_COLUMNS.findIndex((c) => c.key === "convertedName"),
-] as const;
+const COL_MAX_LENGTHS: Record<number, number> = {
+  0: 8, 1: 300, 2: 20, 3: 30, 4: 300, 5: 30, 6: 300, 7: 30, 8: 300, 9: 300,
+  10: 300, 11: 300, 12: 300, 13: 300, 14: 300,
+};
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: 0,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[0].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 8 }] },
+    { colIndex: 1,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[1].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
+    { colIndex: 2,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[2].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 20 }] },
+    { colIndex: 3,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[3].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
+    { colIndex: 4,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[4].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 5,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[5].labelKey,  rules: [{ type: "length", maxLength: 30 }] },
+    { colIndex: 6,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[6].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 7,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[7].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
+    { colIndex: 8,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[8].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
+    { colIndex: 9,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[9].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 10, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[10].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 11, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[11].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 12, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[12].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 13, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[13].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 14, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[14].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 15, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[15].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
+  ],
+};
 
 const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 
@@ -718,49 +734,25 @@ export default function CommonConversionMasterScreen() {
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
 
-    // 2. Required-field validation. Collect, per row, the names of the
-    // required columns left empty so the error can list them.
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = rows[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
-      ).map((c) => t(COMMON_CONVERSION_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      if (missingByRow.length === 1) {
-        showSnackbar(
-          t("commonConversionMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("commonConversionMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("commonConversionMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+    try {
+    const violations = runDqValidation(csvData.rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -1626,6 +1618,7 @@ export default function CommonConversionMasterScreen() {
                                             searchable
                                             searchOptions={itemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.itemId")}
+                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[0] } }}
                                           />
                                         ) : colIndex === systemIdColIndex ? (
                                           <SearchableCell
@@ -1641,6 +1634,7 @@ export default function CommonConversionMasterScreen() {
                                             searchable
                                             searchOptions={systemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.systemId")}
+                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[2] } }}
                                           />
                                         ) : colIndex === itemNameColIndex ? (
                                           <SearchableCell

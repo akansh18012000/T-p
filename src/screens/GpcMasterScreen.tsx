@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -130,6 +130,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 
 const GPC_MASTER_SEARCH_API_URL = "/api/v1/item-cls-linkage/search";
 const GPC_MASTER_REGISTER_API_URL = "/api/v1/item-cls-linkage/create";
@@ -269,12 +270,14 @@ interface GpcMasterCreatePayload {
 //   Checkbox columns (overwritePreventionFlag, deletionFlag) are excluded —
 //   an unchecked box is a meaningful "0", not a missing value, and the payload
 //   builder defaults them to "0" when the cell is empty.
-const REQUIRED_COL_INDICES = [
-  COL_MANUFACTURER,
-  COL_MFR_PART_NUMBER,
-  COL_GPC_CODE,
-  COL_VALID_YEAR,
-] as const;
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: COL_MANUFACTURER,    labelKey: GPC_MASTER_COLUMNS[COL_MANUFACTURER].labelKey,    rules: [{ type: "null" }] },
+    { colIndex: COL_MFR_PART_NUMBER, labelKey: GPC_MASTER_COLUMNS[COL_MFR_PART_NUMBER].labelKey, rules: [{ type: "null" }] },
+    { colIndex: COL_GPC_CODE,        labelKey: GPC_MASTER_COLUMNS[COL_GPC_CODE].labelKey,        rules: [{ type: "null" }] },
+    { colIndex: COL_VALID_YEAR,      labelKey: GPC_MASTER_COLUMNS[COL_VALID_YEAR].labelKey,      rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{4}$/ }] },
+  ],
+};
 
 const DEFAULT_CSV_HEADERS = GPC_MASTER_HEADERS;
 
@@ -1099,45 +1102,25 @@ export default function GpcMasterScreen() {
       rowsForValidation = csvData.rows;
     }
 
-    // 3. Required-field validation (after BU3 backfill).
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = rowsForValidation[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
-      ).map((c) => t(GPC_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      let message: React.ReactNode;
-      if (missingByRow.length === 1) {
-        message = t("gpcMaster.requiredFieldsMissingSingle", {
-          row: missingByRow[0].row,
-          fields: missingByRow[0].fields.join(", "),
-        });
-      } else {
-        message = (
-          <Box component="span">
-            {t("gpcMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("gpcMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>
-        );
-      }
-      showSnackbar(message, "error", true);
-      setIsRegistering(false);
+    // 3. DQ validation (null, regex, duplicates).
+    const violations = runDqValidation(rowsForValidation, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -1211,36 +1194,36 @@ export default function GpcMasterScreen() {
 
     // 6. POST and refresh.
     try {
-      const res = await fetch(GPC_MASTER_REGISTER_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(GPC_MASTER_REGISTER_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
+    // Revert the table to the last search results without re-querying:
+    // drop newly added rows and discard edits by restoring each surviving
+    // row from its original search snapshot.
+    const restoredRows: string[][] = [];
+    const restoredMeta: typeof rowMetadata = [];
+    rowMetadata.forEach((meta, idx) => {
+      if (meta === null || idx >= csvData.rows.length) return;
+      restoredRows.push([...meta.original]);
+      restoredMeta.push(meta);
+    });
+    setCsvData({ ...csvData, rows: restoredRows });
+    setRowMetadata(restoredMeta);
+    clearNewRowTracking();
 
-      let messageKey: string;
-      if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
-        messageKey = "gpcMaster.createdAndUpdatedRows";
-      } else if (newRowIndices.length > 0) {
-        messageKey = "gpcMaster.createdNewRows";
-      } else {
-        messageKey = "gpcMaster.updatedExistingRows";
-      }
-      showSnackbar(t(messageKey), "success");
+    let messageKey: string;
+    if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
+      messageKey = "gpcMaster.createdAndUpdatedRows";
+    } else if (newRowIndices.length > 0) {
+      messageKey = "gpcMaster.createdNewRows";
+    } else {
+      messageKey = "gpcMaster.updatedExistingRows";
+    }
+    showSnackbar(t(messageKey), "success");
     } catch (e) {
       console.error(e);
       showSnackbar(t("gpcMaster.registrationFailed"), "error");

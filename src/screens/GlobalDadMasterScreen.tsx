@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -51,7 +51,9 @@ import { useLocalCustomerData } from "../context/LocalCustomerDataContext.js";
 import { useProductClassificationData } from "../context/ProductClassificationDataContext.js";
 import { useBu3CodeData } from "../context/Bu3CodeDataContext.js";
 import { stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
-import { cellsMatch } from "../utils/commonUtils.js";
+import { cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -221,16 +223,18 @@ const NEW_ROW_SEARCHABLE_COLS = new Set([
   "transferDestBU3",
 ]);
 
-// Required-field validation scope: the identifying codes for a record. Names
-// are lookup-derived and the dates/pattern come from the source row, so they
-// aren't part of the required set.
-const REQUIRED_COL_INDICES = [
-  COL_SYSTEM_ID,
-  COL_SALES_LOCATION,
-  COL_LOCAL_CUSTOMER,
-  COL_PRODUCT_CLASS,
-  COL_TRANSFER_BU3,
-] as const;
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: COL_SYSTEM_ID,      labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_SYSTEM_ID].labelKey,      rules: [{ type: "null" }] },
+    { colIndex: COL_SALES_LOCATION, labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_SALES_LOCATION].labelKey, rules: [{ type: "null" }] },
+    { colIndex: COL_LOCAL_CUSTOMER, labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_LOCAL_CUSTOMER].labelKey, rules: [{ type: "null" }] },
+    { colIndex: COL_PRODUCT_CLASS,  labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_PRODUCT_CLASS].labelKey,  rules: [{ type: "null" }] },
+    { colIndex: COL_TRANSFER_BU3,   labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_TRANSFER_BU3].labelKey,   rules: [{ type: "null" }] },
+    { colIndex: COL_EFF_START,      labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_EFF_START].labelKey,      rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
+    { colIndex: COL_EXP_DATE,       labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_EXP_DATE].labelKey,       rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
+    { colIndex: COL_PATTERN_ID,     labelKey: GLOBAL_DAD_MASTER_COLUMNS[COL_PATTERN_ID].labelKey,     rules: [{ type: "null" }] },
+  ],
+};
 
 // API dates arrive as YYYYMM (e.g. "201404"); display them as YYYY-MM.
 function formatYearMonth(yyyymm: string): string {
@@ -796,48 +800,25 @@ export default function GlobalDadMasterScreen() {
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
 
-    // 2. Required-field validation.
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = rows[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
-      ).map((c) => t(GLOBAL_DAD_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      if (missingByRow.length === 1) {
-        showSnackbar(
-          t("globalDadMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("globalDadMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("globalDadMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+    try {
+    const violations = runDqValidation(rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -907,8 +888,7 @@ export default function GlobalDadMasterScreen() {
       ip_address: SEARCH_IP_ADDRESS,
     };
 
-    // 5. POST and refresh.
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const res = await fetch(GLOBAL_DAD_CREATE_API_URL, {
         method: "POST",

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
@@ -157,6 +157,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 
 // Global Item Type dropdown options. The code (value) is stored in the cell and
 // sent in the create/update API call; the dropdown shows "code : value".
@@ -206,23 +207,31 @@ const COL_STANDARD_COST = colIndexOf("standardCost");
 const COL_CURRENCY = colIndexOf("currency");
 const COL_VALID_FROM_DATE = colIndexOf("validFromDate");
 
-// All fields are required for create/update except Global Item Type, Location
-// Code and Location Name (per the API contract).
-const REQUIRED_COL_INDICES = [
-  COL_SYSTEM_ID,
-  COL_LOCAL_ITEM_CODE,
-  COL_MANUFACTURER,
-  COL_MANUFACTURER_NAME,
-  COL_MFR_PART_NUMBER,
-  COL_GPC_CODE,
-  COL_GPC_NAME,
-  COL_VALIDITY_YEAR,
-  COL_CORPORATE_CODE,
-  COL_CORPORATE_NAME,
-  COL_STANDARD_COST,
-  COL_CURRENCY,
-  COL_VALID_FROM_DATE,
-] as const;
+const COL_MAX_LENGTHS: Record<number, number> = {
+  [COL_SYSTEM_ID]:       5,
+  [COL_LOCAL_ITEM_CODE]: 40,
+  [COL_MANUFACTURER]:    10,
+  [COL_MFR_PART_NUMBER]: 40,
+};
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: COL_SYSTEM_ID,         labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_SYSTEM_ID].labelKey,         rules: [{ type: "null" }, { type: "length", maxLength: 5 }] },
+    { colIndex: COL_LOCAL_ITEM_CODE,   labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_LOCAL_ITEM_CODE].labelKey,   rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: COL_MANUFACTURER,      labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_MANUFACTURER].labelKey,      rules: [{ type: "null" }, { type: "length", maxLength: 10 }] },
+    { colIndex: COL_MANUFACTURER_NAME, labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_MANUFACTURER_NAME].labelKey, rules: [{ type: "null" }] },
+    { colIndex: COL_MFR_PART_NUMBER,   labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_MFR_PART_NUMBER].labelKey,   rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: COL_GLOBAL_ITEM_TYPE,  labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GLOBAL_ITEM_TYPE].labelKey,  rules: [{ type: "regex", pattern: /^(?!999$).*$/ }] },
+    { colIndex: COL_GPC_CODE,          labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GPC_CODE].labelKey,          rules: [{ type: "null" }] },
+    { colIndex: COL_GPC_NAME,          labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GPC_NAME].labelKey,          rules: [{ type: "null" }] },
+    { colIndex: COL_VALIDITY_YEAR,     labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_VALIDITY_YEAR].labelKey,     rules: [{ type: "null" }] },
+    { colIndex: COL_CORPORATE_CODE,    labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_CORPORATE_CODE].labelKey,    rules: [{ type: "null" }] },
+    { colIndex: COL_CORPORATE_NAME,    labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_CORPORATE_NAME].labelKey,    rules: [{ type: "null" }] },
+    { colIndex: COL_STANDARD_COST,     labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_STANDARD_COST].labelKey,     rules: [{ type: "null" }, { type: "decimal" }, { type: "positive" }] },
+    { colIndex: COL_CURRENCY,          labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_CURRENCY].labelKey,          rules: [{ type: "null" }] },
+    { colIndex: COL_VALID_FROM_DATE,   labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_VALID_FROM_DATE].labelKey,   rules: [{ type: "null" }] },
+  ],
+};
 
 interface LocalItemSearchPayload {
   system_id: string;
@@ -766,45 +775,25 @@ function LocalItemConversionMasterScreen() {
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
 
-    // 2. Required-field validation. All fields are required except Global Item
-    // Type, Location Code and Location Name.
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = csvData.rows[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
-      ).map((c) => t(LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      let message: React.ReactNode;
-      if (missingByRow.length === 1) {
-        message = t("localItemConversion.requiredFieldsMissingSingle", {
-          row: missingByRow[0].row,
-          fields: missingByRow[0].fields.join(", "),
-        });
-      } else {
-        message = (
-          <Box component="span">
-            {t("localItemConversion.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("localItemConversion.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>
-        );
-      }
-      showSnackbar(message, "error", true);
+    try {
+    const violations = runDqValidation(csvData.rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -886,7 +875,7 @@ function LocalItemConversionMasterScreen() {
     };
 
     // 5. POST and refresh.
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const res = await fetch(LOCAL_ITEM_CREATE_API_URL, {
         method: "POST",
@@ -1821,6 +1810,11 @@ function LocalItemConversionMasterScreen() {
                                                 searchOptions={searchOptions}
                                                 searchTitle={t(col.labelKey)}
                                                 paginated
+                                                textFieldProps={
+                                                  COL_MAX_LENGTHS[colIndex] !== undefined
+                                                    ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } }
+                                                    : undefined
+                                                }
                                               />
                                             ) : (
                                               <Box

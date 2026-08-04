@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -131,6 +131,7 @@ import {
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 const KIT_ITEM_COMBINED_SEARCH_API_URL =
@@ -181,7 +182,25 @@ interface ExistingRowMeta {
   original: string[];
 }
 
-const REQUIRED_COL_INDICES = [0, 1, 2, 3, 5] as const;
+const COL_MAX_LENGTHS: Record<number, number> = {
+  0: 40,
+  1: 25,
+  2: 40,
+  3: 25,
+  4: 25,
+};
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: 0, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[0].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: 1, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
+    { colIndex: 2, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: 3, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
+    { colIndex: 4, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[4].labelKey, rules: [{ type: "length", maxLength: 25 }] },
+    { colIndex: 5, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[5].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 6, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[6].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
+  ],
+};
 // AI Generated Code by Deloitte + Cursor (END)
 
 const DEFAULT_CSV_HEADERS = KIT_ITEM_CLASSIFICATION_MASTER_HEADERS;
@@ -569,43 +588,28 @@ export default function KitItemClassificationMasterScreen() {
     }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = csvData.rows[idx];
-      if (!row) return;
-      const missingFields = REQUIRED_COL_INDICES.filter(
-        (c) => !(row[c] ?? "").trim(),
-      ).map((c) => t(KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      let message: React.ReactNode;
-      if (missingByRow.length === 1) {
-        message = t("kitItemClassification.requiredFieldsMissingSingle", {
-          row: missingByRow[0].row,
-          fields: missingByRow[0].fields.join(", "),
-        });
-      } else {
-        message = (
-          <Box component="span">
-            {t("kitItemClassification.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("kitItemClassification.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>
-        );
-      }
-      showSnackbar(message, "error", true);
+
+    try {
+    const violations = runDqValidation(
+      csvData.rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t,
+    );
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -683,7 +687,7 @@ export default function KitItemClassificationMasterScreen() {
       ip_address: "192.168.1.101",
     };
 
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const res = await fetch(KIT_ITEM_COMBINED_CREATE_API_URL, {
         method: "POST",
@@ -1357,6 +1361,11 @@ export default function KitItemClassificationMasterScreen() {
                                               editable={isEditable}
                                               searchable={false}
                                               searchTitle={colConfig?.label}
+                                              textFieldProps={
+                                                COL_MAX_LENGTHS[colIndex] !== undefined
+                                                  ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } }
+                                                  : undefined
+                                              }
                                             />
                                           )}
                                         </StyledTableDataCell>

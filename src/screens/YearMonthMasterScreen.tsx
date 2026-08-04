@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -8,7 +8,6 @@ import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import {
-  Box,
   TableBody,
   TableHead,
   TableRow,
@@ -26,7 +25,10 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
-import { formatDateTimeForDisplay, cellsMatch } from "../utils/commonUtils.js";
+import { formatDateTimeForDisplay, cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { downloadCsvWithPicker } from "../utils/csvUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
 import {
@@ -130,6 +132,19 @@ const EDITABLE_COL_INDICES = [
   PROC_YEAR_COL_INDEX,
   PROC_PERIOD_COL_INDEX,
 ];
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: PROC_TYPE_COL_INDEX,      labelKey: YEAR_MONTH_MASTER_COLUMNS[PROC_TYPE_COL_INDEX].labelKey,      rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]+$/ }] },
+    { colIndex: PROC_TYPE_NAME_COL_INDEX, labelKey: YEAR_MONTH_MASTER_COLUMNS[PROC_TYPE_NAME_COL_INDEX].labelKey, rules: [{ type: "null" }] },
+    { colIndex: PROC_YEAR_COL_INDEX,      labelKey: YEAR_MONTH_MASTER_COLUMNS[PROC_YEAR_COL_INDEX].labelKey,      rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{4}$/ }] },
+    { colIndex: PROC_PERIOD_COL_INDEX,    labelKey: YEAR_MONTH_MASTER_COLUMNS[PROC_PERIOD_COL_INDEX].labelKey,    rules: [
+      { type: "null" },
+      { type: "regex", pattern: /^[0-9]{6}$/ },
+      { type: "fiscalPeriod", procYearColIndex: PROC_YEAR_COL_INDEX, otherFieldLabelKey: YEAR_MONTH_MASTER_COLUMNS[PROC_YEAR_COL_INDEX].labelKey },
+    ]},
+  ],
+};
 
 type ProcessMonthCreateRow = {
   proc_type: string;
@@ -373,47 +388,26 @@ function YearMonthMasterScreen() {
     }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const r = rows[idx];
-      if (!r) return;
-      const missingFields = EDITABLE_COL_INDICES.filter(
-        (c) => !(r[c] ?? "").trim(),
-      ).map((c) => t(YEAR_MONTH_MASTER_COLUMNS[c].labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      if (missingByRow.length === 1) {
-        showSnackbar(
-          t("yearMonthMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("yearMonthMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("yearMonthMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+
+    try {
+    const violations = runDqValidation(rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -484,7 +478,7 @@ function YearMonthMasterScreen() {
       ip_address: "192.168.1.101",
     };
 
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",

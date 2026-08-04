@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
@@ -92,7 +92,9 @@ import {
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 import { parseCsv, stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
-import { cellsMatch } from "../utils/commonUtils.js";
+import { cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
@@ -204,6 +206,12 @@ const paginatedListboxSlotProps = {
   },
 };
 
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: 1, labelKey: COMMON_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[A-Za-z0-9]+$/ }] },
+    { colIndex: 3, labelKey: COMMON_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]/ }] },
+  ],
+};
 
 export default function CommonMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -654,47 +662,25 @@ export default function CommonMasterScreen() {
     }
 
     const targetIndices = [...newRowIndices, ...editedRowIndices];
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    targetIndices.forEach((idx) => {
-      const row = csvData.rows[idx];
-      if (!row) return;
-      if (!(row[groupIdColIndex] ?? "").trim()) {
-        missingByRow.push({
-          row: idx + 1,
-          fields: [t(COMMON_MASTER_COLUMNS[groupIdColIndex].labelKey)],
-        });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      if (missingByRow.length === 1) {
-        showSnackbar(
-          t("commonMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("commonMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("commonMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+    try {
+    const violations = runDqValidation(csvData.rows, DQ_SCREEN_CONFIG, targetIndices, searchSnapshotRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -781,7 +767,7 @@ export default function CommonMasterScreen() {
       ip_address: "192.168.1.101",
     };
 
-    setIsRegistering(true);
+      setIsRegistering(true);
     try {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",

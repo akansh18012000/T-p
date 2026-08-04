@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
@@ -123,6 +123,7 @@ import {
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
@@ -161,6 +162,16 @@ const DEFAULT_CSV_HEADERS = FX_RATE_ENTRY_MASTER_HEADERS;
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    { colIndex: 0, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[0].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
+    { colIndex: 1, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 2, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 3, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 4, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }, { type: "decimal" }] },
+  ],
+};
 
 function FxRateEntryMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -457,56 +468,26 @@ function FxRateEntryMasterScreen() {
       return;
     }
 
-    // Every column is required except the checkbox flags (overwrite prevention
-    // and deletion), whose unchecked state is a meaningful "0", not a missing
-    // value. Collect, per row, the names of the empty columns so the error can
-    // list them.
-    const missingByRow: { row: number; fields: string[] }[] = [];
-    [...createdRowIndices, ...updatedRowIndices].forEach((idx) => {
-      const row = csvData.rows[idx];
-      if (!row) return;
-      const missingFields = FX_RATE_ENTRY_MASTER_COLUMNS
-        .filter(
-          (_col, ci) =>
-            ci !== overwriteFlagColIndex &&
-            ci !== deletionFlagColIndex &&
-            String(row[ci] ?? "").trim() === "",
-        )
-        .map((col) => t(col.labelKey));
-      if (missingFields.length > 0) {
-        missingByRow.push({ row: idx + 1, fields: missingFields });
-      }
-    });
-    if (missingByRow.length > 0) {
-      missingByRow.sort((a, b) => a.row - b.row);
-      if (missingByRow.length === 1) {
-        showSnackbar(
-          t("fxRateEntryMaster.requiredFieldsMissingSingle", {
-            row: missingByRow[0].row,
-            fields: missingByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("fxRateEntryMaster.requiredFieldsMissingMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {missingByRow.map((m) => (
-                <li key={m.row}>
-                  {t("fxRateEntryMaster.requiredFieldsMissingRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+    try {
+    const targetIndices = [...createdRowIndices, ...updatedRowIndices];
+    const violations = runDqValidation(csvData.rows, DQ_SCREEN_CONFIG, targetIndices, originalRowsRef.current, t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["\uFEFF" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, t("dq.violationsFileName") + ".txt");
+      };
+      if (violations.length > DQ_INLINE_LIMIT) void triggerDownload();
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
@@ -567,7 +548,7 @@ function FxRateEntryMasterScreen() {
       delete_flg: row[6] === "1" ? "1" : "0",
     }));
 
-    setRegistering(true);
+      setRegistering(true);
     try {
       const res = await fetch(FX_RATE_CREATE_API_URL, {
         method: "POST",
