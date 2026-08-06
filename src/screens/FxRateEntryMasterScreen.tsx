@@ -120,6 +120,7 @@ import {
   getDqViolationLines,
   downloadDqErrorFile,
   DQ_INLINE_LIMIT,
+  cellsMatch,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
@@ -459,7 +460,7 @@ function FxRateEntryMasterScreen() {
         createdRowIndices.push(i);
       } else {
         const original = originalRowsRef.current[originalIdx];
-        if (original && JSON.stringify(row) !== JSON.stringify(original)) {
+        if (original && row.some((cell, i) => !cellsMatch(cell, original[i] ?? ""))) {
           updatedRows.push(row);
           updatedRowIndices.push(i);
           updatedRowOriginalIndices.push(originalIdx);
