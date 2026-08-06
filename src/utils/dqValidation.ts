@@ -31,6 +31,29 @@ export interface DqScreenConfig {
   duplicateKeyIndices?: number[];
 }
 
+export function decimalOnlyKeyDown(e: {
+  key: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  preventDefault(): void;
+}): void {
+  const allowed = [
+    "Backspace", "Delete", "Tab", "Enter",
+    "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+    "Home", "End",
+  ];
+  if (allowed.includes(e.key) || e.ctrlKey || e.metaKey || /^\d$/.test(e.key) || e.key === ".") return;
+  e.preventDefault();
+}
+
+export function decimalOnlyPaste(e: {
+  clipboardData: DataTransfer | null;
+  preventDefault(): void;
+}): void {
+  const text = e.clipboardData?.getData("text") ?? "";
+  if (!/^[0-9.]*$/.test(text)) e.preventDefault();
+}
+
 function cellsMatch(a: string | undefined, b: string | undefined): boolean {
   return (a ?? "").trim() === (b ?? "").trim();
 }
@@ -57,7 +80,7 @@ function validateDqRow(
           violations.push(t("dq.regexViolation", { row: rowNumber, field: fieldName }));
         }
       } else if (rule.type === "decimal") {
-        if (value && isNaN(Number(rawValue))) {
+        if (value && !/^(\d+\.?\d*|\.\d+)$/.test(value)) {
           violations.push(t("dq.decimalViolation", { row: rowNumber, field: fieldName }));
         }
       } else if (rule.type === "nonNegative") {

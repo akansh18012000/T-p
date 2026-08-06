@@ -123,7 +123,7 @@ import {
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
-import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
+import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
@@ -172,6 +172,12 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
     { colIndex: 4, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }, { type: "decimal" }] },
   ],
 };
+
+const DECIMAL_COL_INDICES = new Set(
+  DQ_SCREEN_CONFIG.columns
+    .filter((c) => c.rules.some((r) => r.type === "decimal"))
+    .map((c) => c.colIndex),
+);
 
 function FxRateEntryMasterScreen() {
   const { t, i18n } = useTranslation();
@@ -1237,6 +1243,8 @@ function FxRateEntryMasterScreen() {
                                                 e.target.value,
                                               )
                                             }
+                                            onKeyDown={DECIMAL_COL_INDICES.has(colIndex) ? decimalOnlyKeyDown : undefined}
+                                            onPaste={DECIMAL_COL_INDICES.has(colIndex) ? decimalOnlyPaste : undefined}
                                             variant="standard"
                                             fullWidth
                                             size="small"

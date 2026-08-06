@@ -73,7 +73,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
-import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
+import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -468,6 +468,12 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
     { colIndex: 11,                  labelKey: STANDARD_COST_MASTER_COLUMNS[11].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1", "9"] }] },
   ],
 };
+
+const DECIMAL_COL_INDICES = new Set(
+  DQ_SCREEN_CONFIG.columns
+    .filter((c) => c.rules.some((r) => r.type === "decimal"))
+    .map((c) => c.colIndex),
+);
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
@@ -1876,11 +1882,10 @@ export default function StandardCostMasterScreen() {
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
                                               paginated
-                                              textFieldProps={
-                                                COL_MAX_LENGTHS[colIndex] !== undefined
-                                                  ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } }
-                                                  : undefined
-                                              }
+                                              textFieldProps={{
+                                                ...(COL_MAX_LENGTHS[colIndex] !== undefined ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } } : {}),
+                                                ...(DECIMAL_COL_INDICES.has(colIndex) ? { onKeyDown: decimalOnlyKeyDown, onPaste: decimalOnlyPaste } : {}),
+                                              }}
                                             />
                                           )}
                                         </StyledTableDataCell>

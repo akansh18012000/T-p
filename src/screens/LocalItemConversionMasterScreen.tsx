@@ -157,7 +157,7 @@ import {
   cellsMatch,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
-import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
+import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
 
 // Global Item Type dropdown options. The code (value) is stored in the cell and
 // sent in the create/update API call; the dropdown shows "code : value".
@@ -232,6 +232,12 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
     { colIndex: COL_VALID_FROM_DATE,   labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_VALID_FROM_DATE].labelKey,   rules: [{ type: "null" }] },
   ],
 };
+
+const DECIMAL_COL_INDICES = new Set(
+  DQ_SCREEN_CONFIG.columns
+    .filter((c) => c.rules.some((r) => r.type === "decimal"))
+    .map((c) => c.colIndex),
+);
 
 interface LocalItemSearchPayload {
   system_id: string;
@@ -1808,11 +1814,10 @@ function LocalItemConversionMasterScreen() {
                                                 searchOptions={searchOptions}
                                                 searchTitle={t(col.labelKey)}
                                                 paginated
-                                                textFieldProps={
-                                                  COL_MAX_LENGTHS[colIndex] !== undefined
-                                                    ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } }
-                                                    : undefined
-                                                }
+                                                textFieldProps={{
+                                                  ...(COL_MAX_LENGTHS[colIndex] !== undefined ? { inputProps: { maxLength: COL_MAX_LENGTHS[colIndex] } } : {}),
+                                                  ...(DECIMAL_COL_INDICES.has(colIndex) ? { onKeyDown: decimalOnlyKeyDown, onPaste: decimalOnlyPaste } : {}),
+                                                }}
                                               />
                                             ) : (
                                               <Box
