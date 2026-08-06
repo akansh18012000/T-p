@@ -103,6 +103,9 @@ import {
 } from "../components/shared/StyledComponents.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
 import { downloadCsvWithPicker } from "../utils/csvUtils.js";
+import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
+import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
 import {
   useTablePagination,
   TABLE_PAGINATION_ROWS_OPTIONS,
@@ -389,18 +392,6 @@ function applyEditsToApiRow(
   return base;
 }
 
-/**
- * Editable columns that must hold a value before a row can be registered.
- * Keys mirror ErrorData; label keys mirror SALES_DATA_ERROR_CORRECTION_COLUMNS.
- */
-const REGISTER_REQUIRED_FIELDS: { key: keyof ErrorData; labelKey: string }[] = [
-  { key: "localItemCode", labelKey: "errorCorrection.localItemCode" },
-  {
-    key: "productionPlantCode",
-    labelKey: "errorCorrection.productionFactoryCode",
-  },
-];
-
 /** Drop the YYYY-MM-DD dashes the API returns so dates match the table's compact format. */
 function stripDateDashes(isoDate: string | null): string {
   return isoDate ? isoDate.replace(/-/g, "") : "";
@@ -448,6 +439,28 @@ function mapApiRowToErrorData(
     description: raw.description ?? "",
   };
 }
+
+const COL_LOCAL_ITEM_CODE = SALES_DATA_ERROR_CORRECTION_COLUMNS.findIndex(
+  (c) => c.key === "localItemCode",
+);
+const COL_PRODUCTION_PLANT_CODE = SALES_DATA_ERROR_CORRECTION_COLUMNS.findIndex(
+  (c) => c.key === "productionPlantCode",
+);
+
+const DQ_SCREEN_CONFIG: DqScreenConfig = {
+  columns: [
+    {
+      colIndex: COL_LOCAL_ITEM_CODE,
+      labelKey: SALES_DATA_ERROR_CORRECTION_COLUMNS[COL_LOCAL_ITEM_CODE].labelKey,
+      rules: [{ type: "null" }],
+    },
+    {
+      colIndex: COL_PRODUCTION_PLANT_CODE,
+      labelKey: SALES_DATA_ERROR_CORRECTION_COLUMNS[COL_PRODUCTION_PLANT_CODE].labelKey,
+      rules: [{ type: "null" }],
+    },
+  ],
+};
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
 function defaultSalesDate(): Date {
@@ -934,52 +947,32 @@ export default function SalesDataErrorCorrectionScreen() {
       return;
     }
 
-    // The editable columns (Local Item Code, Production Factory Code) are
-    // mandatory: block registration if any row being submitted left one empty,
-    // and surface the offending row numbers + field names in the snackbar.
-    const emptyByRow: { row: number; fields: string[] }[] = [];
-    editedRowCodes.forEach((rowCode) => {
-      const rowIndex = errorData.findIndex((r) => r.rowCode === rowCode);
-      if (rowIndex === -1) return;
-      const row = errorData[rowIndex];
-      const emptyFields = REGISTER_REQUIRED_FIELDS.filter(({ key }) => {
-        const value = String(getDisplayValue(row, key) ?? "").trim();
-        return !value;
-      }).map(({ labelKey }) => t(labelKey));
-      if (emptyFields.length > 0) {
-        emptyByRow.push({ row: rowIndex + 1, fields: emptyFields });
-      }
-    });
-    if (emptyByRow.length > 0) {
-      emptyByRow.sort((a, b) => a.row - b.row);
-      if (emptyByRow.length === 1) {
-        showSnackbar(
-          t("errorCorrection.requiredFieldsEmptySingle", {
-            row: emptyByRow[0].row,
-            fields: emptyByRow[0].fields.join(", "),
-          }),
-          "error",
-          true,
-        );
-      } else {
-        showSnackbar(
-          <Box component="span">
-            {t("errorCorrection.requiredFieldsEmptyMultiple")}
-            <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
-              {emptyByRow.map((m) => (
-                <li key={m.row}>
-                  {t("errorCorrection.requiredFieldsEmptyRowItem", {
-                    row: m.row,
-                    fields: m.fields.join(", "),
-                  })}
-                </li>
-              ))}
-            </Box>
-          </Box>,
-          "error",
-          true,
-        );
-      }
+    // DQ validation: null checks on both editable columns
+    const rowsAsStrings: string[][] = errorData.map((row) =>
+      SALES_DATA_ERROR_CORRECTION_COLUMNS.map((col) =>
+        String(getDisplayValue(row, col.key as keyof ErrorData)),
+      ),
+    );
+    const targetIndices = editedRowCodes
+      .map((code) => errorData.findIndex((r) => r.rowCode === code))
+      .filter((idx) => idx !== -1);
+    const violations = runDqValidation(rowsAsStrings, DQ_SCREEN_CONFIG, targetIndices, [], t);
+    if (violations.length > 0) {
+      const errorMessage = t("dq.violationsFound");
+      const triggerDownload = () => {
+        const content = ["﻿" + errorMessage, "", ...violations].join("\r\n");
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        void downloadCsvWithPicker(blob, "validation_errors_sales_correction.txt");
+      };
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={violations.length > DQ_INLINE_LIMIT ? triggerDownload : undefined}
+        />,
+        "error",
+        true,
+      );
       return;
     }
 
