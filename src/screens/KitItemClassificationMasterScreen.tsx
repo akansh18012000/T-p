@@ -898,7 +898,7 @@ export default function KitItemClassificationMasterScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_kit_item_master",
                     );
                   }
                 : undefined

@@ -1451,7 +1451,7 @@ export default function GpcMasterScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_gpc_master",
                     );
                   }
                 : undefined

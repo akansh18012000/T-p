@@ -1248,7 +1248,7 @@ export default function StandardCostMasterScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_standard_cost_master",
                     );
                   }
                 : undefined

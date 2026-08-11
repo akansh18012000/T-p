@@ -777,7 +777,7 @@ function FxRateEntryMasterScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_fx_rate_master",
                     );
                   }
                 : undefined

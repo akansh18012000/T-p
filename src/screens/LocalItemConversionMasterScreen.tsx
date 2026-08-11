@@ -1130,7 +1130,7 @@ function LocalItemConversionMasterScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_local_item_conversion_master",
                     );
                   }
                 : undefined

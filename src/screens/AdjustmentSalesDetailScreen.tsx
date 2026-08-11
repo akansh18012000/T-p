@@ -681,7 +681,7 @@ export default function AdjustmentSalesDetailScreen() {
                 ? () => {
                     void downloadDqErrorFile(
                       dqFile,
-                      t("upload.dqErrorFileName"),
+                      "data_quality_errors_adjustment_data_upload",
                     );
                   }
                 : undefined

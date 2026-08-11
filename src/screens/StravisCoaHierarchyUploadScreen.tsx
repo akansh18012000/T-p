@@ -364,7 +364,7 @@ export default function StravisCoaHierarchyUploadScreen() {
               ? () => {
                   void downloadDqErrorFileForFiles(
                     dqFiles,
-                    t("upload.dqErrorFileName"),
+                    "data_quality_errors_stravis_coa_upload",
                   );
                 }
               : undefined

@@ -1216,7 +1216,7 @@ export default function SalesDataUploadScreen() {
               ? () => {
                   void downloadDqErrorFileForFiles(
                     dqFiles,
-                    t("upload.dqErrorFileName"),
+                    "data_quality_errors_sales_upload",
                   );
                 }
               : undefined
