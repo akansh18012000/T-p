@@ -395,9 +395,6 @@ export default function StravisCoaHierarchyUploadScreen() {
             : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
         const useDownload =
           uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
-        if (useDownload) {
-          void downloadDqErrorFileForFiles(dqFiles, t("upload.dqErrorFileName"));
-        }
         showSnackbar(
           <DqErrorSnackbarContent
             errorMessage={errorMessage}
