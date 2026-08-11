@@ -341,6 +341,40 @@ export default function StravisCoaHierarchyUploadScreen() {
     }
 
     // 4. All files passed — POST them in a single multipart request.
+
+    // Declared outside the try so the catch block can inspect DQ violations
+    // even when an unexpected error occurs after the response is parsed.
+    let uploadJson: UploadApiResponse | null = null;
+
+    const showDqSnackbar = (dqFiles: ReturnType<typeof findAllDqFailedFiles>) => {
+      const firstFile = dqFiles[0];
+      const violations = getDqViolationLines(firstFile);
+      const errorMessage =
+        dqFiles.length > 1
+          ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
+          : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
+      const useDownload =
+        uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={
+            useDownload
+              ? () => {
+                  void downloadDqErrorFileForFiles(
+                    dqFiles,
+                    t("upload.dqErrorFileName"),
+                  );
+                }
+              : undefined
+          }
+        />,
+        "error",
+        true,
+      );
+    };
+
     try {
       const metadata = {
         requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
@@ -371,7 +405,6 @@ export default function StravisCoaHierarchyUploadScreen() {
       // The backend reports data-quality outcomes in the JSON body even when
       // the overall status is FAILED, so parse it before reacting to the HTTP
       // status.
-      let uploadJson: UploadApiResponse | null = null;
       try {
         uploadJson = (await response.json()) as UploadApiResponse;
       } catch {
@@ -381,38 +414,10 @@ export default function StravisCoaHierarchyUploadScreen() {
       // Data-quality validation failure. Rule for this multi-file screen: show
       // violations inline only when a single file was uploaded and it has
       // ≤ limit errors; otherwise (more than one file, or > limit errors)
-      // auto-download a text log of every failed file and offer a Download
-      // button to re-fetch it.
+      // offer a Download button for the full error log.
       const dqFiles = findAllDqFailedFiles(uploadJson);
       if (dqFiles.length > 0) {
-        const firstFile = dqFiles[0];
-        const violations = getDqViolationLines(firstFile);
-        // With several failed files, a per-file message is misleading — show a
-        // generic count-based headline; the full breakdown is in the download.
-        const errorMessage =
-          dqFiles.length > 1
-            ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
-            : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
-        const useDownload =
-          uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
-        showSnackbar(
-          <DqErrorSnackbarContent
-            errorMessage={errorMessage}
-            violations={violations}
-            onDownload={
-              useDownload
-                ? () => {
-                    void downloadDqErrorFileForFiles(
-                      dqFiles,
-                      t("upload.dqErrorFileName"),
-                    );
-                  }
-                : undefined
-            }
-          />,
-          "error",
-          true,
-        );
+        showDqSnackbar(dqFiles);
         return;
       }
 
@@ -424,6 +429,13 @@ export default function StravisCoaHierarchyUploadScreen() {
       showSnackbar(t("upload.uploadSuccess"), "success");
     } catch (error) {
       console.error("Upload API error:", error);
+      // If the response body was parsed before the error occurred, prefer
+      // showing DQ violations over the generic error message.
+      const dqFiles = findAllDqFailedFiles(uploadJson);
+      if (dqFiles.length > 0) {
+        showDqSnackbar(dqFiles);
+        return;
+      }
       showSnackbar(t("upload.uploadError"), "error");
     } finally {
       setUploading(false);
