@@ -1194,6 +1194,42 @@ export default function SalesDataUploadScreen() {
       }),
     );
 
+    // Declared outside the try so the catch block can inspect DQ violations
+    // even when an unexpected error occurs after the response is parsed.
+    let uploadJson: UploadApiResponse | null = null;
+
+    const showDqSnackbar = (dqFiles: ReturnType<typeof findAllDqFailedFiles>) => {
+      const firstFile = dqFiles[0];
+      const violations = getDqViolationLines(firstFile);
+      const errorMessage =
+        dqFiles.length > 1
+          ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
+          : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
+      const useDownload =
+        uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
+      if (useDownload) {
+        void downloadDqErrorFileForFiles(dqFiles, t("upload.dqErrorFileName"));
+      }
+      showSnackbar(
+        <DqErrorSnackbarContent
+          errorMessage={errorMessage}
+          violations={violations}
+          onDownload={
+            useDownload
+              ? () => {
+                  void downloadDqErrorFileForFiles(
+                    dqFiles,
+                    t("upload.dqErrorFileName"),
+                  );
+                }
+              : undefined
+          }
+        />,
+        "error",
+        true,
+      );
+    };
+
     try {
       const metadata = {
         requested_by: "9363e503-3d7c-4200-9702-e2445866c4c2",
@@ -1224,11 +1260,10 @@ export default function SalesDataUploadScreen() {
       // The backend reports per-file outcomes in the JSON body even when the
       // overall upload_status is FAILED (e.g. every file was a duplicate), so
       // parse the body before deciding how to react to the HTTP status.
-      let json: UploadApiResponse | null = null;
       try {
-        json = (await response.json()) as UploadApiResponse;
+        uploadJson = (await response.json()) as UploadApiResponse;
       } catch {
-        json = null;
+        uploadJson = null;
       }
 
       // Data-quality validation failure takes precedence over the per-file
@@ -1236,44 +1271,14 @@ export default function SalesDataUploadScreen() {
       // inline only when a single file was uploaded and it has ≤ limit errors;
       // otherwise (more than one file, or > limit errors) auto-download a text
       // log of every failed file and offer a Download button to re-fetch it.
-      const dqFiles = findAllDqFailedFiles(json);
+      const dqFiles = findAllDqFailedFiles(uploadJson);
       if (dqFiles.length > 0) {
-        const firstFile = dqFiles[0];
-        const violations = getDqViolationLines(firstFile);
-        // With several failed files, a per-file message is misleading — show a
-        // generic count-based headline; the full breakdown is in the download.
-        const errorMessage =
-          dqFiles.length > 1
-            ? t("upload.dqCheckFailedMultiple", { count: dqFiles.length })
-            : (firstFile.error_message ?? t("upload.dqCheckFailedGeneric"));
-        const useDownload =
-          uploads.length > 1 || violations.length > DQ_INLINE_LIMIT;
-        if (useDownload) {
-          void downloadDqErrorFileForFiles(dqFiles, t("upload.dqErrorFileName"));
-        }
-        showSnackbar(
-          <DqErrorSnackbarContent
-            errorMessage={errorMessage}
-            violations={violations}
-            onDownload={
-              useDownload
-                ? () => {
-                    void downloadDqErrorFileForFiles(
-                      dqFiles,
-                      t("upload.dqErrorFileName"),
-                    );
-                  }
-                : undefined
-            }
-          />,
-          "error",
-          true,
-        );
+        showDqSnackbar(dqFiles);
         return;
       }
 
       const resultFiles =
-        json && Array.isArray(json.files) ? json.files : [];
+        uploadJson && Array.isArray(uploadJson.files) ? uploadJson.files : [];
 
       // No per-file details to act on: fall back to the HTTP status.
       if (resultFiles.length === 0) {
@@ -1353,6 +1358,13 @@ export default function SalesDataUploadScreen() {
       }
     } catch (error) {
       console.error("Upload API error:", error);
+      // If the response body was parsed before the error occurred, prefer
+      // showing DQ violations over the generic error message.
+      const dqFiles = findAllDqFailedFiles(uploadJson);
+      if (dqFiles.length > 0) {
+        showDqSnackbar(dqFiles);
+        return;
+      }
       uploads.forEach((upload) =>
         updateEntry(screenKey, upload.id, {
           uploadStatus: "pending",
