@@ -102,6 +102,27 @@ const CP1252_REVERSE = new Map<number, number>(
   Object.entries(CP1252_TABLE).map(([k, v]) => [v, Number(k)])
 );
 
+// Returns true only if every byte sequence in `bytes` is a well-formed UTF-8
+// code unit. Used to sanity-check encoding-japanese's detection result: if the
+// library says UTF-8 but the bytes aren't valid UTF-8, the detection is wrong.
+function isValidUtf8(bytes: Uint8Array): boolean {
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i];
+    if (b < 0x80) { i++; continue; }
+    let extra: number;
+    if      (b >= 0xc2 && b <= 0xdf) extra = 1;
+    else if (b >= 0xe0 && b <= 0xef) extra = 2;
+    else if (b >= 0xf0 && b <= 0xf4) extra = 3;
+    else return false; // 0x80–0xBF (lone continuation), 0xC0–0xC1, or 0xF5–0xFF
+    for (let j = 1; j <= extra; j++) {
+      if (i + j >= bytes.length || bytes[i + j] < 0x80 || bytes[i + j] > 0xbf) return false;
+    }
+    i += 1 + extra;
+  }
+  return true;
+}
+
 // A UTF-8 file decoded to a JS string should never contain C1 control characters
 // (U+0080–U+009F) in real human-readable text. Their presence is a reliable
 // indicator that the file's bytes were Shift-JIS but were mistakenly treated as
@@ -148,10 +169,17 @@ function reverseMojibake(text: string, Encoding: any): string {
  * files and causes incorrect decoding. UTF-16 files with a real BOM are still
  * handled via the 'UTF16' candidate.
  *
- * Also handles the CP1252 Mojibake pattern: files originally in Shift-JIS that
- * were accidentally decoded as Windows-1252 and re-saved as UTF-8. These are
- * detected by the presence of C1 control characters (U+0080–U+009F) in the
- * UTF-8 decoded text, which should never appear in genuine human-readable text.
+ * Two additional safeguards cover common Shift-JIS mis-detection cases:
+ *
+ * 1. If the library returns UTF-8 but the file has no UTF-8 BOM and the bytes
+ *    are not valid UTF-8, the detection is wrong (encoding-japanese can
+ *    misclassify plain SJIS files). We re-detect excluding UTF-8 and fall back
+ *    to SJIS rather than UTF-8.
+ *
+ * 2. If the file has a UTF-8 BOM but the decoded text contains C1 control
+ *    characters (U+0080–U+009F), it is a Shift-JIS file that was accidentally
+ *    decoded as Windows-1252 and re-saved as UTF-8 (CP1252 Mojibake). We
+ *    reverse the Mojibake to recover the original Japanese text.
  */
 export async function readFileWithDetectedEncoding(
   file: Blob,
@@ -161,17 +189,25 @@ export async function readFileWithDetectedEncoding(
 
   const CANDIDATES = ['UTF8', 'SJIS', 'EUCJP', 'JIS', 'UTF16'] as const;
   const detected = Encoding.detect(bytes, [...CANDIDATES]);
-  // false or unrecognised → default to UTF-8.
-  const encoding = detected || 'UTF8';
+  let encoding: string = detected || 'UTF8';
+
+  // Safeguard 1: if the library says UTF-8 but there is no UTF-8 BOM and the
+  // bytes are not actually valid UTF-8, the detection is wrong. Re-detect
+  // without UTF-8 in the candidate list; default to SJIS for Japanese files.
+  const hasUtf8Bom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
+  if (encoding === 'UTF8' && !hasUtf8Bom && !isValidUtf8(bytes)) {
+    const redetected = Encoding.detect(bytes, ['SJIS', 'EUCJP', 'JIS', 'UTF16']);
+    encoding = redetected || 'SJIS';
+  }
 
   // Convert bytes to a Unicode code-point array, then to a JS string.
   // encoding-japanese handles BOM stripping and all JIS/CP932 variants.
   const unicodeArray = Encoding.convert(bytes, { to: 'UNICODE', from: encoding });
   const text = Encoding.codeToString(unicodeArray);
 
-  // Detect and repair CP1252 Mojibake: Shift-JIS bytes that were mistakenly
-  // decoded as Windows-1252 and then saved as UTF-8. Strip the BOM character
-  // (U+FEFF) before the reversal so it doesn't interfere.
+  // Safeguard 2: detect and repair CP1252 Mojibake — Shift-JIS bytes that were
+  // mistakenly decoded as Windows-1252 and saved as UTF-8 with BOM. Strip the
+  // BOM character (U+FEFF) before the reversal so it doesn't interfere.
   if (encoding === 'UTF8' && looksLikeCP1252Mojibake(text)) {
     const fixed = reverseMojibake(text.replace(/^﻿/, ''), Encoding);
     return { text: fixed, encoding: 'SJIS' };
