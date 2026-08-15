@@ -4,6 +4,7 @@ import { styled, alpha } from "@mui/material/styles";
 import { Alert, Box, Grid, Paper, Typography } from "@mui/material";
 import {
   DATA_INPUT_ITEMS,
+  PL_DATA_ITEMS,
   MASTER_MAINTENANCE_ITEMS,
   ADMIN_ITEMS,
   handleMenuItemNavigation,
@@ -215,6 +216,9 @@ export default function HomeScreen() {
   const dataInputItems = DATA_INPUT_ITEMS.filter((item) =>
     canAccessMenuItem(user?.role_name, item.id),
   );
+  const plDataItems = PL_DATA_ITEMS.filter((item) =>
+    canAccessMenuItem(user?.role_name, item.id),
+  );
   const masterMaintenanceItems = MASTER_MAINTENANCE_ITEMS.filter((item) =>
     canAccessMenuItem(user?.role_name, item.id),
   );
@@ -227,6 +231,28 @@ export default function HomeScreen() {
     return (
       <StyledGridContainer container spacing={2}>
         {dataInputItems.map((item: MenuItemType) => {
+          const IconComponent = item.icon;
+          return (
+            <Grid key={item.id}>
+              <StyledMenuCard onClick={() => handleMenuItemClick(item)}>
+                <StyledIconBox>
+                  {IconComponent && <IconComponent />}
+                </StyledIconBox>
+                <StyledCardLabel variant="body2">
+                  {t(item.label)}
+                </StyledCardLabel>
+              </StyledMenuCard>
+            </Grid>
+          );
+        })}
+      </StyledGridContainer>
+    );
+  };
+
+  const renderPlDataCards = () => {
+    return (
+      <StyledGridContainer container spacing={2}>
+        {plDataItems.map((item: MenuItemType) => {
           const IconComponent = item.icon;
           return (
             <Grid key={item.id}>
@@ -322,19 +348,35 @@ export default function HomeScreen() {
       )}
 
       <StyledTwoColumnBox>
-        {dataInputItems.length > 0 && (
+        {(dataInputItems.length > 0 || plDataItems.length > 0) && (
           <StyledSectionBox>
-            <StyledSectionHeaderBox>
-              <StyledSectionTitle variant="h6">
-                {t("home.dataInput")}
-              </StyledSectionTitle>
-              <StyledSectionAccent />
-            </StyledSectionHeaderBox>
-            <StyledScrollBox>{renderDataInputCards()}</StyledScrollBox>
+            {dataInputItems.length > 0 && (
+              <>
+                <StyledSectionHeaderBox>
+                  <StyledSectionTitle variant="h6">
+                    {t("home.dataInput")}
+                  </StyledSectionTitle>
+                  <StyledSectionAccent />
+                </StyledSectionHeaderBox>
+                <StyledScrollBox>{renderDataInputCards()}</StyledScrollBox>
+              </>
+            )}
+
+            {plDataItems.length > 0 && (
+              <>
+                <StyledSectionHeaderBox sx={{ mt: dataInputItems.length > 0 ? 3 : 0 }}>
+                  <StyledSectionTitle variant="h6">
+                    {t("home.plDataSection")}
+                  </StyledSectionTitle>
+                  <StyledSectionAccent />
+                </StyledSectionHeaderBox>
+                <Box>{renderPlDataCards()}</Box>
+              </>
+            )}
           </StyledSectionBox>
         )}
 
-        {dataInputItems.length > 0 && masterMaintenanceItems.length > 0 && (
+        {(dataInputItems.length > 0 || plDataItems.length > 0) && masterMaintenanceItems.length > 0 && (
           <StyledDivider />
         )}
 

@@ -15,6 +15,7 @@ import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import InputIcon from "@mui/icons-material/Input";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
@@ -62,6 +63,10 @@ export const DATA_INPUT_ITEMS: MenuItem[] = [
     label: "home.planningDataIngestion",
     icon: ScheduleIcon,
   },
+];
+
+// Centralized P&L Data Items - used across all screens
+export const PL_DATA_ITEMS: MenuItem[] = [
   {
     id: "stravis-coa-hierarchy-upload",
     label: "home.stravisCoaHierarchyUpload",
@@ -140,6 +145,7 @@ export const createMenuSections = (
   adminExpanded: boolean,
   showAdmin: boolean,
   roleName?: string | null,
+  plDataExpanded?: boolean,
 ): MenuSection[] => {
   const toTranslatedItems = (items: MenuItem[]) =>
     items
@@ -166,6 +172,13 @@ export const createMenuSections = (
       expanded: dataInputExpanded,
     },
     {
+      id: "pl-data",
+      label: t("home.plDataSection"),
+      icon: AssessmentIcon,
+      items: toTranslatedItems(PL_DATA_ITEMS),
+      expanded: plDataExpanded ?? false,
+    },
+    {
       id: "master-maintenance",
       label: t("home.masterMaintenance"),
       icon: StorageIcon,
@@ -181,7 +194,7 @@ export const createMenuSections = (
 // the CSV viewer). Route guards use this so role-based menu gating only applies
 // to actual menu screens.
 const ALL_MENU_ITEM_IDS = new Set(
-  [...DATA_INPUT_ITEMS, ...MASTER_MAINTENANCE_ITEMS, ...ADMIN_ITEMS].map(
+  [...DATA_INPUT_ITEMS, ...PL_DATA_ITEMS, ...MASTER_MAINTENANCE_ITEMS, ...ADMIN_ITEMS].map(
     (item) => item.id,
   ),
 );
@@ -196,14 +209,17 @@ export function getInitialSidebarExpanded(screenId: string): {
   dataInputExpanded: boolean;
   masterMaintenanceExpanded: boolean;
   adminExpanded: boolean;
+  plDataExpanded: boolean;
 } {
   const isDataInput = DATA_INPUT_ITEMS.some((i) => i.id === screenId);
   const isMasterMaintenance = MASTER_MAINTENANCE_ITEMS.some((i) => i.id === screenId);
   const isAdmin = ADMIN_ITEMS.some((i) => i.id === screenId);
+  const isPlData = PL_DATA_ITEMS.some((i) => i.id === screenId);
   return {
     dataInputExpanded: isDataInput,
     masterMaintenanceExpanded: isMasterMaintenance,
     adminExpanded: isAdmin,
+    plDataExpanded: isPlData,
   };
 }
 

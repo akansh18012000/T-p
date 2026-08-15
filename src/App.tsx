@@ -91,6 +91,8 @@ function ConditionalLayout() {
     setMasterMaintenanceExpanded,
     adminExpanded,
     setAdminExpanded,
+    plDataExpanded,
+    setPlDataExpanded,
     currentScreenId,
   } = useSidebar();
 
@@ -130,6 +132,7 @@ function ConditionalLayout() {
     adminExpanded,
     userIsItAdmin,
     user?.role_name,
+    plDataExpanded,
   );
 
   const handleSectionToggle = (sectionId: string) => {
@@ -139,6 +142,8 @@ function ConditionalLayout() {
       setMasterMaintenanceExpanded(!masterMaintenanceExpanded);
     } else if (sectionId === "admin-pages") {
       setAdminExpanded(!adminExpanded);
+    } else if (sectionId === "pl-data") {
+      setPlDataExpanded(!plDataExpanded);
     }
   };
 
