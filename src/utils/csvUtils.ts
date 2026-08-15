@@ -83,6 +83,60 @@ export interface DecodedFile {
   encoding: string;
 }
 
+// Windows-1252 (CP1252) mapping for the 0x80–0x9F range that diverges from Latin-1.
+// Values are the corresponding Unicode code points.
+const CP1252_TABLE: Record<number, number> = {
+  0x80: 0x20ac, 0x81: 0x0081, 0x82: 0x201a, 0x83: 0x0192,
+  0x84: 0x201e, 0x85: 0x2026, 0x86: 0x2020, 0x87: 0x2021,
+  0x88: 0x02c6, 0x89: 0x2030, 0x8a: 0x0160, 0x8b: 0x2039,
+  0x8c: 0x0152, 0x8d: 0x008d, 0x8e: 0x017d, 0x8f: 0x008f,
+  0x90: 0x0090, 0x91: 0x2018, 0x92: 0x2019, 0x93: 0x201c,
+  0x94: 0x201d, 0x95: 0x2022, 0x96: 0x2013, 0x97: 0x2014,
+  0x98: 0x02dc, 0x99: 0x2122, 0x9a: 0x0161, 0x9b: 0x203a,
+  0x9c: 0x0153, 0x9d: 0x009d, 0x9e: 0x017e, 0x9f: 0x0178,
+};
+
+// Reverse map: Unicode code point → CP1252 byte (covers 0x80–0x9F range above
+// plus the Latin-1 supplement 0xA0–0xFF which maps identically).
+const CP1252_REVERSE = new Map<number, number>(
+  Object.entries(CP1252_TABLE).map(([k, v]) => [v, Number(k)])
+);
+
+// A UTF-8 file decoded to a JS string should never contain C1 control characters
+// (U+0080–U+009F) in real human-readable text. Their presence is a reliable
+// indicator that the file's bytes were Shift-JIS but were mistakenly treated as
+// Windows-1252 before being saved as UTF-8 ("Mojibake").
+function looksLikeCP1252Mojibake(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const cp = text.charCodeAt(i);
+    if (cp >= 0x0080 && cp <= 0x009f) return true;
+  }
+  return false;
+}
+
+// Reverse a Shift-JIS → CP1252 → UTF-8 Mojibake chain:
+//   1. Map each Unicode code point back to its CP1252 byte value.
+//   2. Decode the resulting byte array as Shift-JIS.
+function reverseMojibake(text: string, Encoding: any): string {
+  const rawBytes: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const cp = text.charCodeAt(i);
+    if (cp < 0x80) {
+      rawBytes.push(cp);
+    } else if (CP1252_REVERSE.has(cp)) {
+      rawBytes.push(CP1252_REVERSE.get(cp)!);
+    } else if (cp >= 0x00a0 && cp <= 0x00ff) {
+      rawBytes.push(cp); // Latin-1 supplement: byte value equals code point
+    }
+    // Characters outside these ranges don't appear in valid Mojibake; skip them.
+  }
+  const unicodeArray = Encoding.convert(new Uint8Array(rawBytes), {
+    to: 'UNICODE',
+    from: 'SJIS',
+  });
+  return Encoding.codeToString(unicodeArray);
+}
+
 /**
  * Read a file and decode it to text, detecting its character encoding first.
  *
@@ -93,6 +147,11 @@ export interface DecodedFile {
  * which it assigns to UTF-16-like byte patterns that can occur in Shift-JIS
  * files and causes incorrect decoding. UTF-16 files with a real BOM are still
  * handled via the 'UTF16' candidate.
+ *
+ * Also handles the CP1252 Mojibake pattern: files originally in Shift-JIS that
+ * were accidentally decoded as Windows-1252 and re-saved as UTF-8. These are
+ * detected by the presence of C1 control characters (U+0080–U+009F) in the
+ * UTF-8 decoded text, which should never appear in genuine human-readable text.
  */
 export async function readFileWithDetectedEncoding(
   file: Blob,
@@ -109,6 +168,14 @@ export async function readFileWithDetectedEncoding(
   // encoding-japanese handles BOM stripping and all JIS/CP932 variants.
   const unicodeArray = Encoding.convert(bytes, { to: 'UNICODE', from: encoding });
   const text = Encoding.codeToString(unicodeArray);
+
+  // Detect and repair CP1252 Mojibake: Shift-JIS bytes that were mistakenly
+  // decoded as Windows-1252 and then saved as UTF-8. Strip the BOM character
+  // (U+FEFF) before the reversal so it doesn't interfere.
+  if (encoding === 'UTF8' && looksLikeCP1252Mojibake(text)) {
+    const fixed = reverseMojibake(text.replace(/^﻿/, ''), Encoding);
+    return { text: fixed, encoding: 'SJIS' };
+  }
 
   return { text, encoding };
 }
@@ -429,7 +496,7 @@ export function searchCsvData(
  * @param filename - Filename for download
  * @returns Blob object ready for download
  */
-export function csvToBlob(csvData: CsvData, filename?: string): Blob {
+export function csvToBlob(csvData: CsvData, _filename?: string): Blob {
   const csvString = stringifyCsv(csvData);
   
   // Add BOM for proper Unicode handling in Excel and other applications
