@@ -170,12 +170,6 @@ const StyledMainPaper = styled(Paper)(({ theme }) => ({
   marginRight: "auto",
 }));
 
-const StyledBottomActionBox = styled(Box)(({ theme }) => ({
-  display: "flex",
-  justifyContent: "flex-end",
-  marginTop: theme.spacing(3),
-}));
-
 // Horizontal separator with vertical spacing, used between the info boxes,
 // the download button and the upload zone.
 const StyledSectionDivider = styled(Divider)(({ theme }) => ({
@@ -753,6 +747,14 @@ export default function StravisCoaHierarchyUploadScreen() {
                           </StyledFileSizeText>
                         </Box>
                       </StyledFileInfoInner>
+                      <StyledUploadButton
+                        variant="contained"
+                        size="small"
+                        onClick={handleUploadClick}
+                        disabled={uploading /* || hasInvalidFileType (disabled) */}
+                      >
+                        {t("upload.upload")}
+                      </StyledUploadButton>
                       {isCsvFile(entry.file.name) && (
                         <StyledViewButton
                           variant="outlined"
@@ -787,19 +789,6 @@ export default function StravisCoaHierarchyUploadScreen() {
                   </StyledSelectedFileBox>
                 );
               })}
-
-              {/* Single Upload button for the whole batch, bottom-right. */}
-              {fileUploads.length > 0 && (
-                <StyledBottomActionBox>
-                  <StyledUploadButton
-                    variant="contained"
-                    onClick={handleUploadClick}
-                    disabled={uploading /* || hasInvalidFileType (disabled) */}
-                  >
-                    {t("upload.upload")}
-                  </StyledUploadButton>
-                </StyledBottomActionBox>
-              )}
             </StyledUploadFlexBox>
           </StyledUploadSectionBox>
         </StyledContentBox>
