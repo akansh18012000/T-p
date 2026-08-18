@@ -73,8 +73,11 @@ import {
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
 
-// Stravis COA upload supports the 7 COA file types in a single batch.
-const MAX_UPLOAD_FILES = 7;
+// Stravis COA upload supports the 7 COA file types in a single batch —
+// DISABLED (commented out, kept for reference): only 1 file is now allowed
+// per upload, similar to the Adjustment Sales Detail screen.
+// const MAX_UPLOAD_FILES = 7;
+const MAX_UPLOAD_FILES = 1;
 const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
 const COA_HIERARCHY_DOWNLOAD_FILE_NAME = "Stravis_COA_Hierarchy_Data.csv";
 
@@ -185,8 +188,15 @@ export default function StravisCoaHierarchyUploadScreen() {
   const location = useLocation();
   const { t } = useTranslation();
   const screenKey = location.pathname;
-  const { getUploadState, addEntries, removeEntry, setEntries } =
-    useUploadContext();
+  const {
+    getUploadState,
+    removeEntry,
+    setEntries,
+    // addEntries — DISABLED (commented out, kept for reference): file
+    // selection now replaces the queue via setEntries instead of appending
+    // via addEntries, since only 1 file is allowed.
+    // addEntries,
+  } = useUploadContext();
 
   const fileUploads = getUploadState(screenKey).entries;
 
@@ -262,14 +272,17 @@ export default function StravisCoaHierarchyUploadScreen() {
       }
       return;
     }
-    if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
-      showSnackbar(
-        t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
-        "error",
-        true,
-      );
-      return;
-    }
+    // Multi-file batching (up to MAX_UPLOAD_FILES) — DISABLED (commented
+    // out, kept for reference): only 1 file is allowed now, so a new
+    // selection replaces the queue below instead of being capped/appended.
+    // if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
+    //   showSnackbar(
+    //     t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
+    //     "error",
+    //     true,
+    //   );
+    //   return;
+    // }
 
     // File name validation (part 2 — duplicate COA type check) — DISABLED
     // (commented out, kept for reference):
@@ -281,41 +294,52 @@ export default function StravisCoaHierarchyUploadScreen() {
     //   const ft = getCoaFileType(entry.file.name);
     //   if (ft) takenTypeToName.set(ft, entry.file.name);
     // }
+    //
+    // const accepted: UploadEntry[] = [];
+    // for (const file of csvFiles) {
+    //   // Re-validate the incoming file's name against the recognized COA
+    //   // suffixes. A recognized type that's already taken by another queued
+    //   // file is rejected outright (with the name of the conflicting file);
+    //   // an unrecognized type falls through and is still queued below so its
+    //   // row can show the rename info box.
+    //   const ft = getCoaFileType(file.name);
+    //   if (ft) {
+    //     const existingName = takenTypeToName.get(ft);
+    //     if (existingName) {
+    //       showSnackbar(
+    //         t("stravisCoaHierarchyUpload.duplicateFileType", {
+    //           type: ft,
+    //           file: existingName,
+    //         }),
+    //         "error",
+    //         true,
+    //       );
+    //       continue;
+    //     }
+    //     takenTypeToName.set(ft, file.name);
+    //   }
+    //   // Files with an unrecognized type are still added so the row can show
+    //   // a rename info box; they keep the Upload button disabled until
+    //   // renamed.
+    //   accepted.push({
+    //     id: `${Date.now()}-${Math.random()}`,
+    //     file,
+    //     uploadedAt: new Date(),
+    //     uploadStatus: "pending" as const,
+    //   });
+    // }
+    // if (accepted.length > 0) addEntries(screenKey, accepted);
 
-    const accepted: UploadEntry[] = [];
-    for (const file of csvFiles) {
-      // Re-validate the incoming file's name against the recognized COA
-      // suffixes. A recognized type that's already taken by another queued
-      // file is rejected outright (with the name of the conflicting file);
-      // an unrecognized type falls through and is still queued below so its
-      // row can show the rename info box.
-      //
-      // const ft = getCoaFileType(file.name);
-      // if (ft) {
-      //   const existingName = takenTypeToName.get(ft);
-      //   if (existingName) {
-      //     showSnackbar(
-      //       t("stravisCoaHierarchyUpload.duplicateFileType", {
-      //         type: ft,
-      //         file: existingName,
-      //       }),
-      //       "error",
-      //       true,
-      //     );
-      //     continue;
-      //   }
-      //   takenTypeToName.set(ft, file.name);
-      // }
-      // Files with an unrecognized type are still added so the row can show a
-      // rename info box; they keep the Upload button disabled until renamed.
-      accepted.push({
-        id: `${Date.now()}-${Math.random()}`,
-        file,
-        uploadedAt: new Date(),
-        uploadStatus: "pending" as const,
-      });
-    }
-    if (accepted.length > 0) addEntries(screenKey, accepted);
+    // Only 1 file is allowed: keep just the first selected/dropped CSV file,
+    // replacing whatever was already queued (mirrors Adjustment Sales
+    // Detail's single-file behavior).
+    const newEntry: UploadEntry = {
+      id: `${Date.now()}-${Math.random()}`,
+      file: csvFiles[0],
+      uploadedAt: new Date(),
+      uploadStatus: "pending" as const,
+    };
+    setEntries(screenKey, [newEntry]);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -671,7 +695,9 @@ export default function StravisCoaHierarchyUploadScreen() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  multiple
+                  // `multiple` — DISABLED (commented out, kept for
+                  // reference): only 1 file is now allowed per upload.
+                  // multiple
                   accept=".csv"
                   onChange={handleFileSelect}
                   style={{ display: "none" }}
