@@ -517,9 +517,9 @@ function LocalItemConversionMasterScreen() {
   };
 
   // Upload file state (selectedFile from context)
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading">(
-    "idle",
-  );
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "decoding" | "uploading"
+  >("idle");
   const [dragActive, setDragActive] = useState(false);
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1018,7 +1018,7 @@ function LocalItemConversionMasterScreen() {
 
   const handleUploadClick = async () => {
     if (!selectedFile) return;
-    setUploadStatus("uploading");
+    setUploadStatus("decoding");
 
     let parsed: CsvData;
     try {
@@ -1041,11 +1041,30 @@ function LocalItemConversionMasterScreen() {
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
-      const missing =
-        enValidation.missingColumns.length <=
-        jaValidation.missingColumns.length
-          ? enValidation.missingColumns
-          : jaValidation.missingColumns;
+      // Determine which template the file most closely matched (fewest missing
+      // columns), then map the missing column indices to the site's current UI
+      // language so the error always reads in the language the user sees.
+      const fileIsCloserToJa =
+        jaValidation.missingColumns.length < enValidation.missingColumns.length;
+      const closerTemplate = fileIsCloserToJa
+        ? LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA
+        : LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
+      const closerMissing = fileIsCloserToJa
+        ? jaValidation.missingColumns
+        : enValidation.missingColumns;
+      // Both header arrays are parallel; look up each missing column's index in
+      // the matched template and return the name at that index from the UI template.
+      const uiTemplate = i18n.language.startsWith("ja")
+        ? LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA
+        : LOCAL_ITEM_CONVERSION_MASTER_HEADERS;
+      const normalizeH = (s: string) =>
+        s.replace(/^﻿/, "").trim().normalize("NFKC").toLowerCase();
+      const missing = closerMissing.map((mc) => {
+        const idx = closerTemplate.findIndex(
+          (h) => normalizeH(h) === normalizeH(mc),
+        );
+        return idx >= 0 ? uiTemplate[idx] : mc;
+      });
       showSnackbar(
         t("localItemConversion.missingColumnsError", {
           columns: missing.join(", "),
@@ -1074,6 +1093,7 @@ function LocalItemConversionMasterScreen() {
       return;
     }
 
+    setUploadStatus("uploading");
     try {
       const formData = new FormData();
       formData.append("requested_by", SEARCH_USER_ID);
@@ -1976,7 +1996,7 @@ function LocalItemConversionMasterScreen() {
                       variant="contained"
                       size="small"
                       onClick={handleUploadClick}
-                      disabled={uploadStatus === "uploading"}
+                      disabled={uploadStatus !== "idle"}
                     >
                       {t("localItemConversion.upload")}
                     </StyledUploadButton>
@@ -1992,7 +2012,7 @@ function LocalItemConversionMasterScreen() {
                           t("home.localItemConversionMaster"),
                         )
                       }
-                      disabled={!selectedFile || uploadStatus === "uploading"}
+                      disabled={!selectedFile || uploadStatus !== "idle"}
                     >
                       {t("upload.view")}
                     </StyledViewButton>
@@ -2001,7 +2021,7 @@ function LocalItemConversionMasterScreen() {
                       size="small"
                       startIcon={<CloseIcon />}
                       onClick={handleUploadCancel}
-                      disabled={uploadStatus === "uploading"}
+                      disabled={uploadStatus !== "idle"}
                     >
                       {t("localItemConversion.cancelUpload")}
                     </StyledCancelUploadButton>
@@ -2037,8 +2057,15 @@ function LocalItemConversionMasterScreen() {
         />
       )}
 
-      {uploadStatus === "uploading" && (
-        <ResultsLoader fullScreen label={t("upload.uploading")} />
+      {(uploadStatus === "decoding" || uploadStatus !== "idle") && (
+        <ResultsLoader
+          fullScreen
+          label={
+            uploadStatus === "decoding"
+              ? t("upload.decoding")
+              : t("upload.uploading")
+          }
+        />
       )}
     </>
   );

@@ -4,6 +4,8 @@ const MANUFACTURER_CODES_API_URL =
   "/api/v1/databricks/get_manufacturer_codes";
 const MANUFACTURER_PART_NUMBERS_API_URL =
   "/api/v1/databricks/get_manufacture_part_numbers";
+const STD_COST_MANUFACTURER_CODES_API_URL =
+  "/api/v1/std-cost-combined/get_manufacturer_codes";
 
 interface ManufacturerCodeApiRow {
   manufacturer_code: string;
@@ -21,7 +23,10 @@ interface ManufacturerDataContextValue {
   manufacturerNameMap: Record<string, string>;
   manufacturerPartNumberOptions: string[];
   status: ManufacturerDataStatus;
-  ensureLoaded: () => void;
+  // Status of the opt-in std-cost manufacturer names fetch (see ensureLoaded).
+  // Stays "idle" for callers that never pass includeStdCostManufacturerNames.
+  stdCostManufacturerNamesStatus: ManufacturerDataStatus;
+  ensureLoaded: (includeStdCostManufacturerNames?: boolean) => void;
 }
 
 const ManufacturerDataContext =
@@ -40,85 +45,134 @@ export function ManufacturerDataProvider({
     useState<string[]>([]);
   const [status, setStatus] = useState<ManufacturerDataStatus>("idle");
 
+  // Opt-in override: screens that need it pass includeStdCostManufacturerNames
+  // to ensureLoaded, which additionally fetches
+  // /std-cost-combined/get_manufacturer_codes. Codes always come from the
+  // shared manufacturerOptions list above; this fetch only ever overrides the
+  // *names* in manufacturerNameMap for codes present in both responses.
+  const [stdCostManufacturerNames, setStdCostManufacturerNames] = useState<
+    Record<string, string>
+  >({});
+  const [stdCostManufacturerNamesStatus, setStdCostManufacturerNamesStatus] =
+    useState<ManufacturerDataStatus>("idle");
+
   const statusRef = useRef<ManufacturerDataStatus>(status);
   statusRef.current = status;
+  const stdCostStatusRef = useRef<ManufacturerDataStatus>(
+    stdCostManufacturerNamesStatus,
+  );
+  stdCostStatusRef.current = stdCostManufacturerNamesStatus;
 
-  const ensureLoadedRef = useRef<(() => void) | null>(null);
+  const ensureLoadedRef = useRef<
+    ((includeStdCostManufacturerNames?: boolean) => void) | null
+  >(null);
   if (ensureLoadedRef.current === null) {
-    ensureLoadedRef.current = () => {
-      if (
-        statusRef.current === "loading" ||
-        statusRef.current === "loaded"
-      ) {
-        return;
+    ensureLoadedRef.current = (includeStdCostManufacturerNames = false) => {
+      if (statusRef.current === "idle") {
+        statusRef.current = "loading";
+        setStatus("loading");
+
+        void (async () => {
+          try {
+            const [codesRes, partNumbersRes] = await Promise.all([
+              fetch(MANUFACTURER_CODES_API_URL),
+              fetch(MANUFACTURER_PART_NUMBERS_API_URL),
+            ]);
+            if (!codesRes.ok) {
+              throw new Error(`Manufacturer codes HTTP ${codesRes.status}`);
+            }
+            if (!partNumbersRes.ok) {
+              throw new Error(
+                `Manufacturer part numbers HTTP ${partNumbersRes.status}`,
+              );
+            }
+            const [codesJson, partNumbersJson] = (await Promise.all([
+              codesRes.json(),
+              partNumbersRes.json(),
+            ])) as [ManufacturerCodeApiRow[], ManufacturerPartNumberApiRow[]];
+
+            const codeRows = Array.isArray(codesJson) ? codesJson : [];
+            const manufacturers: string[] = [];
+            const nameMap: Record<string, string> = {};
+            for (const r of codeRows) {
+              if (!r.manufacturer_code) continue;
+              if (!(r.manufacturer_code in nameMap)) {
+                manufacturers.push(r.manufacturer_code);
+                nameMap[r.manufacturer_code] = r.manufacturer_name || "";
+              }
+            }
+
+            const partRows = Array.isArray(partNumbersJson)
+              ? partNumbersJson
+              : [];
+            const partNumbers: string[] = [];
+            const partSeen = new Set<string>();
+            for (const r of partRows) {
+              if (
+                r.manufacture_part_number &&
+                !partSeen.has(r.manufacture_part_number)
+              ) {
+                partSeen.add(r.manufacture_part_number);
+                partNumbers.push(r.manufacture_part_number);
+              }
+            }
+
+            setManufacturerOptions(manufacturers);
+            setManufacturerNameMap(nameMap);
+            setManufacturerPartNumberOptions(partNumbers);
+            statusRef.current = "loaded";
+            setStatus("loaded");
+          } catch (e) {
+            console.error("Failed to load manufacturer data:", e);
+            statusRef.current = "error";
+            setStatus("error");
+          }
+        })();
       }
-      statusRef.current = "loading";
-      setStatus("loading");
 
-      void (async () => {
-        try {
-          const [codesRes, partNumbersRes] = await Promise.all([
-            fetch(MANUFACTURER_CODES_API_URL),
-            fetch(MANUFACTURER_PART_NUMBERS_API_URL),
-          ]);
-          if (!codesRes.ok) {
-            throw new Error(`Manufacturer codes HTTP ${codesRes.status}`);
-          }
-          if (!partNumbersRes.ok) {
-            throw new Error(
-              `Manufacturer part numbers HTTP ${partNumbersRes.status}`,
-            );
-          }
-          const [codesJson, partNumbersJson] = (await Promise.all([
-            codesRes.json(),
-            partNumbersRes.json(),
-          ])) as [ManufacturerCodeApiRow[], ManufacturerPartNumberApiRow[]];
+      if (
+        includeStdCostManufacturerNames &&
+        stdCostStatusRef.current === "idle"
+      ) {
+        stdCostStatusRef.current = "loading";
+        setStdCostManufacturerNamesStatus("loading");
 
-          const codeRows = Array.isArray(codesJson) ? codesJson : [];
-          const manufacturers: string[] = [];
-          const nameMap: Record<string, string> = {};
-          for (const r of codeRows) {
-            if (!r.manufacturer_code) continue;
-            if (!(r.manufacturer_code in nameMap)) {
-              manufacturers.push(r.manufacturer_code);
+        void (async () => {
+          try {
+            const res = await fetch(STD_COST_MANUFACTURER_CODES_API_URL);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = (await res.json()) as ManufacturerCodeApiRow[];
+            const nameMap: Record<string, string> = {};
+            for (const r of Array.isArray(data) ? data : []) {
+              if (!r.manufacturer_code) continue;
               nameMap[r.manufacturer_code] = r.manufacturer_name || "";
             }
+            setStdCostManufacturerNames(nameMap);
+            stdCostStatusRef.current = "loaded";
+            setStdCostManufacturerNamesStatus("loaded");
+          } catch (e) {
+            console.error("Failed to load std cost manufacturer codes:", e);
+            stdCostStatusRef.current = "error";
+            setStdCostManufacturerNamesStatus("error");
           }
-
-          const partRows = Array.isArray(partNumbersJson)
-            ? partNumbersJson
-            : [];
-          const partNumbers: string[] = [];
-          const partSeen = new Set<string>();
-          for (const r of partRows) {
-            if (
-              r.manufacture_part_number &&
-              !partSeen.has(r.manufacture_part_number)
-            ) {
-              partSeen.add(r.manufacture_part_number);
-              partNumbers.push(r.manufacture_part_number);
-            }
-          }
-
-          setManufacturerOptions(manufacturers);
-          setManufacturerNameMap(nameMap);
-          setManufacturerPartNumberOptions(partNumbers);
-          statusRef.current = "loaded";
-          setStatus("loaded");
-        } catch (e) {
-          console.error("Failed to load manufacturer data:", e);
-          statusRef.current = "error";
-          setStatus("error");
-        }
-      })();
+        })();
+      }
     };
   }
 
+  // Names from the std-cost fetch (if it ran) take precedence over the shared
+  // list's names for any code present in both.
+  const mergedManufacturerNameMap =
+    Object.keys(stdCostManufacturerNames).length > 0
+      ? { ...manufacturerNameMap, ...stdCostManufacturerNames }
+      : manufacturerNameMap;
+
   const value: ManufacturerDataContextValue = {
     manufacturerOptions,
-    manufacturerNameMap,
+    manufacturerNameMap: mergedManufacturerNameMap,
     manufacturerPartNumberOptions,
     status,
+    stdCostManufacturerNamesStatus,
     ensureLoaded: ensureLoadedRef.current,
   };
 
