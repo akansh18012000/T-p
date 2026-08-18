@@ -348,6 +348,13 @@ const StyledSnackbarAlert = styled(Alert)({
 const DEFAULT_CSV_HEADERS = STANDARD_COST_MASTER_HEADERS;
 
 const STANDARD_COST_SEARCH_API_URL = "/api/v1/std-cost-combined/search";
+const STD_COST_MANUFACTURER_CODES_API_URL =
+  "/api/v1/std-cost-combined/get_manufacturer_codes";
+
+interface StdCostManufacturerCodeApiRow {
+  manufacturer_code: string;
+  manufacturer_name: string;
+}
 
 // TODO: source these from the authenticated session once auth is wired up.
 const SEARCH_USER_ID = "9363e503-3d7c-4200-9702-e2445866c4c2";
@@ -524,8 +531,52 @@ export default function StandardCostMasterScreen() {
     status: manufacturerDataStatus,
     ensureLoaded: ensureManufacturerData,
   } = useManufacturerData();
-  const manufacturersLoading = manufacturerDataStatus === "loading";
+  // Screen-specific manufacturer codes/names, fetched alongside the shared
+  // context data. Names from this response take precedence over the shared
+  // context's names for any code present in both (see mergedManufacturerNameMap).
+  const [stdCostManufacturerNameMap, setStdCostManufacturerNameMap] = useState<
+    Record<string, string>
+  >({});
+  const [stdCostManufacturerCodesStatus, setStdCostManufacturerCodesStatus] =
+    useState<"idle" | "loading" | "loaded" | "error">("idle");
+  const stdCostManufacturerCodesFetchedRef = useRef(false);
+
+  useEffect(() => {
+    // Guard against React StrictMode's double-invoke in development.
+    if (stdCostManufacturerCodesFetchedRef.current) return;
+    stdCostManufacturerCodesFetchedRef.current = true;
+    setStdCostManufacturerCodesStatus("loading");
+    (async () => {
+      try {
+        const response = await fetch(STD_COST_MANUFACTURER_CODES_API_URL);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data =
+          (await response.json()) as StdCostManufacturerCodeApiRow[];
+        const nameMap: Record<string, string> = {};
+        for (const r of Array.isArray(data) ? data : []) {
+          if (!r.manufacturer_code) continue;
+          nameMap[r.manufacturer_code] = r.manufacturer_name || "";
+        }
+        setStdCostManufacturerNameMap(nameMap);
+        setStdCostManufacturerCodesStatus("loaded");
+      } catch (e) {
+        console.error("Failed to load std cost manufacturer codes:", e);
+        setStdCostManufacturerCodesStatus("error");
+      }
+    })();
+  }, []);
+
+  const manufacturersLoading =
+    manufacturerDataStatus === "loading" ||
+    stdCostManufacturerCodesStatus === "loading";
   const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
+
+  // Codes always come from the shared context list; names from the std-cost
+  // API override the context's names when a code appears in both responses.
+  const mergedManufacturerNameMap: Record<string, string> = {
+    ...manufacturerNameMap,
+    ...stdCostManufacturerNameMap,
+  };
 
   // Location codes/names come from the shared context as well.
   const {
@@ -1074,7 +1125,7 @@ export default function StandardCostMasterScreen() {
       if (assocColIndex !== -1) {
         let assocValue = "";
         if (colConfig.key === "manufacturer") {
-          assocValue = manufacturerNameMap[value] || "";
+          assocValue = mergedManufacturerNameMap[value] || "";
         } else if (colConfig.key === "locationCode") {
           assocValue = locationNameMap[value] || "";
         } else if (colConfig.key === "corporateCode") {
@@ -1410,7 +1461,7 @@ export default function StandardCostMasterScreen() {
                       const v = newValue ?? "";
                       setManufacturer(v);
                       setManufacturerSearchInput(v);
-                      setManufacturerName(manufacturerNameMap[v] || "");
+                      setManufacturerName(mergedManufacturerNameMap[v] || "");
                     }}
                     freeSolo
                     openOnFocus
