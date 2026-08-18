@@ -510,7 +510,7 @@
     "selectFileType": "ファイル種別を選択",
     "success": "ファイルが正常にアップロードされました！",
     "templateInfo": "7種類すべてのCOAアップロードに使用できるテンプレートファイルを用意しています。ファイルをアップロードする際は、テンプレートから列を削除しないでください。",
-    "downloadTemplate": "テンプレートCSVをダウンロード",
+    "downloadCoaData": "COA階層データをダウンロード",
     "fileNameFormatHint": "ファイル名はファイル種別で終わる必要があります。例: PBI_STRAVIS_ACCOUNT_FA_BS.csv",
     "cancelUpload": "アップロードをキャンセル",
     "invalidFileTypeInfo": "このファイル名は有効なCOAファイル種別で終わっていません。アップロードする前に、FA_BS、FA_INC、FA_MEMO、FA_PL、MA_PL、MA_MEMO、MA_BS のいずれかで終わるように名前を変更してください（例: PBI_STRAVIS_ACCOUNT_FA_BS.csv）。",

@@ -75,27 +75,87 @@ import {
 
 // Stravis COA upload supports the 7 COA file types in a single batch.
 const MAX_UPLOAD_FILES = 7;
-const STRAVIS_COA_TEMPLATE_FILE = "PBI_STRAVIS_ACCOUNT_Template.csv";
+const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
+const COA_HIERARCHY_DOWNLOAD_FILE_NAME = "Stravis_COA_Hierarchy_Data.csv";
 
-// A file name (before its extension) must end with one of these COA file
-// types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
-const COA_FILE_TYPES = [
-  "FA_BS",
-  "FA_INC",
-  "FA_MEMO",
-  "FA_PL",
-  "MA_PL",
-  "MA_MEMO",
-  "MA_BS",
-] as const;
-type CoaFileType = (typeof COA_FILE_TYPES)[number];
+// Column validation used to be driven by a downloaded template file instead
+// of the hardcoded COA_HIERARCHY_TEMPLATE_COLUMNS list below — DISABLED
+// (commented out, kept for reference):
+// const STRAVIS_COA_TEMPLATE_FILE = "PBI_STRAVIS_ACCOUNT_Template.csv";
 
-// Returns the COA file type the file name ends with (ignoring the extension),
-// or null when it doesn't end with any recognized type.
-function getCoaFileType(fileName: string): CoaFileType | null {
-  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
-  return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
-}
+// Expected columns for every uploaded COA file, checked in handleUploadClick.
+const COA_HIERARCHY_TEMPLATE_COLUMNS = [
+  "ACCOUNT_LV1_CODE",
+  "ACCOUNT_LV1_NAME_JP",
+  "ACCOUNT_LV1_NAME_EN",
+  "ACCOUNT_LV1_SHORT_NAME_JP",
+  "ACCOUNT_LV1_SHORT_NAME_EN",
+  "ACCOUNT_LV1_SORT_ORDER",
+  "ACCOUNT_LV2_CODE",
+  "ACCOUNT_LV2_NAME_JP",
+  "ACCOUNT_LV2_NAME_EN",
+  "ACCOUNT_LV2_SHORT_NAME_JP",
+  "ACCOUNT_LV2_SHORT_NAME_EN",
+  "ACCOUNT_LV2_SORT_ORDER",
+  "ACCOUNT_LV3_CODE",
+  "ACCOUNT_LV3_NAME_JP",
+  "ACCOUNT_LV3_NAME_EN",
+  "ACCOUNT_LV3_SHORT_NAME_JP",
+  "ACCOUNT_LV3_SHORT_NAME_EN",
+  "ACCOUNT_LV3_SORT_ORDER",
+  "ACCOUNT_LV4_CODE",
+  "ACCOUNT_LV4_NAME_JP",
+  "ACCOUNT_LV4_NAME_EN",
+  "ACCOUNT_LV4_SHORT_NAME_JP",
+  "ACCOUNT_LV4_SHORT_NAME_EN",
+  "ACCOUNT_LV4_SORT_ORDER",
+  "ACCOUNT_LV5_CODE",
+  "ACCOUNT_LV5_NAME_JP",
+  "ACCOUNT_LV5_NAME_EN",
+  "ACCOUNT_LV5_SHORT_NAME_JP",
+  "ACCOUNT_LV5_SHORT_NAME_EN",
+  "ACCOUNT_LV6_CODE",
+  "ACCOUNT_LV6_NAME_JP",
+  "ACCOUNT_LV6_NAME_EN",
+  "ACCOUNT_LV6_SHORT_NAME_JP",
+  "ACCOUNT_LV6_SHORT_NAME_EN",
+  "ACCOUNT_LV7_CODE",
+  "ACCOUNT_LV7_NAME_JP",
+  "ACCOUNT_LV7_NAME_EN",
+  "ACCOUNT_LV7_SHORT_NAME_JP",
+  "ACCOUNT_LV7_SHORT_NAME_EN",
+  "ACCOUNT_LV8_CODE",
+  "ACCOUNT_LV8_NAME_JP",
+  "ACCOUNT_LV8_NAME_EN",
+  "ACCOUNT_LV8_SHORT_NAME_JP",
+  "ACCOUNT_LV8_SHORT_NAME_EN",
+  "FILE_TYPE",
+  "FISCAL_YEAR",
+];
+
+// File name validation — DISABLED (commented out, kept for reference):
+// // A file name (before its extension) must end with one of these COA file
+// // types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
+// const COA_FILE_TYPES = [
+//   "FA_BS",
+//   "FA_INC",
+//   "FA_MEMO",
+//   "FA_PL",
+//   "MA_PL",
+//   "MA_MEMO",
+//   "MA_BS",
+// ] as const;
+// type CoaFileType = (typeof COA_FILE_TYPES)[number];
+//
+// // File name validation: strips the extension, uppercases the remainder, and
+// // checks whether it ends with one of the 7 recognized COA type suffixes
+// // (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS"). Returns null when the
+// // file name doesn't end with any recognized type, which the UI treats as an
+// // invalid file name.
+// function getCoaFileType(fileName: string): CoaFileType | null {
+//   const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+//   return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
+// }
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -143,6 +203,7 @@ export default function StravisCoaHierarchyUploadScreen() {
   // AI Generated Code by Deloitte + Cursor (END)
 
   const [uploading, setUploading] = useState(false);
+  const [downloadingCoaData, setDownloadingCoaData] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,11 +226,14 @@ export default function StravisCoaHierarchyUploadScreen() {
     setSnackbarOpen(true);
   };
 
-  // Any queued file whose name doesn't end with a valid COA file type blocks
-  // the upload (and shows a rename info box under its row).
-  const hasInvalidFileType = fileUploads.some(
-    (entry) => getCoaFileType(entry.file.name) === null,
-  );
+  // File name validation gate — DISABLED (commented out, kept for reference):
+  // // File name validation gate: true if ANY queued file's name fails the COA
+  // // suffix check (getCoaFileType returns null for it). While true, the
+  // // Upload button stays disabled and each offending row renders a rename
+  // // info box (see the "invalidType" Alert further down).
+  // const hasInvalidFileType = fileUploads.some(
+  //   (entry) => getCoaFileType(entry.file.name) === null,
+  // );
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -207,32 +271,41 @@ export default function StravisCoaHierarchyUploadScreen() {
       return;
     }
 
-    // Track which valid COA types are already taken so a second file of the
-    // same type is rejected with the name of the file already added.
-    const takenTypeToName = new Map<CoaFileType, string>();
-    for (const entry of fileUploads) {
-      const ft = getCoaFileType(entry.file.name);
-      if (ft) takenTypeToName.set(ft, entry.file.name);
-    }
+    // File name validation (part 2 — duplicate COA type check) — DISABLED
+    // (commented out, kept for reference):
+    // // File name validation (part 2 — duplicate COA type check): build a map
+    // // of COA type -> file name for files already queued, using the same
+    // // getCoaFileType() suffix check as hasInvalidFileType above.
+    // const takenTypeToName = new Map<CoaFileType, string>();
+    // for (const entry of fileUploads) {
+    //   const ft = getCoaFileType(entry.file.name);
+    //   if (ft) takenTypeToName.set(ft, entry.file.name);
+    // }
 
     const accepted: UploadEntry[] = [];
     for (const file of csvFiles) {
-      const ft = getCoaFileType(file.name);
-      if (ft) {
-        const existingName = takenTypeToName.get(ft);
-        if (existingName) {
-          showSnackbar(
-            t("stravisCoaHierarchyUpload.duplicateFileType", {
-              type: ft,
-              file: existingName,
-            }),
-            "error",
-            true,
-          );
-          continue;
-        }
-        takenTypeToName.set(ft, file.name);
-      }
+      // Re-validate the incoming file's name against the recognized COA
+      // suffixes. A recognized type that's already taken by another queued
+      // file is rejected outright (with the name of the conflicting file);
+      // an unrecognized type falls through and is still queued below so its
+      // row can show the rename info box.
+      //
+      // const ft = getCoaFileType(file.name);
+      // if (ft) {
+      //   const existingName = takenTypeToName.get(ft);
+      //   if (existingName) {
+      //     showSnackbar(
+      //       t("stravisCoaHierarchyUpload.duplicateFileType", {
+      //         type: ft,
+      //         file: existingName,
+      //       }),
+      //       "error",
+      //       true,
+      //     );
+      //     continue;
+      //   }
+      //   takenTypeToName.set(ft, file.name);
+      // }
       // Files with an unrecognized type are still added so the row can show a
       // rename info box; they keep the Upload button disabled until renamed.
       accepted.push({
@@ -265,34 +338,40 @@ export default function StravisCoaHierarchyUploadScreen() {
 
   const handleUploadClick = async () => {
     const uploads = getUploadState(screenKey).entries;
-    if (uploads.length === 0 || hasInvalidFileType) return;
+    if (uploads.length === 0 /* || hasInvalidFileType (disabled) */) return;
 
     setUploading(true);
 
-    // 1. Load the template once and parse its headers.
-    let templateHeaders: string[];
-    try {
-      const templateResponse = await fetch(
-        `/templates/${STRAVIS_COA_TEMPLATE_FILE}`,
-      );
-      if (!templateResponse.ok) throw new Error("Template fetch failed");
-      const templateText = await templateResponse.text();
-      const templateParsed = await parseCsv(templateText);
-      templateHeaders = templateParsed.headers;
-    } catch {
-      setUploading(false);
-      showSnackbar(t("upload.templateLoadError"), "error");
-      return;
-    }
+    // Loading the template file to derive expected headers — DISABLED
+    // (commented out, kept for reference); replaced by the hardcoded
+    // COA_HIERARCHY_TEMPLATE_COLUMNS list used in the validation loop below.
+    // let templateHeaders: string[];
+    // try {
+    //   const templateResponse = await fetch(
+    //     `/templates/${STRAVIS_COA_TEMPLATE_FILE}`,
+    //   );
+    //   if (!templateResponse.ok) throw new Error("Template fetch failed");
+    //   const templateText = await templateResponse.text();
+    //   const templateParsed = await parseCsv(templateText);
+    //   templateHeaders = templateParsed.headers;
+    // } catch {
+    //   setUploading(false);
+    //   showSnackbar(t("upload.templateLoadError"), "error");
+    //   return;
+    // }
 
-    // 2. Validate every file's columns against the template — collect ALL
-    //    failures so the user sees every problem at once.
+    // 1. Validate every file's columns against the expected COA hierarchy
+    //    columns (COA_HIERARCHY_TEMPLATE_COLUMNS) — collect ALL failures so
+    //    the user sees every problem at once.
     const failures: string[] = [];
     for (const upload of uploads) {
       try {
         const text = await readFileAsText(upload.file);
         const parsed = await parseCsv(text);
-        const validation = validateCsvColumns(parsed.headers, templateHeaders);
+        const validation = validateCsvColumns(
+          parsed.headers,
+          COA_HIERARCHY_TEMPLATE_COLUMNS,
+        );
         if (!validation.isValid) {
           failures.push(
             t("upload.fileMissingColumns", {
@@ -313,7 +392,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       }
     }
 
-    // 3. If anything failed, surface every failure and do NOT call the API.
+    // 2. If anything failed, surface every failure and do NOT call the API.
     if (failures.length > 0) {
       setUploading(false);
       showSnackbar(
@@ -340,7 +419,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       return;
     }
 
-    // 4. All files passed — POST them in a single multipart request.
+    // 3. All files passed — POST them in a single multipart request.
 
     // Declared outside the try so the catch block can inspect DQ violations
     // even when an unexpected error occurs after the response is parsed.
@@ -470,11 +549,35 @@ export default function StravisCoaHierarchyUploadScreen() {
     fileInputRef.current?.click();
   };
 
-  const handleDownloadTemplate = () => {
-    const link = document.createElement("a");
-    link.href = `/templates/${STRAVIS_COA_TEMPLATE_FILE}`;
-    link.download = STRAVIS_COA_TEMPLATE_FILE;
-    link.click();
+  // Fetches the latest Stravis COA hierarchy data from the backend and
+  // downloads it as a file. The response has no Content-Disposition-safe
+  // filename to rely on (mirrors the "download uploaded file" API), so we
+  // materialize it as a Blob and serve it from a client-created blob: URL
+  // with our own file name.
+  const handleDownloadCoaData = async () => {
+    setDownloadingCoaData(true);
+    let objectUrl: string | null = null;
+    try {
+      const res = await fetch(COA_HIERARCHY_DOWNLOAD_API_URL);
+      if (!res.ok) {
+        throw new Error(`Download COA hierarchy data HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = COA_HIERARCHY_DOWNLOAD_FILE_NAME;
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download COA hierarchy data:", error);
+      showSnackbar(t("upload.downloadFileError"), "error");
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setDownloadingCoaData(false);
+    }
   };
 
   const theme = useTheme();
@@ -536,17 +639,24 @@ export default function StravisCoaHierarchyUploadScreen() {
                 <StyledDownloadTemplateButton
                   variant="outlined"
                   startIcon={<GetAppIcon />}
-                  onClick={handleDownloadTemplate}
+                  onClick={handleDownloadCoaData}
+                  disabled={downloadingCoaData}
                 >
-                  {t("stravisCoaHierarchyUpload.downloadTemplate")}
+                  {t("stravisCoaHierarchyUpload.downloadCoaData")}
                 </StyledDownloadTemplateButton>
               </Box>
 
               <StyledSectionDivider />
 
+              {/* File name validation info box — DISABLED (commented out,
+                  kept for reference): tells the user upfront that each file
+                  name must end with one of the 7 COA type suffixes (see
+                  COA_FILE_TYPES / getCoaFileType above, also disabled).
+                  Shown unconditionally, before any files are queued.
               <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
                 {t("stravisCoaHierarchyUpload.fileNameFormatHint")}
               </Alert>
+              */}
 
               <StyledSectionDivider />
 
@@ -597,7 +707,8 @@ export default function StravisCoaHierarchyUploadScreen() {
                   whose name doesn't end with a valid COA type shows a rename
                   info box below its row. */}
               {fileUploads.map((entry) => {
-                const invalidType = getCoaFileType(entry.file.name) === null;
+                // File name validation — DISABLED (commented out, kept for reference):
+                // const invalidType = getCoaFileType(entry.file.name) === null;
                 return (
                   <StyledSelectedFileBox key={entry.id}>
                     <StyledFileInfoBox>
@@ -637,11 +748,16 @@ export default function StravisCoaHierarchyUploadScreen() {
                         {t("stravisCoaHierarchyUpload.cancelUpload")}
                       </StyledCancelUploadButton>
                     </StyledFileInfoBox>
+                    {/* File name validation info box — DISABLED (commented out,
+                        kept for reference): per-row, shown only for this file
+                        when its name doesn't end with a recognized COA type;
+                        prompts the user to rename and re-upload it.
                     {invalidType && (
                       <Alert severity="warning" sx={{ marginTop: 1 }}>
                         {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
                       </Alert>
                     )}
+                    */}
                   </StyledSelectedFileBox>
                 );
               })}
@@ -652,7 +768,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                   <StyledUploadButton
                     variant="contained"
                     onClick={handleUploadClick}
-                    disabled={uploading || hasInvalidFileType}
+                    disabled={uploading /* || hasInvalidFileType (disabled) */}
                   >
                     {t("upload.upload")}
                   </StyledUploadButton>
@@ -664,6 +780,9 @@ export default function StravisCoaHierarchyUploadScreen() {
       </StyledMainPaper>
 
       {uploading && <ResultsLoader fullScreen label={t("upload.uploading")} />}
+      {downloadingCoaData && (
+        <ResultsLoader fullScreen label={t("upload.downloadingFile")} />
+      )}
 
       <Snackbar
         open={snackbarOpen}
