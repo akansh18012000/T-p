@@ -23,12 +23,13 @@ interface ManufacturerDataContextValue {
   manufacturerNameMap: Record<string, string>;
   manufacturerPartNumberOptions: string[];
   status: ManufacturerDataStatus;
-  // Opt-in std-cost manufacturer names (see ensureLoaded), keyed by
-  // manufacturer_code. Empty for callers that never pass
-  // includeStdCostManufacturerNames — the caller that opts in is responsible
-  // for merging this over manufacturerNameMap itself, since manufacturerNameMap
-  // is shared by every screen using this context.
-  stdCostManufacturerNames: Record<string, string>;
+  // manufacturerNameMap merged with the opt-in std-cost overrides (see
+  // ensureLoaded): std-cost names take precedence for any code present in
+  // both. Equal to manufacturerNameMap for callers that never pass
+  // includeStdCostManufacturerNames, since the override map stays empty.
+  // Exposed as a separate field (rather than folded into manufacturerNameMap
+  // itself) so screens that never opt in keep seeing the plain base map.
+  stdCostManufacturerNameMap: Record<string, string>;
   // Status of the opt-in std-cost manufacturer names fetch (see ensureLoaded).
   // Stays "idle" for callers that never pass includeStdCostManufacturerNames.
   stdCostManufacturerNamesStatus: ManufacturerDataStatus;
@@ -168,14 +169,20 @@ export function ManufacturerDataProvider({
 
   // manufacturerNameMap stays the plain shared/base map — it's read by every
   // screen using this context, so it must not carry the std-cost overrides.
-  // Only the caller that opted in (via includeStdCostManufacturerNames) reads
-  // stdCostManufacturerNames and merges it locally over manufacturerNameMap.
+  // stdCostManufacturerNameMap is a separate, precomputed field so the caller
+  // that opted in (via includeStdCostManufacturerNames) can use it directly
+  // without re-deriving the merge itself.
+  const stdCostManufacturerNameMap =
+    Object.keys(stdCostManufacturerNames).length > 0
+      ? { ...manufacturerNameMap, ...stdCostManufacturerNames }
+      : manufacturerNameMap;
+
   const value: ManufacturerDataContextValue = {
     manufacturerOptions,
     manufacturerNameMap,
     manufacturerPartNumberOptions,
     status,
-    stdCostManufacturerNames,
+    stdCostManufacturerNameMap,
     stdCostManufacturerNamesStatus,
     ensureLoaded: ensureLoadedRef.current,
   };

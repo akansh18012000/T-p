@@ -518,15 +518,14 @@ export default function StandardCostMasterScreen() {
   // Manufacturer code/name + part numbers come from the shared context
   // (fetched at most once per session, reused across pages). This screen
   // passes `true` to ensureLoaded so the context also fetches
-  // /std-cost-combined/get_manufacturer_codes; that override map is merged
-  // locally below (not by the context) so other screens sharing this context
-  // keep seeing the plain, un-overridden manufacturerNameMap.
+  // /std-cost-combined/get_manufacturer_codes and hands back the merged
+  // result directly as stdCostManufacturerNameMap — other screens sharing
+  // this context keep reading the plain manufacturerNameMap unaffected.
   const {
     manufacturerOptions,
-    manufacturerNameMap,
     manufacturerPartNumberOptions,
     status: manufacturerDataStatus,
-    stdCostManufacturerNames,
+    stdCostManufacturerNameMap: mergedManufacturerNameMap,
     stdCostManufacturerNamesStatus,
     ensureLoaded: ensureManufacturerData,
   } = useManufacturerData();
@@ -542,13 +541,6 @@ export default function StandardCostMasterScreen() {
     (stdCostManufacturerNamesStatus === "loading" ||
       stdCostManufacturerNamesStatus === "idle");
   const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
-
-  // Screen-local merge: std-cost names override the shared list's names for
-  // any code present in both. Scoped to this screen only — see note above.
-  const mergedManufacturerNameMap: Record<string, string> = {
-    ...manufacturerNameMap,
-    ...stdCostManufacturerNames,
-  };
 
   // Location codes/names come from the shared context as well.
   const {
@@ -570,7 +562,7 @@ export default function StandardCostMasterScreen() {
 
   // Kick off all three fetches in parallel; every call is idempotent. `true`
   // tells the manufacturer context to also fetch the std-cost manufacturer
-  // codes/names and merge them into manufacturerNameMap.
+  // codes/names and expose the merged result as stdCostManufacturerNameMap.
   useEffect(() => {
     ensureManufacturerData(true);
     ensureLocationData();
