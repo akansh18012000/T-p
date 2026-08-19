@@ -518,13 +518,15 @@ export default function StandardCostMasterScreen() {
   // Manufacturer code/name + part numbers come from the shared context
   // (fetched at most once per session, reused across pages). This screen
   // passes `true` to ensureLoaded so the context also fetches
-  // /std-cost-combined/get_manufacturer_codes and folds its names into
-  // manufacturerNameMap (overriding the shared names for shared codes).
+  // /std-cost-combined/get_manufacturer_codes; that override map is merged
+  // locally below (not by the context) so other screens sharing this context
+  // keep seeing the plain, un-overridden manufacturerNameMap.
   const {
     manufacturerOptions,
     manufacturerNameMap,
     manufacturerPartNumberOptions,
     status: manufacturerDataStatus,
+    stdCostManufacturerNames,
     stdCostManufacturerNamesStatus,
     ensureLoaded: ensureManufacturerData,
   } = useManufacturerData();
@@ -540,6 +542,13 @@ export default function StandardCostMasterScreen() {
     (stdCostManufacturerNamesStatus === "loading" ||
       stdCostManufacturerNamesStatus === "idle");
   const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
+
+  // Screen-local merge: std-cost names override the shared list's names for
+  // any code present in both. Scoped to this screen only — see note above.
+  const mergedManufacturerNameMap: Record<string, string> = {
+    ...manufacturerNameMap,
+    ...stdCostManufacturerNames,
+  };
 
   // Location codes/names come from the shared context as well.
   const {
@@ -1090,7 +1099,7 @@ export default function StandardCostMasterScreen() {
       if (assocColIndex !== -1) {
         let assocValue = "";
         if (colConfig.key === "manufacturer") {
-          assocValue = manufacturerNameMap[value] || "";
+          assocValue = mergedManufacturerNameMap[value] || "";
         } else if (colConfig.key === "locationCode") {
           assocValue = locationNameMap[value] || "";
         } else if (colConfig.key === "corporateCode") {
@@ -1426,7 +1435,7 @@ export default function StandardCostMasterScreen() {
                       const v = newValue ?? "";
                       setManufacturer(v);
                       setManufacturerSearchInput(v);
-                      setManufacturerName(manufacturerNameMap[v] || "");
+                      setManufacturerName(mergedManufacturerNameMap[v] || "");
                     }}
                     freeSolo
                     openOnFocus

@@ -23,6 +23,12 @@ interface ManufacturerDataContextValue {
   manufacturerNameMap: Record<string, string>;
   manufacturerPartNumberOptions: string[];
   status: ManufacturerDataStatus;
+  // Opt-in std-cost manufacturer names (see ensureLoaded), keyed by
+  // manufacturer_code. Empty for callers that never pass
+  // includeStdCostManufacturerNames — the caller that opts in is responsible
+  // for merging this over manufacturerNameMap itself, since manufacturerNameMap
+  // is shared by every screen using this context.
+  stdCostManufacturerNames: Record<string, string>;
   // Status of the opt-in std-cost manufacturer names fetch (see ensureLoaded).
   // Stays "idle" for callers that never pass includeStdCostManufacturerNames.
   stdCostManufacturerNamesStatus: ManufacturerDataStatus;
@@ -160,18 +166,16 @@ export function ManufacturerDataProvider({
     };
   }
 
-  // Names from the std-cost fetch (if it ran) take precedence over the shared
-  // list's names for any code present in both.
-  const mergedManufacturerNameMap =
-    Object.keys(stdCostManufacturerNames).length > 0
-      ? { ...manufacturerNameMap, ...stdCostManufacturerNames }
-      : manufacturerNameMap;
-
+  // manufacturerNameMap stays the plain shared/base map — it's read by every
+  // screen using this context, so it must not carry the std-cost overrides.
+  // Only the caller that opted in (via includeStdCostManufacturerNames) reads
+  // stdCostManufacturerNames and merges it locally over manufacturerNameMap.
   const value: ManufacturerDataContextValue = {
     manufacturerOptions,
-    manufacturerNameMap: mergedManufacturerNameMap,
+    manufacturerNameMap,
     manufacturerPartNumberOptions,
     status,
+    stdCostManufacturerNames,
     stdCostManufacturerNamesStatus,
     ensureLoaded: ensureLoadedRef.current,
   };
