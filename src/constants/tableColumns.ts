@@ -685,11 +685,6 @@ export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfi
       labelKey: "localItemConversion.gpcName",
       editable: false,
     },
-    {
-      key: "validityYear",
-      labelKey: "localItemConversion.validityYear",
-      editable: true,
-    },
     { key: "locationCode", labelKey: "localItemConversion.locationCode", editable: true },
     {
       key: "locationName",
@@ -717,6 +712,13 @@ export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfi
       labelKey: "localItemConversion.validFromDate",
       editable: true,
     },
+    {
+      key: "deletionFlag",
+      labelKey: "localItemConversion.deletionFlag",
+      editable: true,
+      isCheckbox: true,
+      infoTextKey: "tableCommon.deletionFlagInfo",
+    },
   ];
 
 /** English CSV column headers; order must match SEARCH_RESULT_COLUMNS */
@@ -729,7 +731,6 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
   "Global Item Types",
   "GPC Code",
   "GPC Name",
-  "Validity Year",
   "Location Code",
   "Location Name",
   "Corporate Code",
@@ -737,6 +738,7 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
   "Standard Cost",
   "Currency",
   "Valid from date",
+  "Deletion Flag",
 ];
 
 /** Japanese CSV column headers; order must match LOCAL_ITEM_CONVERSION_MASTER_HEADERS */
@@ -749,7 +751,6 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA: string[] = [
   "グローバル品目タイプ",
   "GPCコード",
   "GPC名",
-  "有効年",
   "ロケーションコード",
   "ロケーション名",
   "法人コード",
@@ -757,21 +758,17 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA: string[] = [
   "標準原価",
   "通貨",
   "有効開始日",
+  "削除フラグ",
 ];
 
-/** Freeze dialog: index 0 = #, 1–16 = data cols, 17 = deletion flag */
+/** Freeze dialog: index 0 = #, 1–17 = data cols (17 = deletion flag) */
 export const LOCAL_ITEM_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, label: "#", width: 48 },
   ...LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map((col, i) => ({
     index: i + 1,
     labelKey: col.labelKey,
+    ...(col.isCheckbox ? { width: 80, isDeletionFlag: true } : {}),
   })),
-  {
-    index: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length + 1,
-    labelKey: "localItemConversion.deletionFlag",
-    width: 80,
-    isDeletionFlag: true,
-  },
 ];
 // AI Generated Code by Deloitte + Cursor (END)
 

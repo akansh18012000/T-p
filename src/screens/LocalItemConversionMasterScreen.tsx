@@ -198,7 +198,6 @@ const COL_MFR_PART_NUMBER = colIndexOf("mfrPartNumber");
 const COL_GLOBAL_ITEM_TYPE = colIndexOf("globalItemTypes");
 const COL_GPC_CODE = colIndexOf("gpcCode");
 const COL_GPC_NAME = colIndexOf("gpcName");
-const COL_VALIDITY_YEAR = colIndexOf("validityYear");
 const COL_LOCATION_CODE = colIndexOf("locationCode");
 const COL_LOCATION_NAME = colIndexOf("locationName");
 const COL_CORPORATE_CODE = colIndexOf("corporateCode");
@@ -206,6 +205,7 @@ const COL_CORPORATE_NAME = colIndexOf("corporateName");
 const COL_STANDARD_COST = colIndexOf("standardCost");
 const COL_CURRENCY = colIndexOf("currency");
 const COL_VALID_FROM_DATE = colIndexOf("validFromDate");
+const COL_DELETION_FLAG = colIndexOf("deletionFlag");
 
 const COL_MAX_LENGTHS: Record<number, number> = {
   [COL_SYSTEM_ID]:       5,
@@ -224,7 +224,6 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
     { colIndex: COL_GLOBAL_ITEM_TYPE,  labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GLOBAL_ITEM_TYPE].labelKey,  rules: [{ type: "regex", pattern: /^(?!999$).*$/ }] },
     { colIndex: COL_GPC_CODE,          labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GPC_CODE].labelKey,          rules: [{ type: "null" }] },
     { colIndex: COL_GPC_NAME,          labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_GPC_NAME].labelKey,          rules: [{ type: "null" }] },
-    { colIndex: COL_VALIDITY_YEAR,     labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_VALIDITY_YEAR].labelKey,     rules: [{ type: "null" }] },
     { colIndex: COL_CORPORATE_CODE,    labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_CORPORATE_CODE].labelKey,    rules: [{ type: "null" }] },
     { colIndex: COL_CORPORATE_NAME,    labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_CORPORATE_NAME].labelKey,    rules: [{ type: "null" }] },
     { colIndex: COL_STANDARD_COST,     labelKey: LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[COL_STANDARD_COST].labelKey,     rules: [{ type: "null" }, { type: "decimal" }, { type: "positive" }] },
@@ -290,7 +289,6 @@ interface LocalItemCreateRow {
   corporate_code: string;
   legal_name: string;
   currency: string;
-  effective_year: string;
   standard_cost: string;
   delete_flg: string;
   effective_month: string;
@@ -512,8 +510,8 @@ function LocalItemConversionMasterScreen() {
   > = {
     2: { nameColIndex: 3, lookupMap: manufacturerNameMap }, // manufacturer -> manufacturerName
     6: { nameColIndex: 7, lookupMap: gpcCodeNameMap }, // gpcCode -> gpcName
-    9: { nameColIndex: 10, lookupMap: locationNameMap }, // locationCode -> locationName
-    11: { nameColIndex: 12, lookupMap: corporateNameMap }, // corporateCode -> corporateName
+    8: { nameColIndex: 9, lookupMap: locationNameMap }, // locationCode -> locationName
+    10: { nameColIndex: 11, lookupMap: corporateNameMap }, // corporateCode -> corporateName
   };
 
   // Upload file state (selectedFile from context)
@@ -525,9 +523,6 @@ function LocalItemConversionMasterScreen() {
 
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
-  const [rowDeletionFlags, setRowDeletionFlags] = useState<Set<number>>(
-    new Set(),
-  );
   // Parallel to csvData.rows. null at index i => row was added locally (new).
   // Non-null => row came from search; `original` is used to detect edits.
   const [rowMetadata, setRowMetadata] = useState<LocalItemRowMeta[]>([]);
@@ -600,8 +595,9 @@ function LocalItemConversionMasterScreen() {
       const json = (await res.json()) as LocalItemSearchApiEnvelope;
       const apiRows = Array.isArray(json.data) ? json.data : [];
       // Map each API row to the column array; order must match
-      // LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS. The deletion flag
-      // (delete_flg) drives the separate deletion-flag checkbox column below.
+      // LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS, including the
+      // deletion flag as the trailing checkbox column (mirrors the other
+      // master screens, e.g. GpcMaster/StandardCostMaster).
       // Coerce raw API cells to strings — numeric fields (e.g. standard_cost)
       // can arrive as numbers despite the string types, which breaks the
       // string[][] CsvData contract (cell comparisons, CSV download).
@@ -614,7 +610,6 @@ function LocalItemConversionMasterScreen() {
         String(r.item_type ?? ""), // Global Item Types
         String(r.gpc_code ?? ""), // GPC Code
         String(r.gpc_name ?? ""), // GPC Name
-        formatDateFieldForDisplay(r.fiscal_year, "year"), // Validity Year (YYYY)
         String(r.manufacturer_detail ?? ""), // Location Code
         String(r.manufacturer_detail_name ?? ""), // Location Name
         String(r.company_code ?? ""), // Corporate Code
@@ -622,19 +617,12 @@ function LocalItemConversionMasterScreen() {
         String(r.standard_cost ?? ""), // Standard Cost
         String(r.currency_code ?? ""), // Currency
         formatDateFieldForDisplay(r.fiscal_month_from, "yearMonth"), // Valid from date (YYYYMM)
+        r.delete_flg === "1" ? "1" : "0", // Deletion Flag
       ]);
       setCsvData({
         headers: [...DEFAULT_CSV_HEADERS],
         rows: mappedRows,
       });
-      // Pre-check the deletion flag for rows the API marks as deleted.
-      setRowDeletionFlags(
-        new Set(
-          apiRows
-            .map((r, idx) => (r.delete_flg === "1" ? idx : -1))
-            .filter((idx) => idx >= 0),
-        ),
-      );
       setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
@@ -647,7 +635,6 @@ function LocalItemConversionMasterScreen() {
     } catch (err) {
       console.error("Local item search failed:", err);
       setCsvData(getEmptyCsvData());
-      setRowDeletionFlags(new Set());
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       clearNewRowTracking();
@@ -675,7 +662,11 @@ function LocalItemConversionMasterScreen() {
   // Add row menu handlers
   const handleAddEmptyRow = () => {
     const base = csvData || getEmptyCsvData();
-    const newRow = base.headers.map(() => "");
+    const newRow = base.headers.map((_, i) =>
+      LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS[i]?.isCheckbox
+        ? "0"
+        : "",
+    );
     // Insert new row at appropriate position based on current page
     const insertIndex = Math.min(pageOffset, base.rows.length);
     const newRows = [
@@ -844,8 +835,7 @@ function LocalItemConversionMasterScreen() {
     }
 
     // 4. Build payload. item_description is not required and has no column, so
-    // it is sent empty. effective_year comes from Validity Year and
-    // effective_month from the Valid from date column.
+    // it is sent empty. effective_month comes from the Valid from date column.
     const buildRow = (idx: number): LocalItemCreateRow => {
       const r = csvData.rows[idx];
       return {
@@ -863,9 +853,8 @@ function LocalItemConversionMasterScreen() {
         corporate_code: r[COL_CORPORATE_CODE] ?? "",
         legal_name: r[COL_CORPORATE_NAME] ?? "",
         currency: r[COL_CURRENCY] ?? "",
-        effective_year: r[COL_VALIDITY_YEAR] ?? "",
         standard_cost: r[COL_STANDARD_COST] ?? "",
-        delete_flg: rowDeletionFlags.has(idx) ? "1" : "0",
+        delete_flg: r[COL_DELETION_FLAG] || "0",
         effective_month: r[COL_VALID_FROM_DATE] ?? "",
       };
     };
@@ -955,23 +944,16 @@ function LocalItemConversionMasterScreen() {
     showSnackbar(t("localItemConversion.rowDeleted"), "success");
   };
 
-  const handleRowDeletionFlagToggle = (rowIndex: number, checked: boolean) => {
-    setRowDeletionFlags((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(rowIndex);
-      else next.delete(rowIndex);
-      return next;
-    });
-  };
-
   const handleDeleteMarkedRows = () => {
-    if (!csvData || rowDeletionFlags.size === 0) return;
-    const newRows = csvData.rows.filter((_, idx) => !rowDeletionFlags.has(idx));
-    setCsvData({ ...csvData, rows: newRows });
-    setRowMetadata((prev) =>
-      prev.filter((_, idx) => !rowDeletionFlags.has(idx)),
+    if (!csvData) return;
+    const rowsToDelete = csvData.rows.filter(
+      (row) => row[COL_DELETION_FLAG] === "1",
     );
-    setRowDeletionFlags(new Set());
+    if (rowsToDelete.length === 0) return;
+    const newRows = csvData.rows.filter(
+      (row) => row[COL_DELETION_FLAG] !== "1",
+    );
+    setCsvData({ ...csvData, rows: newRows });
     showSnackbar(t("localItemConversion.rowsDeleted"), "success");
   };
 
@@ -1650,6 +1632,7 @@ function LocalItemConversionMasterScreen() {
                                   (col, colIndex) => (
                                     <StyledTableHeaderCell
                                       key={col.key}
+                                      $deletionFlag={col.isCheckbox === true}
                                       $isFrozen={freezeIndices.includes(
                                         colIndex + 1,
                                       )}
@@ -1658,44 +1641,29 @@ function LocalItemConversionMasterScreen() {
                                         colIndex + 1,
                                       )}
                                     >
-                                      <StyledTableHeaderText variant="body2">
+                                      <StyledTableHeaderText
+                                        variant="body2"
+                                        sx={
+                                          col.infoTextKey
+                                            ? {
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                              }
+                                            : undefined
+                                        }
+                                      >
                                         {t(col.labelKey)}
+                                        {col.infoTextKey && (
+                                          <FlagInfoButton
+                                            text={t(col.infoTextKey)}
+                                            ariaLabel={t(col.labelKey)}
+                                          />
+                                        )}
                                       </StyledTableHeaderText>
                                     </StyledTableHeaderCell>
                                   ),
                                 )}
-                                <StyledTableHeaderCell
-                                  $deletionFlag
-                                  $isFrozen={freezeIndices.includes(
-                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                      1,
-                                  )}
-                                  $leftOffset={getLeftOffset(
-                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                      1,
-                                  )}
-                                  $isLastFrozen={isLastFrozenColumn(
-                                    LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                      1,
-                                  )}
-                                >
-                                  <StyledTableHeaderText
-                                    variant="body2"
-                                    sx={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    {t("localItemConversion.deletionFlag")}
-                                    <FlagInfoButton
-                                      text={t("tableCommon.deletionFlagInfo")}
-                                      ariaLabel={t(
-                                        "localItemConversion.deletionFlag",
-                                      )}
-                                    />
-                                  </StyledTableHeaderText>
-                                </StyledTableHeaderCell>
                                 {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                               </TableRow>
                             </TableHead>
@@ -1733,9 +1701,11 @@ function LocalItemConversionMasterScreen() {
                                         const isGlobalItemType =
                                           col.key === "globalItemTypes";
                                         const isCurrency = col.key === "currency";
+                                        const isCheckbox = col.isCheckbox === true;
                                         return (
                                           <StyledTableDataCell
                                             key={col.key}
+                                            $deletionFlag={isCheckbox}
                                             $isFrozen={freezeIndices.includes(
                                               colIndex + 1,
                                             )}
@@ -1747,7 +1717,19 @@ function LocalItemConversionMasterScreen() {
                                               colIndex + 1,
                                             )}
                                           >
-                                            {isGlobalItemType ? (
+                                            {isCheckbox ? (
+                                              <StyledCheckbox
+                                                size="small"
+                                                checked={cell === "1"}
+                                                onChange={(e) =>
+                                                  handleCellEdit(
+                                                    originalRowIndex,
+                                                    colIndex,
+                                                    e.target.checked ? "1" : "0",
+                                                  )
+                                                }
+                                              />
+                                            ) : isGlobalItemType ? (
                                               <Select
                                                 value={cell}
                                                 onChange={(e) =>
@@ -1854,35 +1836,6 @@ function LocalItemConversionMasterScreen() {
                                         );
                                       },
                                     )}
-                                    <StyledTableDataCell
-                                      $deletionFlag
-                                      $isFrozen={freezeIndices.includes(
-                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                          1,
-                                      )}
-                                      $leftOffset={getLeftOffset(
-                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                          1,
-                                      )}
-                                      $rowIndex={i}
-                                      $isLastFrozen={isLastFrozenColumn(
-                                        LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.length +
-                                          1,
-                                      )}
-                                    >
-                                      <StyledCheckbox
-                                        size="small"
-                                        checked={rowDeletionFlags.has(
-                                          originalRowIndex,
-                                        )}
-                                        onChange={(e) =>
-                                          handleRowDeletionFlagToggle(
-                                            originalRowIndex,
-                                            e.target.checked,
-                                          )
-                                        }
-                                      />
-                                    </StyledTableDataCell>
                                     {newRowCount > 0 && (
                                       <StyledDeleteActionCell>
                                         {isNewRow(originalRowIndex) && (
