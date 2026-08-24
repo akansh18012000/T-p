@@ -41,6 +41,8 @@ import {
   getDqViolationLines,
   downloadDqErrorFileForFiles,
   DQ_INLINE_LIMIT,
+  findDuplicateUploadFile,
+  stripUploadIdSuffix,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
@@ -506,6 +508,21 @@ export default function StravisCoaHierarchyUploadScreen() {
         uploadJson = (await response.json()) as UploadApiResponse;
       } catch {
         uploadJson = null;
+      }
+
+      const duplicateFile = findDuplicateUploadFile(uploadJson);
+      if (duplicateFile) {
+        showSnackbar(
+          t("upload.duplicateFileMessage", {
+            file: duplicateFile.file_name,
+            duplicate: stripUploadIdSuffix(
+              duplicateFile.duplicate_file_name ?? "",
+            ),
+          }),
+          "error",
+          true,
+        );
+        return;
       }
 
       // Data-quality validation failure. Rule for this multi-file screen: show
