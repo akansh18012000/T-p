@@ -231,6 +231,56 @@ const formatApiTimestamp = (value: string): string => {
   return withTimezone(formatApprovalDateTime(date));
 };
 
+interface ButtonStates {
+  approveEnabled: boolean;
+  rollbackEnabled: boolean;
+}
+
+// Derives Approve/Rollback button enabled states from the current month's
+// jobs (rows must already be sorted descending by requested_at so that
+// currentMonthRows[0] is the most-recent job).
+//
+// State machine (latest job in current month):
+//   No jobs            → Approve ✅  Rollback ❌
+//   APPROVE / PENDING  → Approve ❌  Rollback ❌
+//   APPROVE / FAILURE  → Approve ✅  Rollback ❌
+//   APPROVE / SUCCESS  → Approve ❌  Rollback ✅
+//   ROLLBACK / PENDING → Approve ❌  Rollback ❌
+//   ROLLBACK / FAILURE → Approve ❌  Rollback ✅
+//   ROLLBACK / SUCCESS → Approve ✅  Rollback ❌
+const computeButtonStates = (rows: PnlApprovalLogApiRow[]): ButtonStates => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentMonthRows = rows.filter((row) => {
+    if (!row.requested_at) return false;
+    const trimmed = row.requested_at.split(".")[0];
+    const date = new Date(`${trimmed.replace(" ", "T")}Z`);
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.getFullYear() === currentYear &&
+      date.getMonth() === currentMonth
+    );
+  });
+  if (currentMonthRows.length === 0) {
+    return { approveEnabled: true, rollbackEnabled: false };
+  }
+  const latest = currentMonthRows[0];
+  const action = (latest.action ?? "").toUpperCase();
+  const status = (latest.status ?? "").toUpperCase();
+  if (action === "APPROVE") {
+    if (status === "SUCCESS") return { approveEnabled: false, rollbackEnabled: true };
+    if (status === "FAILURE") return { approveEnabled: true, rollbackEnabled: false };
+    return { approveEnabled: false, rollbackEnabled: false };
+  }
+  if (action === "ROLLBACK") {
+    if (status === "SUCCESS") return { approveEnabled: true, rollbackEnabled: false };
+    if (status === "FAILURE") return { approveEnabled: false, rollbackEnabled: true };
+    return { approveEnabled: false, rollbackEnabled: false };
+  }
+  return { approveEnabled: false, rollbackEnabled: false };
+};
+
 type ApprovalAction = "Approve" | "Rollback";
 
 export default function PlDataApprovalScreen() {
@@ -251,6 +301,10 @@ export default function PlDataApprovalScreen() {
   // Power BI dashboard URL fetched in parallel with the approval history.
   const [dashboardUrl, setDashboardUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [buttonStates, setButtonStates] = useState<ButtonStates>({
+    approveEnabled: true,
+    rollbackEnabled: false,
+  });
   // Which action's POST is in flight (drives the full-page loader message).
   const [actionInProgress, setActionInProgress] =
     useState<ApprovalAction | null>(null);
@@ -266,8 +320,12 @@ export default function PlDataApprovalScreen() {
     setSnackbarOpen(true);
   };
 
-  // GET the approval history and return the rows mapped to the table shape.
-  const fetchHistory = async (): Promise<ApprovalHistoryRow[]> => {
+  // GET the approval history; returns rows sorted descending (latest first)
+  // plus the derived button states for the current month.
+  const fetchHistory = async (): Promise<{
+    rows: ApprovalHistoryRow[];
+    buttonStates: ButtonStates;
+  }> => {
     const res = await fetch(PNL_APPROVAL_LOG_API_URL, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -277,13 +335,19 @@ export default function PlDataApprovalScreen() {
       throw new Error(text || `HTTP ${res.status}`);
     }
     const json = (await res.json()) as PnlApprovalLogApiResponse;
-    const rows = Array.isArray(json?.data) ? json.data : [];
-    return rows.map((row) => ({
-      approver: row.requested_by_username,
-      action: row.action,
-      status: row.status,
-      approvalDateTime: formatApiTimestamp(row.requested_at),
-    }));
+    const rawRows = Array.isArray(json?.data) ? json.data : [];
+    const sorted = [...rawRows].sort((a, b) =>
+      b.requested_at.localeCompare(a.requested_at),
+    );
+    return {
+      rows: sorted.map((row) => ({
+        approver: row.requested_by_username,
+        action: row.action,
+        status: row.status,
+        approvalDateTime: formatApiTimestamp(row.requested_at),
+      })),
+      buttonStates: computeButtonStates(sorted),
+    };
   };
 
   // GET the Power BI dashboard URL and return it.
@@ -314,9 +378,10 @@ export default function PlDataApprovalScreen() {
         fetchHistory(),
         fetchDashboardUrl(),
       ]);
-      setApprovalHistory(
-        historyResult.status === "fulfilled" ? historyResult.value : [],
-      );
+      if (historyResult.status === "fulfilled") {
+        setApprovalHistory(historyResult.value.rows);
+        setButtonStates(historyResult.value.buttonStates);
+      }
       setDashboardUrl(
         urlResult.status === "fulfilled" ? urlResult.value : "",
       );
@@ -345,8 +410,9 @@ export default function PlDataApprovalScreen() {
       }
       // Refresh the results while the loader is still visible.
       try {
-        const mapped = await fetchHistory();
-        setApprovalHistory(mapped);
+        const { rows, buttonStates: newStates } = await fetchHistory();
+        setApprovalHistory(rows);
+        setButtonStates(newStates);
       } catch {
         // Keep the existing table if the refresh fails; the action succeeded.
       }
@@ -401,7 +467,7 @@ export default function PlDataApprovalScreen() {
           variant="contained"
           startIcon={<CheckCircleOutlineIcon />}
           onClick={() => handleAction("Approve")}
-          disabled={isActionInProgress}
+          disabled={isActionInProgress || !buttonStates.approveEnabled}
         >
           {t("plDataApproval.approve")}
         </StyledPrimaryContainedButton>
@@ -409,7 +475,7 @@ export default function PlDataApprovalScreen() {
           variant="outlined"
           startIcon={<UndoIcon />}
           onClick={() => handleAction("Rollback")}
-          disabled={isActionInProgress}
+          disabled={isActionInProgress || !buttonStates.rollbackEnabled}
         >
           {t("plDataApproval.rollback")}
         </StyledRollbackButton>
