@@ -854,7 +854,8 @@ function LocalItemConversionMasterScreen() {
         legal_name: r[COL_CORPORATE_NAME] ?? "",
         currency: r[COL_CURRENCY] ?? "",
         standard_cost: r[COL_STANDARD_COST] ?? "",
-        delete_flg: r[COL_DELETION_FLAG] || "0",
+        // delete_flg: r[COL_DELETION_FLAG] || "0", // Deletion flag column removed from UI
+        delete_flg: "0",
         effective_month: r[COL_VALID_FROM_DATE] ?? "",
       };
     };
@@ -1629,7 +1630,10 @@ function LocalItemConversionMasterScreen() {
                                   #
                                 </StyledTableHeaderCell>
                                 {LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map(
-                                  (col, colIndex) => (
+                                  (col, colIndex) =>
+                                    // Deletion flag column hidden from the table; data is still
+                                    // mapped in rows and sent as "0" in the payload (kept for reference).
+                                    col.isCheckbox ? null : (
                                     <StyledTableHeaderCell
                                       key={col.key}
                                       $deletionFlag={col.isCheckbox === true}
@@ -1662,7 +1666,7 @@ function LocalItemConversionMasterScreen() {
                                         )}
                                       </StyledTableHeaderText>
                                     </StyledTableHeaderCell>
-                                  ),
+                                    ),
                                 )}
                                 {newRowCount > 0 && <StyledDeleteActionHeaderCell />}
                               </TableRow>
@@ -1702,6 +1706,9 @@ function LocalItemConversionMasterScreen() {
                                           col.key === "globalItemTypes";
                                         const isCurrency = col.key === "currency";
                                         const isCheckbox = col.isCheckbox === true;
+                                        // Deletion flag column hidden from the table; data is still
+                                        // mapped in rows and sent as "0" in the payload (kept for reference).
+                                        if (isCheckbox) return null;
                                         return (
                                           <StyledTableDataCell
                                             key={col.key}
