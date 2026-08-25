@@ -236,49 +236,42 @@ interface ButtonStates {
   rollbackEnabled: boolean;
 }
 
-// Derives Approve/Rollback button enabled states from the current month's
-// jobs (rows must already be sorted descending by requested_at so that
-// currentMonthRows[0] is the most-recent job).
+// Derives Approve/Rollback button enabled states from jobs in the last 31 days
+// (rows must already be sorted descending by requested_at so that
+// recentRows[0] is the most-recent job).
 //
-// State machine (latest job in current month):
+// State machine (latest job in the last 31 days):
 //   No jobs            → Approve ✅  Rollback ❌
 //   APPROVE / PENDING  → Approve ❌  Rollback ❌
 //   APPROVE / FAILURE  → Approve ✅  Rollback ❌
-//   APPROVE / SUCCESS  → Approve ❌  Rollback ✅
+//   APPROVE / SUCCESS  → Approve ✅  Rollback ✅
 //   ROLLBACK / PENDING → Approve ❌  Rollback ❌
-//   ROLLBACK / FAILURE → Approve ❌  Rollback ✅
+//   ROLLBACK / FAILURE → Approve ✅  Rollback ✅
 //   ROLLBACK / SUCCESS → Approve ✅  Rollback ❌
+//
+// Approve is disabled ONLY when the latest job (any action) is PENDING.
+// Rollback is enabled only when the latest approve job succeeded or the
+// latest rollback job failed (retry).
 const computeButtonStates = (rows: PnlApprovalLogApiRow[]): ButtonStates => {
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const currentMonthRows = rows.filter((row) => {
+  const cutoff = new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000);
+  const recentRows = rows.filter((row) => {
     if (!row.requested_at) return false;
     const trimmed = row.requested_at.split(".")[0];
     const date = new Date(`${trimmed.replace(" ", "T")}Z`);
-    return (
-      !Number.isNaN(date.getTime()) &&
-      date.getFullYear() === currentYear &&
-      date.getMonth() === currentMonth
-    );
+    return !Number.isNaN(date.getTime()) && date >= cutoff;
   });
-  if (currentMonthRows.length === 0) {
+  if (recentRows.length === 0) {
     return { approveEnabled: true, rollbackEnabled: false };
   }
-  const latest = currentMonthRows[0];
+  const latest = recentRows[0];
   const action = (latest.action ?? "").toUpperCase();
   const status = (latest.status ?? "").toUpperCase();
-  if (action === "APPROVE") {
-    if (status === "SUCCESS") return { approveEnabled: false, rollbackEnabled: true };
-    if (status === "FAILURE") return { approveEnabled: true, rollbackEnabled: false };
-    return { approveEnabled: false, rollbackEnabled: false };
-  }
-  if (action === "ROLLBACK") {
-    if (status === "SUCCESS") return { approveEnabled: true, rollbackEnabled: false };
-    if (status === "FAILURE") return { approveEnabled: false, rollbackEnabled: true };
-    return { approveEnabled: false, rollbackEnabled: false };
-  }
-  return { approveEnabled: false, rollbackEnabled: false };
+  const isPending = status === "PENDING";
+  const rollbackEnabled =
+    (action === "APPROVE" && status === "SUCCESS") ||
+    (action === "ROLLBACK" && status === "FAILURE");
+  return { approveEnabled: !isPending, rollbackEnabled };
 };
 
 type ApprovalAction = "Approve" | "Rollback";
