@@ -75,11 +75,7 @@ import {
   StyledSnackbarAlert,
 } from "../components/shared/StyledComponents.js";
 
-// Stravis COA upload supports the 7 COA file types in a single batch —
-// DISABLED (commented out, kept for reference): only 1 file is now allowed
-// per upload, similar to the Adjustment Sales Detail screen.
-// const MAX_UPLOAD_FILES = 7;
-const MAX_UPLOAD_FILES = 1;
+const MAX_UPLOAD_FILES = 8;
 const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
 const COA_HIERARCHY_DOWNLOAD_FILE_NAME = "Stravis_COA_Hierarchy_Data.csv";
 
@@ -138,29 +134,29 @@ const COA_HIERARCHY_TEMPLATE_COLUMNS = [
   "FISCAL_YEAR",
 ];
 
-// File name validation — DISABLED (commented out, kept for reference):
-// // A file name (before its extension) must end with one of these COA file
-// // types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
-// const COA_FILE_TYPES = [
-//   "FA_BS",
-//   "FA_INC",
-//   "FA_MEMO",
-//   "FA_PL",
-//   "MA_PL",
-//   "MA_MEMO",
-//   "MA_BS",
-// ] as const;
-// type CoaFileType = (typeof COA_FILE_TYPES)[number];
-//
-// // File name validation: strips the extension, uppercases the remainder, and
-// // checks whether it ends with one of the 7 recognized COA type suffixes
-// // (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS"). Returns null when the
-// // file name doesn't end with any recognized type, which the UI treats as an
-// // invalid file name.
-// function getCoaFileType(fileName: string): CoaFileType | null {
-//   const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
-//   return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
-// }
+// A file name (before its extension) must end with one of these COA file
+// types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
+const COA_FILE_TYPES = [
+  "FA_BS",
+  "FA_INC",
+  "FA_MEMO",
+  "FA_PL",
+  "MA_PL_STRVS",
+  "MA_PL_PROFORMA",
+  "MA_MEMO",
+  "MA_BS",
+] as const;
+type CoaFileType = (typeof COA_FILE_TYPES)[number];
+
+// File name validation: strips the extension, uppercases the remainder, and
+// checks whether it ends with one of the 8 recognized COA type suffixes
+// (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS"). Returns null when the
+// file name doesn't end with any recognized type, which the UI treats as an
+// invalid file name.
+function getCoaFileType(fileName: string): CoaFileType | null {
+  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+  return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
+}
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
@@ -188,10 +184,7 @@ export default function StravisCoaHierarchyUploadScreen() {
     getUploadState,
     removeEntry,
     setEntries,
-    // addEntries — DISABLED (commented out, kept for reference): file
-    // selection now replaces the queue via setEntries instead of appending
-    // via addEntries, since only 1 file is allowed.
-    // addEntries,
+    addEntries,
   } = useUploadContext();
 
   const fileUploads = getUploadState(screenKey).entries;
@@ -232,14 +225,21 @@ export default function StravisCoaHierarchyUploadScreen() {
     setSnackbarOpen(true);
   };
 
-  // File name validation gate — DISABLED (commented out, kept for reference):
-  // // File name validation gate: true if ANY queued file's name fails the COA
-  // // suffix check (getCoaFileType returns null for it). While true, the
-  // // Upload button stays disabled and each offending row renders a rename
-  // // info box (see the "invalidType" Alert further down).
-  // const hasInvalidFileType = fileUploads.some(
-  //   (entry) => getCoaFileType(entry.file.name) === null,
-  // );
+  // File name validation gate: true if ANY queued file's name fails the COA
+  // suffix check (getCoaFileType returns null for it). While true, the
+  // Upload button stays disabled and each offending row renders a rename
+  // info box (see the "invalidType" Alert further down).
+  const hasInvalidFileType = fileUploads.some(
+    (entry) => getCoaFileType(entry.file.name) === null,
+  );
+
+  const uploadedTypes = new Set(
+    fileUploads
+      .map((e) => getCoaFileType(e.file.name))
+      .filter((ft): ft is CoaFileType => ft !== null),
+  );
+  const missingTypes = COA_FILE_TYPES.filter((ft) => !uploadedTypes.has(ft));
+  const hasAllRequiredTypes = missingTypes.length === 0 && !hasInvalidFileType;
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -268,74 +268,51 @@ export default function StravisCoaHierarchyUploadScreen() {
       }
       return;
     }
-    // Multi-file batching (up to MAX_UPLOAD_FILES) — DISABLED (commented
-    // out, kept for reference): only 1 file is allowed now, so a new
-    // selection replaces the queue below instead of being capped/appended.
-    // if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
-    //   showSnackbar(
-    //     t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
-    //     "error",
-    //     true,
-    //   );
-    //   return;
-    // }
 
-    // File name validation (part 2 — duplicate COA type check) — DISABLED
-    // (commented out, kept for reference):
-    // // File name validation (part 2 — duplicate COA type check): build a map
-    // // of COA type -> file name for files already queued, using the same
-    // // getCoaFileType() suffix check as hasInvalidFileType above.
-    // const takenTypeToName = new Map<CoaFileType, string>();
-    // for (const entry of fileUploads) {
-    //   const ft = getCoaFileType(entry.file.name);
-    //   if (ft) takenTypeToName.set(ft, entry.file.name);
-    // }
-    //
-    // const accepted: UploadEntry[] = [];
-    // for (const file of csvFiles) {
-    //   // Re-validate the incoming file's name against the recognized COA
-    //   // suffixes. A recognized type that's already taken by another queued
-    //   // file is rejected outright (with the name of the conflicting file);
-    //   // an unrecognized type falls through and is still queued below so its
-    //   // row can show the rename info box.
-    //   const ft = getCoaFileType(file.name);
-    //   if (ft) {
-    //     const existingName = takenTypeToName.get(ft);
-    //     if (existingName) {
-    //       showSnackbar(
-    //         t("stravisCoaHierarchyUpload.duplicateFileType", {
-    //           type: ft,
-    //           file: existingName,
-    //         }),
-    //         "error",
-    //         true,
-    //       );
-    //       continue;
-    //     }
-    //     takenTypeToName.set(ft, file.name);
-    //   }
-    //   // Files with an unrecognized type are still added so the row can show
-    //   // a rename info box; they keep the Upload button disabled until
-    //   // renamed.
-    //   accepted.push({
-    //     id: `${Date.now()}-${Math.random()}`,
-    //     file,
-    //     uploadedAt: new Date(),
-    //     uploadStatus: "pending" as const,
-    //   });
-    // }
-    // if (accepted.length > 0) addEntries(screenKey, accepted);
+    if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
+      showSnackbar(
+        t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
+        "error",
+        true,
+      );
+      return;
+    }
 
-    // Only 1 file is allowed: keep just the first selected/dropped CSV file,
-    // replacing whatever was already queued (mirrors Adjustment Sales
-    // Detail's single-file behavior).
-    const newEntry: UploadEntry = {
-      id: `${Date.now()}-${Math.random()}`,
-      file: csvFiles[0],
-      uploadedAt: new Date(),
-      uploadStatus: "pending" as const,
-    };
-    setEntries(screenKey, [newEntry]);
+    // Build a map of COA type -> file name for files already queued.
+    const takenTypeToName = new Map<CoaFileType, string>();
+    for (const entry of fileUploads) {
+      const ft = getCoaFileType(entry.file.name);
+      if (ft) takenTypeToName.set(ft, entry.file.name);
+    }
+
+    const accepted: UploadEntry[] = [];
+    for (const file of csvFiles) {
+      // A recognized type that's already taken is rejected; an unrecognized
+      // type is still queued so its row can show the rename info box.
+      const ft = getCoaFileType(file.name);
+      if (ft) {
+        const existingName = takenTypeToName.get(ft);
+        if (existingName) {
+          showSnackbar(
+            t("stravisCoaHierarchyUpload.duplicateFileType", {
+              type: ft,
+              file: existingName,
+            }),
+            "error",
+            true,
+          );
+          continue;
+        }
+        takenTypeToName.set(ft, file.name);
+      }
+      accepted.push({
+        id: `${Date.now()}-${Math.random()}`,
+        file,
+        uploadedAt: new Date(),
+        uploadStatus: "pending" as const,
+      });
+    }
+    if (accepted.length > 0) addEntries(screenKey, accepted);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -683,15 +660,12 @@ export default function StravisCoaHierarchyUploadScreen() {
 
               <StyledSectionDivider />
 
-              {/* File name validation info box — DISABLED (commented out,
-                  kept for reference): tells the user upfront that each file
-                  name must end with one of the 7 COA type suffixes (see
-                  COA_FILE_TYPES / getCoaFileType above, also disabled).
-                  Shown unconditionally, before any files are queued.
               <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
-                {t("stravisCoaHierarchyUpload.fileNameFormatHint")}
+                <Box>{t("stravisCoaHierarchyUpload.fileNameFormatHint")}</Box>
+                <Box sx={{ marginTop: 0.5 }}>
+                  {t("stravisCoaHierarchyUpload.allTypesRequiredInfo")}
+                </Box>
               </Alert>
-              */}
 
               <StyledSectionDivider />
 
@@ -706,9 +680,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  // `multiple` — DISABLED (commented out, kept for
-                  // reference): only 1 file is now allowed per upload.
-                  // multiple
+                  multiple
                   accept=".csv"
                   onChange={handleFileSelect}
                   style={{ display: "none" }}
@@ -740,13 +712,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                 </StyledSupportedFormatText>
               </StyledDragDropZone>
 
-              {/* One row per queued file: info + View + Cancel Upload. A file
-                  whose name doesn't end with a valid COA type shows a rename
-                  info box below its row. */}
-              {fileUploads.map((entry) => {
-                // File name validation — DISABLED (commented out, kept for reference):
-                // const invalidType = getCoaFileType(entry.file.name) === null;
-                return (
+              {fileUploads.map((entry) => (
                   <StyledSelectedFileBox key={entry.id}>
                     <StyledFileInfoBox>
                       <StyledFileInfoInner>
@@ -768,7 +734,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                         variant="contained"
                         size="small"
                         onClick={handleUploadClick}
-                        disabled={uploading /* || hasInvalidFileType (disabled) */}
+                        disabled={uploading || !hasAllRequiredTypes}
                       >
                         {t("upload.upload")}
                       </StyledUploadButton>
@@ -793,19 +759,21 @@ export default function StravisCoaHierarchyUploadScreen() {
                         {t("stravisCoaHierarchyUpload.cancelUpload")}
                       </StyledCancelUploadButton>
                     </StyledFileInfoBox>
-                    {/* File name validation info box — DISABLED (commented out,
-                        kept for reference): per-row, shown only for this file
-                        when its name doesn't end with a recognized COA type;
-                        prompts the user to rename and re-upload it.
-                    {invalidType && (
+                    {getCoaFileType(entry.file.name) === null && (
                       <Alert severity="warning" sx={{ marginTop: 1 }}>
                         {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
                       </Alert>
                     )}
-                    */}
                   </StyledSelectedFileBox>
-                );
-              })}
+              ))}
+
+              {fileUploads.length > 0 && !hasAllRequiredTypes && (
+                <Alert severity="warning" sx={UPLOAD_INFO_ALERT_SX}>
+                  {t("stravisCoaHierarchyUpload.missingFileTypes", {
+                    types: missingTypes.join(", "),
+                  })}
+                </Alert>
+              )}
             </StyledUploadFlexBox>
           </StyledUploadSectionBox>
         </StyledContentBox>
