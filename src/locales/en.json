@@ -512,8 +512,11 @@
     "templateInfo": "We have provided a template file which can be used for all 7 types of COA Upload. Please do not remove any columns from the template while uploading the file.",
     "downloadCoaData": "Download COA Hierarchy Data",
     "fileNameFormatHint": "File name must end with the file type, for example PBI_STRAVIS_ACCOUNT_FA_BS.csv",
+    "allTypesRequiredInfo": "The system requires the following account types before proceeding: FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL_STRVS, MA_PL_PROFORMA, MA_MEMO, MA_BS. The Upload button will remain disabled until all 8 types are added.",
+    "allTypesAddedSuccess": "All 8 COA file types have been added. You may now proceed with the upload.",
+    "missingFileTypes": "Missing: {{types}}",
     "cancelUpload": "Cancel Upload",
-    "invalidFileTypeInfo": "This file name does not end with a valid COA file type. Please rename it to end with one of FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL, MA_MEMO, MA_BS (e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv) before uploading.",
+    "invalidFileTypeInfo": "This file name does not end with a valid COA file type. Please rename it to end with one of FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL_STRVS, MA_PL_PROFORMA, MA_MEMO, MA_BS (e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv) before uploading.",
     "duplicateFileType": "A file for type {{type}} is already added: {{file}}. Each COA file type can only be uploaded once."
   },
   "plDataApproval": {
