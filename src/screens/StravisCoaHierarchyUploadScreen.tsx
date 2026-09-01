@@ -149,13 +149,12 @@ const COA_FILE_TYPES = [
 type CoaFileType = (typeof COA_FILE_TYPES)[number];
 
 // File name validation: strips the extension, uppercases the remainder, and
-// checks whether it ends with one of the 8 recognized COA type suffixes
-// (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS"). Returns null when the
-// file name doesn't end with any recognized type, which the UI treats as an
-// invalid file name.
+// checks whether it exactly matches "PBI_STRAVIS_ACCOUNT_<TYPE>" for one of
+// the 8 recognized COA types (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS").
+// Returns null when the file name doesn't match, which the UI treats as invalid.
 function getCoaFileType(fileName: string): CoaFileType | null {
   const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
-  return COA_FILE_TYPES.find((ft) => base.endsWith(ft)) ?? null;
+  return COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`) ?? null;
 }
 
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
