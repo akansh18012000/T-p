@@ -167,7 +167,7 @@ function getCoaFileType(fileName: string): CoaFileType | null {
 //                    the existing invalidFileTypeInfo message is shown instead.
 //   null           — file name is valid.
 type FileNameIssue =
-  | { issue: 'wrong-prefix'; suggestedName: string }
+  | { issue: 'wrong-prefix'; suggestedName: string; typeDetected: boolean }
   | { issue: 'wrong-type' }
   | { issue: null };
 
@@ -188,6 +188,7 @@ function getFileNameIssue(fileName: string): FileNameIssue {
   const detectedType = COA_FILE_TYPES.find((ft) => base.endsWith(ft));
   return {
     issue: "wrong-prefix",
+    typeDetected: detectedType !== undefined,
     suggestedName: `PBI_STRAVIS_ACCOUNT_${detectedType ?? "FA_BS"}${ext}`,
   };
 }
@@ -798,9 +799,12 @@ export default function StravisCoaHierarchyUploadScreen() {
                       if (validation.issue === "wrong-prefix") {
                         return (
                           <Alert severity="warning" sx={{ marginTop: 1 }}>
-                            {t("stravisCoaHierarchyUpload.invalidFileNameInfo", {
-                              suggestedName: validation.suggestedName,
-                            })}
+                            {t(
+                              validation.typeDetected
+                                ? "stravisCoaHierarchyUpload.invalidFileNameDetected"
+                                : "stravisCoaHierarchyUpload.invalidFileNameFormat",
+                              { suggestedName: validation.suggestedName },
+                            )}
                           </Alert>
                         );
                       }

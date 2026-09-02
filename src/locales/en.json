@@ -516,7 +516,8 @@
     "allTypesAddedSuccess": "All 8 COA file types have been added. You may now proceed with the upload.",
     "missingFileTypes": "Missing: {{types}}",
     "cancelUpload": "Cancel Upload",
-    "invalidFileNameInfo": "File name is incorrect ({{suggestedName}})",
+    "invalidFileNameDetected": "File name is incorrect. Please update the file name to {{suggestedName}}.",
+    "invalidFileNameFormat": "File name is incorrect. Please update the filename to have this format {{suggestedName}}.",
     "invalidFileTypeInfo": "This file name does not end with a valid COA file type. Please rename it to end with one of FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL_STRVS, MA_PL_PROFORMA, MA_MEMO, MA_BS (e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv) before uploading.",
     "duplicateFileType": "A file for type {{type}} is already added: {{file}}. Each COA file type can only be uploaded once."
   },

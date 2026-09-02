@@ -516,7 +516,8 @@
     "allTypesAddedSuccess": "8種類すべてのCOAファイルが追加されました。アップロードを開始できます。",
     "missingFileTypes": "不足: {{types}}",
     "cancelUpload": "アップロードをキャンセル",
-    "invalidFileNameInfo": "ファイル名が正しくありません（{{suggestedName}}）",
+    "invalidFileNameDetected": "ファイル名が正しくありません。ファイル名を {{suggestedName}} に更新してください。",
+    "invalidFileNameFormat": "ファイル名が正しくありません。ファイル名を次の形式にしてください: {{suggestedName}}",
     "invalidFileTypeInfo": "このファイル名は有効なCOAファイル種別で終わっていません。アップロードする前に、FA_BS、FA_INC、FA_MEMO、FA_PL、MA_PL_STRVS、MA_PL_PROFORMA、MA_MEMO、MA_BS のいずれかで終わるように名前を変更してください（例: PBI_STRAVIS_ACCOUNT_FA_BS.csv）。",
     "duplicateFileType": "種別 {{type}} のファイルは既に追加されています: {{file}}。各COAファイル種別は一度だけアップロードできます。"
   },
