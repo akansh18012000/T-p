@@ -157,6 +157,41 @@ function getCoaFileType(fileName: string): CoaFileType | null {
   return COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`) ?? null;
 }
 
+// Distinguishes two kinds of invalid file names so the UI can show the right
+// error message:
+//   'wrong-prefix' — the "PBI_STRAVIS_ACCOUNT_" prefix is missing or wrong.
+//                    suggestedName holds the corrected file name to show in
+//                    brackets (derived from the suffix when detectable,
+//                    otherwise an illustrative example).
+//   'wrong-type'   — prefix is correct but the type suffix is unrecognized;
+//                    the existing invalidFileTypeInfo message is shown instead.
+//   null           — file name is valid.
+type FileNameIssue =
+  | { issue: 'wrong-prefix'; suggestedName: string }
+  | { issue: 'wrong-type' }
+  | { issue: null };
+
+function getFileNameIssue(fileName: string): FileNameIssue {
+  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+  const ext = fileName.includes(".")
+    ? fileName.slice(fileName.lastIndexOf(".")).toLowerCase()
+    : ".csv";
+
+  if (COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`)) {
+    return { issue: null };
+  }
+
+  if (base.startsWith("PBI_STRAVIS_ACCOUNT_")) {
+    return { issue: "wrong-type" };
+  }
+
+  const detectedType = COA_FILE_TYPES.find((ft) => base.endsWith(ft));
+  return {
+    issue: "wrong-prefix",
+    suggestedName: `PBI_STRAVIS_ACCOUNT_${detectedType ?? "FA_BS"}${ext}`,
+  };
+}
+
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
   overflow: "hidden",
@@ -758,11 +793,26 @@ export default function StravisCoaHierarchyUploadScreen() {
                         {t("stravisCoaHierarchyUpload.cancelUpload")}
                       </StyledCancelUploadButton>
                     </StyledFileInfoBox>
-                    {getCoaFileType(entry.file.name) === null && (
-                      <Alert severity="warning" sx={{ marginTop: 1 }}>
-                        {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
-                      </Alert>
-                    )}
+                    {(() => {
+                      const validation = getFileNameIssue(entry.file.name);
+                      if (validation.issue === "wrong-prefix") {
+                        return (
+                          <Alert severity="warning" sx={{ marginTop: 1 }}>
+                            {t("stravisCoaHierarchyUpload.invalidFileNameInfo", {
+                              suggestedName: validation.suggestedName,
+                            })}
+                          </Alert>
+                        );
+                      }
+                      if (validation.issue === "wrong-type") {
+                        return (
+                          <Alert severity="warning" sx={{ marginTop: 1 }}>
+                            {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
+                          </Alert>
+                        );
+                      }
+                      return null;
+                    })()}
                   </StyledSelectedFileBox>
               ))}
 
