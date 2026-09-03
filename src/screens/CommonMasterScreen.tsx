@@ -688,11 +688,21 @@ export default function CommonMasterScreen() {
     //   (excluding their own row so reverting an edit isn't self-flagged).
     const snapshotRows = searchSnapshotRef.current;
     const duplicateRows = new Set<number>();
+    const claimedSnapshotIndices = new Set<number>();
+    editedRowIndices.forEach((idx) => {
+      const meta = rowMetadata[idx];
+      if (!meta) return;
+      const snapIdx = snapshotRows.findIndex((snap) =>
+        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+      );
+      if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
+    });
     newRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
       if (!row) return;
       if (
-        snapshotRows.some((snap) =>
+        snapshotRows.some((snap, snapIdx) =>
+          !claimedSnapshotIndices.has(snapIdx) &&
           row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {

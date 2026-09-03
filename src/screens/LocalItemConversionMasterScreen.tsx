@@ -796,11 +796,21 @@ function LocalItemConversionMasterScreen() {
     // - New rows: must not match any row in the last search snapshot.
     // - Edited rows: must not collapse onto another row in the current table.
     const duplicateRows = new Set<number>();
+    const claimedSnapshotIndices = new Set<number>();
+    editedRowIndices.forEach((idx) => {
+      const meta = rowMetadata[idx];
+      if (!meta) return;
+      const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
+        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+      );
+      if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
+    });
     newRowIndices.forEach((idx) => {
       const row = csvData.rows[idx];
       if (!row) return;
       if (
-        searchSnapshotRef.current.some((snap) =>
+        searchSnapshotRef.current.some((snap, snapIdx) =>
+          !claimedSnapshotIndices.has(snapIdx) &&
           row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {
@@ -1014,14 +1024,16 @@ function LocalItemConversionMasterScreen() {
       return;
     }
 
-    const enValidation = validateCsvColumns(
-      parsed.headers,
-      LOCAL_ITEM_CONVERSION_MASTER_HEADERS,
+    // Exclude the deletion flag column from upload validation — it was removed
+    // from the UI and the downloadable template, so uploaded files won't have it.
+    const validationHeadersEN = LOCAL_ITEM_CONVERSION_MASTER_HEADERS.filter(
+      (_, i) => i !== COL_DELETION_FLAG,
     );
-    const jaValidation = validateCsvColumns(
-      parsed.headers,
-      LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA,
+    const validationHeadersJA = LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA.filter(
+      (_, i) => i !== COL_DELETION_FLAG,
     );
+    const enValidation = validateCsvColumns(parsed.headers, validationHeadersEN);
+    const jaValidation = validateCsvColumns(parsed.headers, validationHeadersJA);
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
       // Determine which template the file most closely matched (fewest missing

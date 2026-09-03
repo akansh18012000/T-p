@@ -1129,11 +1129,21 @@ export default function GpcMasterScreen() {
     //   (excluding their own original snapshot entry so reverting an edit
     //   isn't self-flagged).
     const duplicateRows = new Set<number>();
+    const claimedSnapshotIndices = new Set<number>();
+    editedRowIndices.forEach((idx) => {
+      const meta = rowMetadata[idx];
+      if (!meta) return;
+      const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
+        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+      );
+      if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
+    });
     newRowIndices.forEach((idx) => {
       const row = rowsForValidation[idx];
       if (!row) return;
       if (
-        searchSnapshotRef.current.some((snap) =>
+        searchSnapshotRef.current.some((snap, snapIdx) =>
+          !claimedSnapshotIndices.has(snapIdx) &&
           row.every((cell, i) => cellsMatch(cell, snap[i])),
         )
       ) {

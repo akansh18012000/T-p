@@ -499,10 +499,11 @@ function FxRateEntryMasterScreen() {
     const getKey = (row: string[]) =>
       [row[0], row[1], row[2], row[3]].map((v) => String(v ?? "").trim()).join("|");
     const allTargetIndices = [...createdRowIndices, ...updatedRowIndices];
+    const claimedOriginalIndices = new Set<number>(updatedRowOriginalIndices);
     const duplicateRowNumbers: number[] = [];
     createdRows.forEach((row, idx) => {
       const key = getKey(row);
-      if (originalRowsRef.current.some((orig) => getKey(orig) === key)) {
+      if (originalRowsRef.current.some((orig, oIdx) => !claimedOriginalIndices.has(oIdx) && getKey(orig) === key)) {
         duplicateRowNumbers.push(createdRowIndices[idx] + 1);
         return;
       }

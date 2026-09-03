@@ -415,11 +415,21 @@ function YearMonthMasterScreen() {
     // - Edited rows: must not collapse onto another row in the current table
     //   (excluding their own row so reverting an edit isn't self-flagged).
     const duplicateRows = new Set<number>();
+    const claimedSnapshotIndices = new Set<number>();
+    editedRowIndices.forEach((idx) => {
+      const meta = rowMetadata[idx];
+      if (!meta) return;
+      const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
+        EDITABLE_COL_INDICES.every((c) => cellsMatch(snap[c], meta.original[c]))
+      );
+      if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
+    });
     newRowIndices.forEach((idx) => {
       const row = rows[idx];
       if (!row) return;
       if (
-        searchSnapshotRef.current.some((snap) =>
+        searchSnapshotRef.current.some((snap, snapIdx) =>
+          !claimedSnapshotIndices.has(snapIdx) &&
           EDITABLE_COL_INDICES.every((c) => cellsMatch(row[c], snap[c])),
         )
       ) {
