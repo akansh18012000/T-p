@@ -414,6 +414,7 @@
   "localItemConversion": {
     "searchCondition": "検索条件",
     "yearAndMonth": "年月",
+    "yearAndMonthRequired": "年月は必須です。",
     "manufacturerCode": "メーカーコード",
     "searchPlaceholderMinChars": "検索するには3文字を入力してください",
     "manufacturerPartNumberLabel": "メーカー品番",

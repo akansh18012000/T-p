@@ -22,6 +22,7 @@ import {
   CircularProgress,
   Select,
   MenuItem,
+  Typography,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -89,7 +90,7 @@ import {
   StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
-  StyledFormControlLabel,
+  StyledFormHelperText,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
@@ -348,6 +349,7 @@ function LocalItemConversionMasterScreen() {
   const [manufacturerName, setManufacturerName] = useState("");
   const [manufacturerPartNumber, setManufacturerPartNumber] = useState("");
   const [itemNotRegistered, setItemNotRegistered] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
@@ -566,6 +568,13 @@ function LocalItemConversionMasterScreen() {
   const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
   const handleSearch = async () => {
+    const errors: Record<string, string> = {};
+    if (!yearMonth) {
+      errors.yearMonth = t("localItemConversion.yearAndMonthRequired");
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setSearchExecuted(true);
     setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
@@ -1256,239 +1265,292 @@ function LocalItemConversionMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={systemIdOptions}
-                    value={systemId || null}
-                    inputValue={systemIdSearchInput}
-                    onInputChange={(_event, newInputValue) => {
-                      setSystemIdSearchInput(newInputValue);
-                      searchConditionsRef.current.systemId = newInputValue;
-                    }}
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setSystemId(v);
-                      setSystemIdSearchInput(v);
-                      searchConditionsRef.current.systemId = v;
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={systemIdsLoading}
-                    loading={systemIdsLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("localItemConversion.systemId")}
-                        placeholder={t(
-                          "localItemConversion.searchPlaceholderMinChars",
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.systemId")}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={systemIdOptions}
+                        value={systemId || null}
+                        inputValue={systemIdSearchInput}
+                        onInputChange={(_event, newInputValue) => {
+                          setSystemIdSearchInput(newInputValue);
+                          searchConditionsRef.current.systemId = newInputValue;
+                        }}
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setSystemId(v);
+                          setSystemIdSearchInput(v);
+                          searchConditionsRef.current.systemId = v;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={systemIdsLoading}
+                        loading={systemIdsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => (
+                          <StyledAutocompleteInput
+                            {...params}
+                            sx={DENSE_FIELD_SX}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {systemIdsLoading ? (
+                                    <CircularProgress size={18} />
+                                  ) : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
                         )}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {systemIdsLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.yearAndMonth")}
+                        <Box component="span" sx={{ color: "error.main", ml: 0.25 }}>*</Box>
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={yearMonth}
+                          onChange={(newValue) => {
+                            setYearMonth(newValue);
+                            searchConditionsRef.current.yearMonth = newValue;
+                          }}
+                          views={["year", "month"]}
+                          format="yyyyMM"
+                          open={yearMonthPickerOpen}
+                          onOpen={() => setYearMonthPickerOpen(true)}
+                          onClose={() => setYearMonthPickerOpen(false)}
+                          slots={{
+                            textField: StyledInputBase,
+                          }}
+                          slotProps={{
+                            field: { clearable: true },
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              error: !!fieldErrors.yearMonth,
+                              onClick: () => setYearMonthPickerOpen(true),
+                              inputProps: {
+                                readOnly: true,
+                                style: {
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  caretColor: "transparent",
+                                },
+                              },
+                              sx: {
+                                cursor: "pointer",
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                                "& input::selection": {
+                                  backgroundColor: "transparent",
+                                },
+                                ...DENSE_FIELD_SX,
+                              },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                      {fieldErrors.yearMonth && (
+                        <StyledFormHelperText error>
+                          {fieldErrors.yearMonth}
+                        </StyledFormHelperText>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.localItemCode")}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={localItemCode}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLocalItemCode(val);
+                          searchConditionsRef.current.localItemCode = val;
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("localItemConversion.yearAndMonth")}
-                      value={yearMonth}
-                      onChange={(newValue) => {
-                        setYearMonth(newValue);
-                        searchConditionsRef.current.yearMonth = newValue;
-                      }}
-                      views={["year", "month"]}
-                      format="yyyyMM"
-                      open={yearMonthPickerOpen}
-                      onOpen={() => setYearMonthPickerOpen(true)}
-                      onClose={() => setYearMonthPickerOpen(false)}
-                      slots={{
-                        textField: StyledInputBase,
-                      }}
-                      slotProps={{
-                        field: { clearable: true },
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          onClick: () => setYearMonthPickerOpen(true),
-                          inputProps: {
-                            readOnly: true,
-                            style: {
-                              cursor: "pointer",
-                              userSelect: "none",
-                              caretColor: "transparent",
-                            },
-                          },
-                          sx: {
-                            cursor: "pointer",
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
-                            "& input::selection": {
-                              backgroundColor: "transparent",
-                            },
-                            ...DENSE_FIELD_SX,
-                          },
-                        },
-                      }}
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.manufacturerCode")}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={manufacturerCodeOptions}
+                        value={manufacturerCode || null}
+                        inputValue={manufacturerCodeSearchInput}
+                        onInputChange={(_event, newInputValue) => {
+                          setManufacturerCodeSearchInput(newInputValue);
+                          searchConditionsRef.current.manufacturerCode =
+                            newInputValue;
+                        }}
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturerCode(v);
+                          setManufacturerCodeSearchInput(v);
+                          searchConditionsRef.current.manufacturerCode = v;
+                          const name = manufacturerNameMap[v] || "";
+                          setManufacturerName(name);
+                          searchConditionsRef.current.manufacturerName = name;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturersLoading}
+                        loading={manufacturersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => (
+                          <StyledAutocompleteInput
+                            {...params}
+                            sx={DENSE_FIELD_SX}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {manufacturersLoading ? (
+                                    <CircularProgress size={18} />
+                                  ) : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
+                        )}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.manufacturerName")}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={manufacturerName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setManufacturerName(val);
+                          searchConditionsRef.current.manufacturerName = val;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.manufacturerPartNumberLabel")}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={manufacturerPartNumberFilteredOptions}
+                        value={manufacturerPartNumber || null}
+                        inputValue={manufacturerPartNumberSearchInput}
+                        onInputChange={(_event, newInputValue) => {
+                          setManufacturerPartNumberSearchInput(newInputValue);
+                          searchConditionsRef.current.manufacturerPartNumber =
+                            newInputValue;
+                        }}
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturerPartNumber(v);
+                          setManufacturerPartNumberSearchInput(v);
+                          searchConditionsRef.current.manufacturerPartNumber = v;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturersLoading}
+                        loading={manufacturersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => (
+                          <StyledAutocompleteInput
+                            {...params}
+                            sx={DENSE_FIELD_SX}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {manufacturersLoading ? (
+                                    <CircularProgress size={18} />
+                                  ) : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
+                        )}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
+                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                        {t("localItemConversion.itemNotRegistered")}
+                      </Typography>
+                    </Box>
+                    <StyledCheckbox
+                      size="small"
+                      checked={itemNotRegistered}
+                      onChange={(e) => setItemNotRegistered(e.target.checked)}
+                      inputProps={{ "aria-label": t("localItemConversion.itemNotRegistered") }}
                     />
-                  </LocalizationProvider>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("localItemConversion.localItemCode")}
-                    value={localItemCode}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLocalItemCode(val);
-                      searchConditionsRef.current.localItemCode = val;
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={manufacturerCodeOptions}
-                    value={manufacturerCode || null}
-                    inputValue={manufacturerCodeSearchInput}
-                    onInputChange={(_event, newInputValue) => {
-                      setManufacturerCodeSearchInput(newInputValue);
-                      searchConditionsRef.current.manufacturerCode =
-                        newInputValue;
-                    }}
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturerCode(v);
-                      setManufacturerCodeSearchInput(v);
-                      searchConditionsRef.current.manufacturerCode = v;
-                      const name = manufacturerNameMap[v] || "";
-                      setManufacturerName(name);
-                      searchConditionsRef.current.manufacturerName = name;
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturersLoading}
-                    loading={manufacturersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("localItemConversion.manufacturerCode")}
-                        placeholder={t(
-                          "localItemConversion.searchPlaceholderMinChars",
-                        )}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("localItemConversion.manufacturerName")}
-                    value={manufacturerName}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setManufacturerName(val);
-                      searchConditionsRef.current.manufacturerName = val;
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={manufacturerPartNumberFilteredOptions}
-                    value={manufacturerPartNumber || null}
-                    inputValue={manufacturerPartNumberSearchInput}
-                    onInputChange={(_event, newInputValue) => {
-                      setManufacturerPartNumberSearchInput(newInputValue);
-                      searchConditionsRef.current.manufacturerPartNumber =
-                        newInputValue;
-                    }}
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturerPartNumber(v);
-                      setManufacturerPartNumberSearchInput(v);
-                      searchConditionsRef.current.manufacturerPartNumber = v;
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturersLoading}
-                    loading={manufacturersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("localItemConversion.manufacturerPartNumberLabel")}
-                        placeholder={t(
-                          "localItemConversion.searchPlaceholderMinChars",
-                        )}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
-                    <StyledFormControlLabel
-                      control={
-                        <StyledCheckbox
-                          checked={itemNotRegistered}
-                          onChange={(e) =>
-                            setItemNotRegistered(e.target.checked)
-                          }
-                        />
-                      }
-                      label={t("localItemConversion.itemNotRegistered")}
-                    />
                     <StyledSearchButton
                       variant="contained"
                       onClick={handleSearch}

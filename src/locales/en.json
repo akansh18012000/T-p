@@ -414,6 +414,7 @@
   "localItemConversion": {
     "searchCondition": "Search Condition",
     "yearAndMonth": "Year and Month",
+    "yearAndMonthRequired": "Year and month is required.",
     "manufacturerCode": "Manufacturer Code",
     "searchPlaceholderMinChars": "Enter 3 characters to search",
     "manufacturerPartNumberLabel": "Manufacturer Part Number",
