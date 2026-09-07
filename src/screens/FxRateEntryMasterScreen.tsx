@@ -18,7 +18,6 @@ import {
   InputAdornment,
   MenuItem,
   Select,
-  InputLabel,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -33,7 +32,7 @@ import {
   StyledSectionContent,
   StyledInputBase,
   StyledFormControl,
-  StyledFormControlLabel,
+  StyledSearchFieldLabel,
   StyledSearchButton,
   StyledSearchButtonsBox,
   StyledResultBorderBox,
@@ -863,130 +862,159 @@ function FxRateEntryMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("fxRateEntryMaster.processingDate")}
-                      value={processingDate}
-                      onChange={(newValue) => {
-                        setProcessingDate(newValue);
-                        searchConditionsRef.current.processingDate = newValue;
-                      }}
-                      views={["year", "month"]}
-                      format="yyyyMM"
-                      open={processingDatePickerOpen}
-                      onOpen={() => setProcessingDatePickerOpen(true)}
-                      onClose={() => setProcessingDatePickerOpen(false)}
-                      slots={{ textField: StyledInputBase }}
-                      slotProps={{
-                        field: { clearable: true },
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          onClick: () => setProcessingDatePickerOpen(true),
-                          inputProps: {
-                            readOnly: true,
-                            style: {
-                              cursor: "pointer",
-                              userSelect: "none",
-                              caretColor: "transparent",
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("fxRateEntryMaster.processingDate")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={processingDate}
+                          onChange={(newValue) => {
+                            setProcessingDate(newValue);
+                            searchConditionsRef.current.processingDate = newValue;
+                          }}
+                          views={["year", "month"]}
+                          format="yyyyMM"
+                          open={processingDatePickerOpen}
+                          onOpen={() => setProcessingDatePickerOpen(true)}
+                          onClose={() => setProcessingDatePickerOpen(false)}
+                          slots={{ textField: StyledInputBase }}
+                          slotProps={{
+                            field: { clearable: true },
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              onClick: () => setProcessingDatePickerOpen(true),
+                              inputProps: {
+                                readOnly: true,
+                                style: {
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  caretColor: "transparent",
+                                },
+                              },
+                              sx: {
+                                cursor: "pointer",
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                                "& input::selection": {
+                                  backgroundColor: "transparent",
+                                },
+                                ...DENSE_FIELD_SX,
+                              },
                             },
-                          },
-                          sx: {
-                            cursor: "pointer",
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
-                            "& input::selection": {
-                              backgroundColor: "transparent",
-                            },
-                            ...DENSE_FIELD_SX,
-                          },
-                        },
-                      }}
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("fxRateEntryMaster.currencyType")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
+                        <Select
+                          value={currencyType}
+                          displayEmpty
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCurrencyType(val);
+                            searchConditionsRef.current.currencyType = val;
+                          }}
+                        >
+                          <MenuItem value="">
+                            <em>{t("fxRateEntryMaster.all")}</em>
+                          </MenuItem>
+                          {CURRENCY_TYPE_OPTIONS.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              {t(opt.labelKey)}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </StyledFormControl>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("fxRateEntryMaster.fromCurrency")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
+                        <Select
+                          value={fromCurrency}
+                          displayEmpty
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setFromCurrency(val);
+                            searchConditionsRef.current.fromCurrency = val;
+                          }}
+                        >
+                          <MenuItem value="">
+                            <em>{t("fxRateEntryMaster.all")}</em>
+                          </MenuItem>
+                          {CURRENCY_CODES.map((code) => (
+                            <MenuItem key={code} value={code}>
+                              {code}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </StyledFormControl>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("fxRateEntryMaster.toCurrency")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
+                        <Select
+                          value={toCurrency}
+                          displayEmpty
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setToCurrency(val);
+                            searchConditionsRef.current.toCurrency = val;
+                          }}
+                        >
+                          <MenuItem value="">
+                            <em>{t("fxRateEntryMaster.all")}</em>
+                          </MenuItem>
+                          {CURRENCY_CODES.map((code) => (
+                            <MenuItem key={code} value={code}>
+                              {code}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </StyledFormControl>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("fxRateEntryMaster.deletionFlag")}
+                    </StyledSearchFieldLabel>
+                    <StyledCheckbox
+                      size="small"
+                      checked={deletionFlag}
+                      onChange={(e) => setDeletionFlag(e.target.checked)}
+                      slotProps={{ input: { "aria-label": t("fxRateEntryMaster.deletionFlag") } }}
                     />
-                  </LocalizationProvider>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
-                    <InputLabel>{t("fxRateEntryMaster.currencyType")}</InputLabel>
-                    <Select
-                      value={currencyType}
-                      label={t("fxRateEntryMaster.currencyType")}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCurrencyType(val);
-                        searchConditionsRef.current.currencyType = val;
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>{t("fxRateEntryMaster.all")}</em>
-                      </MenuItem>
-                      {CURRENCY_TYPE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt.value} value={opt.value}>
-                          {t(opt.labelKey)}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </StyledFormControl>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
-                    <InputLabel>{t("fxRateEntryMaster.fromCurrency")}</InputLabel>
-                    <Select
-                      value={fromCurrency}
-                      label={t("fxRateEntryMaster.fromCurrency")}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFromCurrency(val);
-                        searchConditionsRef.current.fromCurrency = val;
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>{t("fxRateEntryMaster.all")}</em>
-                      </MenuItem>
-                      {CURRENCY_CODES.map((code) => (
-                        <MenuItem key={code} value={code}>
-                          {code}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </StyledFormControl>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledFormControl fullWidth size="small" sx={DENSE_FIELD_SX}>
-                    <InputLabel>{t("fxRateEntryMaster.toCurrency")}</InputLabel>
-                    <Select
-                      value={toCurrency}
-                      label={t("fxRateEntryMaster.toCurrency")}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setToCurrency(val);
-                        searchConditionsRef.current.toCurrency = val;
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>{t("fxRateEntryMaster.all")}</em>
-                      </MenuItem>
-                      {CURRENCY_CODES.map((code) => (
-                        <MenuItem key={code} value={code}>
-                          {code}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </StyledFormControl>
-                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
-                    <StyledFormControlLabel
-                      control={
-                        <StyledCheckbox
-                          checked={deletionFlag}
-                          onChange={(e) => setDeletionFlag(e.target.checked)}
-                        />
-                      }
-                      label={t("fxRateEntryMaster.deletionFlag")}
-                    />
                     <StyledSearchButton
                       variant="contained"
                       onClick={handleSearch}
@@ -1057,22 +1085,24 @@ function FxRateEntryMasterScreen() {
                           placeholder={t("fxRateEntryMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

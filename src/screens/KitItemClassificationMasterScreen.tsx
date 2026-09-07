@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import {
   Box,
-  Typography,
   Paper,
   TextField,
   Grid,
@@ -82,6 +81,7 @@ import {
   StyledCancelUploadButton,
   StyledUploadSectionContent,
   StyledSnackbarAlert,
+  StyledSearchFieldLabel,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
@@ -1015,95 +1015,115 @@ export default function KitItemClassificationMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleKitManufacturerPartNumberOptions}
-                    value={kitManufacturerPartNumber || null}
-                    inputValue={kitManufacturerPartNumberSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setKitManufacturerPartNumberSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setKitManufacturerPartNumber(v);
-                      setKitManufacturerPartNumberSearchInput(v);
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={kitManufacturerPartNumbersLoading}
-                    loading={kitManufacturerPartNumbersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("kitItemClassification.kitManufacturerPartNumber")}
-                        placeholder={t("kitItemClassification.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {kitManufacturerPartNumbersLoading ? (
-                                <CircularProgress
-                                  size={18}
-                                />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("kitItemClassification.kitManufacturerPartNumber")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleKitManufacturerPartNumberOptions}
+                        value={kitManufacturerPartNumber || null}
+                        inputValue={kitManufacturerPartNumberSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setKitManufacturerPartNumberSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setKitManufacturerPartNumber(v);
+                          setKitManufacturerPartNumberSearchInput(v);
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={kitManufacturerPartNumbersLoading}
+                        loading={kitManufacturerPartNumbersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {kitManufacturerPartNumbersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleKitManufacturerOptions}
-                    value={kitManufacturer || null}
-                    inputValue={kitManufacturerSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setKitManufacturerSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setKitManufacturer(v);
-                      setKitManufacturerSearchInput(v);
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={kitManufacturersLoading}
-                    loading={kitManufacturersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("kitItemClassification.kitManufacturer")}
-                        placeholder={t("kitItemClassification.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {kitManufacturersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("kitItemClassification.kitManufacturer")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleKitManufacturerOptions}
+                        value={kitManufacturer || null}
+                        inputValue={kitManufacturerSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setKitManufacturerSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setKitManufacturer(v);
+                          setKitManufacturerSearchInput(v);
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={kitManufacturersLoading}
+                        loading={kitManufacturersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {kitManufacturersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
@@ -1181,22 +1201,24 @@ export default function KitItemClassificationMasterScreen() {
                           placeholder={t("kitItemClassification.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

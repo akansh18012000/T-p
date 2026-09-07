@@ -30,9 +30,7 @@ import {
   StyledSectionContent,
   StyledAutocompleteInput,
   StyledInputBase,
-  StyledFormControlLabel,
-  StyledPrimaryCaption,
-  StyledItemDetailsBox,
+  StyledSearchFieldLabel,
   StyledSearchButton,
   StyledSearchButtonsBox,
   StyledResultBorderBox,
@@ -1158,219 +1156,290 @@ export default function CommonConversionMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={itemIdOptions}
-                      value={itemId || null}
-                      inputValue={itemIdSearchInput}
-                      onInputChange={(_e, v) => {
-                        setItemIdSearchInput(v);
-                        searchConditionsRef.current.itemId = v;
-                        if (!v) setItemId("");
-                      }}
-                      onChange={(_e, v) => {
-                        const s = v ?? "";
-                        setItemId(s);
-                        setItemIdSearchInput(s);
-                        searchConditionsRef.current.itemId = s;
-                      }}
-                      freeSolo
-                      openOnFocus
-                      disabled={itemIdLoading}
-                      loading={itemIdLoading}
-                      filterOptions={(x) => x}
-                      ListboxComponent={PaginatedAutocompleteListbox}
-                      slotProps={paginatedListboxSlotProps}
-                      renderInput={(params) => (
-                        <StyledAutocompleteInput
-                          {...params}
-                          label={t("commonConversionMaster.itemId")}
-                          placeholder={t("commonConversionMaster.enterCharsToSearch")}
-                          sx={(theme) => ({
-                            "& .MuiInputBase-root.Mui-disabled": {
-                              backgroundColor: theme.palette.common.white,
-                            },
-                            ...DENSE_FIELD_SX,
-                          })}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {itemIdLoading ? (
-                                  <CircularProgress size={18} />
-                                ) : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    {itemSelected && (
-                      <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption" fontSize={16}>
-                          {t("commonConversionMaster.name")}: {itemSelected.name}
-                        </StyledPrimaryCaption>
-                        <StyledPrimaryCaption variant="caption" fontSize={16}>
-                          {t("commonConversionMaster.abstract")}: {itemSelected.abstract}
-                        </StyledPrimaryCaption>
-                      </StyledItemDetailsBox>
-                    )}
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={systemIdOptions}
-                    value={systemId || null}
-                    inputValue={systemIdSearchInput}
-                    onInputChange={(_e, v) => {
-                      setSystemIdSearchInput(v);
-                      searchConditionsRef.current.systemId = v;
-                    }}
-                    onChange={(_e, v) => {
-                      const s = v ?? "";
-                      setSystemId(s);
-                      setSystemIdSearchInput(s);
-                      searchConditionsRef.current.systemId = s;
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={systemIdsLoading}
-                    loading={systemIdsLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        label={t("commonConversionMaster.systemId")}
-                        placeholder={t("commonConversionMaster.enterCharsToSearch")}
-                        sx={(theme) => ({
-                          "& .MuiInputBase-root.Mui-disabled": {
-                            backgroundColor: theme.palette.common.white,
-                          },
-                          ...DENSE_FIELD_SX,
-                        })}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {systemIdsLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.itemId")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={itemIdOptions}
+                        value={itemId || null}
+                        inputValue={itemIdSearchInput}
+                        onInputChange={(_e, v) => {
+                          setItemIdSearchInput(v);
+                          searchConditionsRef.current.itemId = v;
+                          if (!v) setItemId("");
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setItemId(s);
+                          setItemIdSearchInput(s);
+                          searchConditionsRef.current.itemId = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={itemIdLoading}
+                        loading={itemIdLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={(theme) => ({
+                                "& .MuiInputBase-root.Mui-disabled": {
+                                  backgroundColor: theme.palette.common.white,
+                                },
+                                ...DENSE_FIELD_SX,
+                              })}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {itemIdLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.preConversionCode1")}
-                    sx={DENSE_FIELD_SX}
-                    value={preconversionCode1}
-                    onChange={(e) => {
-                      setPreconversionCode1(e.target.value);
-                      searchConditionsRef.current.preconversionCode1 =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.name")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontSize: "0.875rem" }}>
+                      {itemSelected?.name ?? ""}
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.preConversionName1")}
-                    sx={DENSE_FIELD_SX}
-                    value={preconversionCode1Name}
-                    onChange={(e) => {
-                      setPreconversionCode1Name(e.target.value);
-                      searchConditionsRef.current.preconversionCode1Name =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.abstract")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontSize: "0.875rem" }}>
+                      {itemSelected?.abstract ?? ""}
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.preConversionCode2")}
-                    sx={DENSE_FIELD_SX}
-                    value={preconversionCode2}
-                    onChange={(e) => {
-                      setPreconversionCode2(e.target.value);
-                      searchConditionsRef.current.preconversionCode2 =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.systemId")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={systemIdOptions}
+                        value={systemId || null}
+                        inputValue={systemIdSearchInput}
+                        onInputChange={(_e, v) => {
+                          setSystemIdSearchInput(v);
+                          searchConditionsRef.current.systemId = v;
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setSystemId(s);
+                          setSystemIdSearchInput(s);
+                          searchConditionsRef.current.systemId = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={systemIdsLoading}
+                        loading={systemIdsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={(theme) => ({
+                                "& .MuiInputBase-root.Mui-disabled": {
+                                  backgroundColor: theme.palette.common.white,
+                                },
+                                ...DENSE_FIELD_SX,
+                              })}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {systemIdsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.preConversionName2")}
-                    sx={DENSE_FIELD_SX}
-                    value={preconversionCode2Name}
-                    onChange={(e) => {
-                      setPreconversionCode2Name(e.target.value);
-                      searchConditionsRef.current.preconversionCode2Name =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 8 }} />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.preConversionCode1")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={preconversionCode1}
+                        onChange={(e) => {
+                          setPreconversionCode1(e.target.value);
+                          searchConditionsRef.current.preconversionCode1 =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.convertedCode")}
-                    sx={DENSE_FIELD_SX}
-                    value={convertedCode}
-                    onChange={(e) => {
-                      setConvertedCode(e.target.value);
-                      searchConditionsRef.current.convertedCode =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.preConversionName1")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={preconversionCode1Name}
+                        onChange={(e) => {
+                          setPreconversionCode1Name(e.target.value);
+                          searchConditionsRef.current.preconversionCode1Name =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    label={t("commonConversionMaster.convertedName")}
-                    sx={DENSE_FIELD_SX}
-                    value={convertedCodeName}
-                    onChange={(e) => {
-                      setConvertedCodeName(e.target.value);
-                      searchConditionsRef.current.convertedCodeName =
-                        e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 4 }} />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.preConversionCode2")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={preconversionCode2}
+                        onChange={(e) => {
+                          setPreconversionCode2(e.target.value);
+                          searchConditionsRef.current.preconversionCode2 =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.preConversionName2")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={preconversionCode2Name}
+                        onChange={(e) => {
+                          setPreconversionCode2Name(e.target.value);
+                          searchConditionsRef.current.preconversionCode2Name =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }} />
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.convertedCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={convertedCode}
+                        onChange={(e) => {
+                          setConvertedCode(e.target.value);
+                          searchConditionsRef.current.convertedCode =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.convertedName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={convertedCodeName}
+                        onChange={(e) => {
+                          setConvertedCodeName(e.target.value);
+                          searchConditionsRef.current.convertedCodeName =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonConversionMaster.deletionFlag")}
+                    </StyledSearchFieldLabel>
+                    <StyledCheckbox
+                      size="small"
+                      checked={deletionFlag}
+                      onChange={(e) => {
+                        setDeletionFlag(e.target.checked);
+                        searchConditionsRef.current.deletionFlag =
+                          e.target.checked;
+                      }}
+                      slotProps={{ input: { "aria-label": t("commonConversionMaster.deletionFlag") } }}
+                    />
+                  </Box>
                 </Grid>
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
-                    <StyledFormControlLabel
-                      control={
-                        <StyledCheckbox
-                          checked={deletionFlag}
-                          onChange={(e) => {
-                            setDeletionFlag(e.target.checked);
-                            searchConditionsRef.current.deletionFlag =
-                              e.target.checked;
-                          }}
-                        />
-                      }
-                      label={t("commonConversionMaster.deletionFlag")}
-                    />
                     <StyledSearchButton
                       variant="contained"
                       onClick={() => handleSearch()}
@@ -1446,22 +1515,24 @@ export default function CommonConversionMasterScreen() {
                           placeholder={t("commonConversionMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

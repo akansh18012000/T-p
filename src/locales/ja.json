@@ -639,6 +639,7 @@
     "productClassificationName": "製品分類名",
     "transferDestinationBU3": "振替先BU3",
     "transferDestBU3": "振替先BU3",
+    "name": "名称",
     "patternId": "パターンID",
     "effectiveStartDate": "有効開始日",
     "expirationDate": "有効終了日",

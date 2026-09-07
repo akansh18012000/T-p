@@ -67,11 +67,9 @@ import {
   StyledExpandMoreIcon,
   StyledInputBase,
   StyledAutocompleteInput,
-  StyledPrimaryCaption,
-  StyledItemDetailsBox,
+  StyledSearchFieldLabel,
   StyledSearchButton,
   StyledSearchButtonsBox,
-  StyledFormControlLabel,
   StyledCheckbox,
   StyledResultBorderBox,
   StyledResultPaper,
@@ -1080,296 +1078,370 @@ export default function GlobalDadMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={systemIdOptions}
-                    value={systemId || null}
-                    inputValue={systemIdSearchInput}
-                    onInputChange={(_e, v) => {
-                      setSystemIdSearchInput(v);
-                      searchConditionsRef.current.systemId = v;
-                    }}
-                    onChange={(_e, v) => {
-                      const s = v ?? "";
-                      setSystemId(s);
-                      setSystemIdSearchInput(s);
-                      searchConditionsRef.current.systemId = s;
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={systemIdsLoading}
-                    loading={systemIdsLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("globalDadMaster.systemId")}
-                        placeholder={t("globalDadMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {systemIdsLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.systemId")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={systemIdOptions}
+                        value={systemId || null}
+                        inputValue={systemIdSearchInput}
+                        onInputChange={(_e, v) => {
+                          setSystemIdSearchInput(v);
+                          searchConditionsRef.current.systemId = v;
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setSystemId(s);
+                          setSystemIdSearchInput(s);
+                          searchConditionsRef.current.systemId = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={systemIdsLoading}
+                        loading={systemIdsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {systemIdsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("globalDadMaster.salesLocationCode")}
-                    value={salesLocationCode}
-                    onChange={(e) => {
-                      setSalesLocationCode(e.target.value);
-                      searchConditionsRef.current.salesLocationCode =
-                        e.target.value;
-                    }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={localCustomerCodeOptions}
-                      value={localCustomerCode || null}
-                      inputValue={localCustomerSearchInput}
-                      onInputChange={(_e, v) => {
-                        setLocalCustomerSearchInput(v);
-                        searchConditionsRef.current.localCustomerCode = v;
-                      }}
-                      onChange={(_e, v) => {
-                        const s = v ?? "";
-                        setLocalCustomerCode(s);
-                        setLocalCustomerSearchInput(s);
-                        searchConditionsRef.current.localCustomerCode = s;
-                      }}
-                      freeSolo
-                      openOnFocus
-                      disabled={localCustomersLoading}
-                      loading={localCustomersLoading}
-                      filterOptions={(x) => x}
-                      ListboxComponent={PaginatedAutocompleteListbox}
-                      slotProps={paginatedListboxSlotProps}
-                      renderInput={(params) => (
-                        <StyledAutocompleteInput
-                          {...params}
-                          sx={DENSE_FIELD_SX}
-                          label={t("globalDadMaster.localCustomerCode")}
-                          placeholder={t("globalDadMaster.enterCharsToSearch")}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {localCustomersLoading ? (
-                                  <CircularProgress size={18} />
-                                ) : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    {localCustomerName && (
-                      <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption" fontSize={16}>
-                          {localCustomerName}
-                        </StyledPrimaryCaption>
-                      </StyledItemDetailsBox>
-                    )}
+                    </Box>
                   </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={productClassificationCodeOptions}
-                      value={productClassification || null}
-                      inputValue={productClassificationSearchInput}
-                      onInputChange={(_e, v) => {
-                        setProductClassificationSearchInput(v);
-                        searchConditionsRef.current.productClassification = v;
-                      }}
-                      onChange={(_e, v) => {
-                        const s = v ?? "";
-                        setProductClassification(s);
-                        setProductClassificationSearchInput(s);
-                        searchConditionsRef.current.productClassification = s;
-                      }}
-                      freeSolo
-                      openOnFocus
-                      disabled={productClassificationsLoading}
-                      loading={productClassificationsLoading}
-                      filterOptions={(x) => x}
-                      ListboxComponent={PaginatedAutocompleteListbox}
-                      slotProps={paginatedListboxSlotProps}
-                      renderInput={(params) => (
-                        <StyledAutocompleteInput
-                          {...params}
-                          sx={DENSE_FIELD_SX}
-                          label={t("globalDadMaster.productClassification")}
-                          placeholder={t("globalDadMaster.enterCharsToSearch")}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {productClassificationsLoading ? (
-                                  <CircularProgress size={18} />
-                                ) : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    {productClassificationName && (
-                      <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption">
-                          {productClassificationName}
-                        </StyledPrimaryCaption>
-                      </StyledItemDetailsBox>
-                    )}
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.salesLocationCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={salesLocationCode}
+                        onChange={(e) => {
+                          setSalesLocationCode(e.target.value);
+                          searchConditionsRef.current.salesLocationCode =
+                            e.target.value;
+                        }}
+                      />
+                    </Box>
                   </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={transferDestBU3CodeOptions}
-                      value={transferDestBU3 || null}
-                      inputValue={transferDestBU3SearchInput}
-                      onInputChange={(_e, v) => {
-                        setTransferDestBU3SearchInput(v);
-                        searchConditionsRef.current.transferDestBU3 = v;
-                      }}
-                      onChange={(_e, v) => {
-                        const s = v ?? "";
-                        setTransferDestBU3(s);
-                        setTransferDestBU3SearchInput(s);
-                        searchConditionsRef.current.transferDestBU3 = s;
-                      }}
-                      freeSolo
-                      openOnFocus
-                      disabled={transferDestBU3sLoading}
-                      loading={transferDestBU3sLoading}
-                      filterOptions={(x) => x}
-                      ListboxComponent={PaginatedAutocompleteListbox}
-                      slotProps={paginatedListboxSlotProps}
-                      renderInput={(params) => (
-                        <StyledAutocompleteInput
-                          {...params}
-                          sx={DENSE_FIELD_SX}
-                          label={t("globalDadMaster.transferDestinationBU3")}
-                          placeholder={t("globalDadMaster.enterCharsToSearch")}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {transferDestBU3sLoading ? (
-                                  <CircularProgress size={18} />
-                                ) : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    {transferDestBU3Name && (
-                      <StyledItemDetailsBox>
-                        <StyledPrimaryCaption variant="caption">
-                          {transferDestBU3Name}
-                        </StyledPrimaryCaption>
-                      </StyledItemDetailsBox>
-                    )}
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.localCustomerCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={localCustomerCodeOptions}
+                        value={localCustomerCode || null}
+                        inputValue={localCustomerSearchInput}
+                        onInputChange={(_e, v) => {
+                          setLocalCustomerSearchInput(v);
+                          searchConditionsRef.current.localCustomerCode = v;
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setLocalCustomerCode(s);
+                          setLocalCustomerSearchInput(s);
+                          searchConditionsRef.current.localCustomerCode = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={localCustomersLoading}
+                        loading={localCustomersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {localCustomersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Box>
                   </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("globalDadMaster.patternId")}
-                    value={patternId}
-                    onChange={(e) => {
-                      setPatternId(e.target.value);
-                      searchConditionsRef.current.patternId = e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.name")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontSize: "0.875rem", color: "text.primary" }}>
+                      {localCustomerName}
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("globalDadMaster.effectiveStartDate")}
-                      value={effectiveStartDate}
-                      onChange={(v) => {
-                        setEffectiveStartDate(v);
-                        searchConditionsRef.current.effectiveStartDate = v;
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.productClassification")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={productClassificationCodeOptions}
+                        value={productClassification || null}
+                        inputValue={productClassificationSearchInput}
+                        onInputChange={(_e, v) => {
+                          setProductClassificationSearchInput(v);
+                          searchConditionsRef.current.productClassification = v;
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setProductClassification(s);
+                          setProductClassificationSearchInput(s);
+                          searchConditionsRef.current.productClassification = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={productClassificationsLoading}
+                        loading={productClassificationsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {productClassificationsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.name")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontSize: "0.875rem", color: "text.primary" }}>
+                      {productClassificationName}
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.transferDestinationBU3")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={transferDestBU3CodeOptions}
+                        value={transferDestBU3 || null}
+                        inputValue={transferDestBU3SearchInput}
+                        onInputChange={(_e, v) => {
+                          setTransferDestBU3SearchInput(v);
+                          searchConditionsRef.current.transferDestBU3 = v;
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setTransferDestBU3(s);
+                          setTransferDestBU3SearchInput(s);
+                          searchConditionsRef.current.transferDestBU3 = s;
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={transferDestBU3sLoading}
+                        loading={transferDestBU3sLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {transferDestBU3sLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.name")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontSize: "0.875rem", color: "text.primary" }}>
+                      {transferDestBU3Name}
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.patternId")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={patternId}
+                        onChange={(e) => {
+                          setPatternId(e.target.value);
+                          searchConditionsRef.current.patternId = e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.effectiveStartDate")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={effectiveStartDate}
+                          onChange={(v) => {
+                            setEffectiveStartDate(v);
+                            searchConditionsRef.current.effectiveStartDate = v;
+                          }}
+                          views={["year", "month"]}
+                          format="yyyyMM"
+                          open={effectiveStartDatePickerOpen}
+                          onOpen={() => setEffectiveStartDatePickerOpen(true)}
+                          onClose={() => setEffectiveStartDatePickerOpen(false)}
+                          slots={datePickerSlots}
+                          slotProps={buildDatePickerSlotProps(setEffectiveStartDatePickerOpen)}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.expirationDate")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={expirationDate}
+                          onChange={(v) => {
+                            setExpirationDate(v);
+                            searchConditionsRef.current.expirationDate = v;
+                          }}
+                          views={["year", "month"]}
+                          format="yyyyMM"
+                          open={expirationDatePickerOpen}
+                          onOpen={() => setExpirationDatePickerOpen(true)}
+                          onClose={() => setExpirationDatePickerOpen(false)}
+                          slots={datePickerSlots}
+                          slotProps={buildDatePickerSlotProps(setExpirationDatePickerOpen)}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("globalDadMaster.deletionFlag")}
+                    </StyledSearchFieldLabel>
+                    <StyledCheckbox
+                      checked={deletionFlag}
+                      onChange={(e) => {
+                        setDeletionFlag(e.target.checked);
+                        searchConditionsRef.current.deletionFlag =
+                          e.target.checked;
                       }}
-                      views={["year", "month"]}
-                      format="yyyyMM"
-                      open={effectiveStartDatePickerOpen}
-                      onOpen={() => setEffectiveStartDatePickerOpen(true)}
-                      onClose={() => setEffectiveStartDatePickerOpen(false)}
-                      slots={datePickerSlots}
-                      slotProps={buildDatePickerSlotProps(setEffectiveStartDatePickerOpen)}
+                      slotProps={{ input: { "aria-label": t("globalDadMaster.deletionFlag") } }}
                     />
-                  </LocalizationProvider>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("globalDadMaster.expirationDate")}
-                      value={expirationDate}
-                      onChange={(v) => {
-                        setExpirationDate(v);
-                        searchConditionsRef.current.expirationDate = v;
-                      }}
-                      views={["year", "month"]}
-                      format="yyyyMM"
-                      open={expirationDatePickerOpen}
-                      onOpen={() => setExpirationDatePickerOpen(true)}
-                      onClose={() => setExpirationDatePickerOpen(false)}
-                      slots={datePickerSlots}
-                      slotProps={buildDatePickerSlotProps(setExpirationDatePickerOpen)}
-                    />
-                  </LocalizationProvider>
-                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
-                    <StyledFormControlLabel
-                      control={
-                        <StyledCheckbox
-                          checked={deletionFlag}
-                          onChange={(e) => {
-                            setDeletionFlag(e.target.checked);
-                            searchConditionsRef.current.deletionFlag =
-                              e.target.checked;
-                          }}
-                        />
-                      }
-                      label={t("globalDadMaster.deletionFlag")}
-                    />
                     <StyledSearchButton
                       variant="contained"
                       onClick={() => handleSearch()}
@@ -1445,22 +1517,24 @@ export default function GlobalDadMasterScreen() {
                           placeholder={t("globalDadMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

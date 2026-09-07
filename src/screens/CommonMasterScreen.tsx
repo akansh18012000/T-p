@@ -53,9 +53,8 @@ import {
   StyledSectionContent,
   StyledInputBase,
   StyledAutocompleteInput,
-  StyledPrimaryCaption,
+  StyledSearchFieldLabel,
   StyledSearchButtonsBox,
-  StyledFormControlLabel,
   StyledSearchButton,
   StyledResultBorderBox,
   StyledResultPaper,
@@ -963,189 +962,223 @@ export default function CommonMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Box>
-                    <Autocomplete
-                      fullWidth
-                      size="small"
-                      options={visibleGroupIdOptions}
-                      value={selectedGroupOption}
-                      inputValue={groupIdSearchInput}
-                      getOptionLabel={(o) =>
-                        typeof o === "string" ? o : o.id
-                      }
-                      getOptionKey={(o) =>
-                        typeof o === "string" ? o : o.key
-                      }
-                      isOptionEqualToValue={(option, value) =>
-                        option.key === value.key
-                      }
-                      renderOption={({ key, ...optionProps }, option) => (
-                        <li key={key} {...optionProps}>
-                          {typeof option === "string"
-                            ? option
-                            : `${option.id} - ${option.name}`}
-                        </li>
-                      )}
-                      onInputChange={(_e, v) => {
-                        setGroupIdSearchInput(v);
-                        searchConditionsRef.current.groupId = v;
-                        if (!v) {
-                          setGroupId("");
-                          setSelectedGroupOption(null);
-                          setCode("");
-                          setCodeSearchInput("");
-                          setCodeName("");
-                          searchConditionsRef.current.code = "";
-                          searchConditionsRef.current.codeName = "";
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonMaster.groupId")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleGroupIdOptions}
+                        value={selectedGroupOption}
+                        inputValue={groupIdSearchInput}
+                        getOptionLabel={(o) =>
+                          typeof o === "string" ? o : o.id
                         }
-                      }}
-                      onChange={(_e, v) => {
-                        const s = typeof v === "string" ? v : (v?.id ?? "");
-                        setGroupId(s);
-                        setGroupIdSearchInput(s);
-                        setSelectedGroupOption(typeof v === "string" ? null : (v ?? null));
-                        searchConditionsRef.current.groupId = s;
-                        if (!s) {
-                          setCode("");
-                          setCodeSearchInput("");
-                          setCodeName("");
-                          searchConditionsRef.current.code = "";
-                          searchConditionsRef.current.codeName = "";
+                        getOptionKey={(o) =>
+                          typeof o === "string" ? o : o.key
                         }
-                      }}
-                      freeSolo
-                      openOnFocus
-                      disabled={groupOptionsLoading}
-                      loading={groupOptionsLoading}
-                      filterOptions={(x) => x}
-                      ListboxComponent={PaginatedAutocompleteListbox}
-                      slotProps={paginatedListboxSlotProps}
-                      renderInput={(params) => (
-                        <StyledAutocompleteInput
-                          {...params}
-                          sx={DENSE_FIELD_SX}
-                          label={t("commonMaster.groupId")}
-                          placeholder={t("commonMaster.enterCharsToSearch")}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {groupOptionsLoading ? (
-                                  <CircularProgress size={18} />
-                                ) : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                    {selectedGroupOption && (
-                      <StyledPrimaryCaption variant="caption" fontSize={16}>
-                        {selectedGroupOption.name}
-                      </StyledPrimaryCaption>
-                    )}
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    disabled={!groupId || codeOptionsLoading}
-                    options={visibleCodeIdOptions}
-                    value={code || null}
-                    inputValue={codeSearchInput}
-                    onInputChange={(_e, v) => {
-                      setCodeSearchInput(v);
-                      searchConditionsRef.current.code = v;
-                      if (!v) {
-                        setCode("");
-                        setCodeName("");
-                        searchConditionsRef.current.codeName = "";
-                      }
-                    }}
-                    onChange={(_e, v) => {
-                      const s = v ?? "";
-                      setCode(s);
-                      setCodeSearchInput(s);
-                      searchConditionsRef.current.code = s;
-                      const selected = codeOptions.find((o) => o.code === s);
-                      if (selected) {
-                        setCodeName(selected.name);
-                        searchConditionsRef.current.codeName = selected.name;
-                      } else if (!s) {
-                        setCodeName("");
-                        searchConditionsRef.current.codeName = "";
-                      }
-                    }}
-                    freeSolo
-                    openOnFocus
-                    loading={codeOptionsLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledInputBase
-                        {...params}
-                        sx={
-                          codeOptionsLoading
-                            ? {
-                                ...DENSE_FIELD_SX,
-                                "& .MuiInputBase-root.Mui-disabled": {
-                                  backgroundColor: (theme) =>
-                                    theme.palette.background.paper,
+                        isOptionEqualToValue={(option, value) =>
+                          option.key === value.key
+                        }
+                        renderOption={({ key, ...optionProps }, option) => (
+                          <li key={key} {...optionProps}>
+                            {typeof option === "string"
+                              ? option
+                              : `${option.id} - ${option.name}`}
+                          </li>
+                        )}
+                        onInputChange={(_e, v) => {
+                          setGroupIdSearchInput(v);
+                          searchConditionsRef.current.groupId = v;
+                          if (!v) {
+                            setGroupId("");
+                            setSelectedGroupOption(null);
+                            setCode("");
+                            setCodeSearchInput("");
+                            setCodeName("");
+                            searchConditionsRef.current.code = "";
+                            searchConditionsRef.current.codeName = "";
+                          }
+                        }}
+                        onChange={(_e, v) => {
+                          const s = typeof v === "string" ? v : (v?.id ?? "");
+                          setGroupId(s);
+                          setGroupIdSearchInput(s);
+                          setSelectedGroupOption(typeof v === "string" ? null : (v ?? null));
+                          searchConditionsRef.current.groupId = s;
+                          if (!s) {
+                            setCode("");
+                            setCodeSearchInput("");
+                            setCodeName("");
+                            searchConditionsRef.current.code = "";
+                            searchConditionsRef.current.codeName = "";
+                          }
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={groupOptionsLoading}
+                        loading={groupOptionsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {groupOptionsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
                                 },
-                              }
-                            : DENSE_FIELD_SX
-                        }
-                        label={t("commonMaster.code")}
-                        placeholder={t("commonMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {codeOptionsLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    disabled={!groupId}
-                    sx={DENSE_FIELD_SX}
-                    label={t("commonMaster.codeName")}
-                    value={codeName}
-                    onChange={(e) => {
-                      setCodeName(e.target.value);
-                      searchConditionsRef.current.codeName = e.target.value;
-                    }}
-                  />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonMaster.groupName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0, fontWeight: 700, color: "text.primary", fontSize: "0.875rem" }}>
+                      {selectedGroupOption?.name ?? ""}
+                    </Box>
+                  </Box>
                 </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonMaster.code")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        disabled={!groupId || codeOptionsLoading}
+                        options={visibleCodeIdOptions}
+                        value={code || null}
+                        inputValue={codeSearchInput}
+                        onInputChange={(_e, v) => {
+                          setCodeSearchInput(v);
+                          searchConditionsRef.current.code = v;
+                          if (!v) {
+                            setCode("");
+                            setCodeName("");
+                            searchConditionsRef.current.codeName = "";
+                          }
+                        }}
+                        onChange={(_e, v) => {
+                          const s = v ?? "";
+                          setCode(s);
+                          setCodeSearchInput(s);
+                          searchConditionsRef.current.code = s;
+                          const selected = codeOptions.find((o) => o.code === s);
+                          if (selected) {
+                            setCodeName(selected.name);
+                            searchConditionsRef.current.codeName = selected.name;
+                          } else if (!s) {
+                            setCodeName("");
+                            searchConditionsRef.current.codeName = "";
+                          }
+                        }}
+                        freeSolo
+                        openOnFocus
+                        loading={codeOptionsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledInputBase
+                              {...restParams}
+                              sx={
+                                codeOptionsLoading
+                                  ? {
+                                      ...DENSE_FIELD_SX,
+                                      "& .MuiInputBase-root.Mui-disabled": {
+                                        backgroundColor: (theme) =>
+                                          theme.palette.background.paper,
+                                      },
+                                    }
+                                  : DENSE_FIELD_SX
+                              }
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {codeOptionsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonMaster.codeName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        disabled={!groupId}
+                        sx={DENSE_FIELD_SX}
+                        value={codeName}
+                        onChange={(e) => {
+                          setCodeName(e.target.value);
+                          searchConditionsRef.current.codeName = e.target.value;
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("commonMaster.deletionFlag")}
+                    </StyledSearchFieldLabel>
+                    <StyledCheckbox
+                      size="small"
+                      checked={deletionFlag}
+                      onChange={(e) => {
+                        setDeletionFlag(e.target.checked);
+                        searchConditionsRef.current.deletionFlag =
+                          e.target.checked;
+                      }}
+                      slotProps={{ input: { "aria-label": t("commonMaster.deletionFlag") } }}
+                    />
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
-                    <StyledFormControlLabel
-                      control={
-                        <StyledCheckbox
-                          checked={deletionFlag}
-                          onChange={(e) => {
-                            setDeletionFlag(e.target.checked);
-                            searchConditionsRef.current.deletionFlag =
-                              e.target.checked;
-                          }}
-                        />
-                      }
-                      label={t("commonMaster.deletionFlag")}
-                    />
                     <StyledSearchButton
                       variant="contained"
                       onClick={handleSearch}
@@ -1221,22 +1254,24 @@ export default function CommonMasterScreen() {
                           placeholder={t("commonMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

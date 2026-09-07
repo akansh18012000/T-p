@@ -131,6 +131,7 @@ import {
   StyledDescriptionIcon,
   StyledFileNameText,
   StyledFileSizeText,
+  StyledSearchFieldLabel,
   StyledSelectedFileBox,
 } from "../components/shared/StyledComponents.js";
 
@@ -1379,252 +1380,318 @@ export default function StandardCostMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleManufacturerPartNumberOptions}
-                    value={manufacturerPartNumber || null}
-                    inputValue={manufacturerPartNumberSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setManufacturerPartNumberSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturerPartNumber(v);
-                      setManufacturerPartNumberSearchInput(v);
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturerPartNumbersLoading}
-                    loading={manufacturerPartNumbersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("standardCostMaster.manufacturerPartNumber")}
-                        placeholder={t("standardCostMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturerPartNumbersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.manufacturerPartNumber")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleManufacturerPartNumberOptions}
+                        value={manufacturerPartNumber || null}
+                        inputValue={manufacturerPartNumberSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setManufacturerPartNumberSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturerPartNumber(v);
+                          setManufacturerPartNumberSearchInput(v);
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturerPartNumbersLoading}
+                        loading={manufacturerPartNumbersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturerPartNumbersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleManufacturerOptions}
-                    value={manufacturer || null}
-                    inputValue={manufacturerSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setManufacturerSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturer(v);
-                      setManufacturerSearchInput(v);
-                      setManufacturerName(mergedManufacturerNameMap[v] || "");
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturersLoading}
-                    loading={manufacturersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("standardCostMaster.manufacturer")}
-                        placeholder={t("standardCostMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.manufacturer")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleManufacturerOptions}
+                        value={manufacturer || null}
+                        inputValue={manufacturerSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setManufacturerSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturer(v);
+                          setManufacturerSearchInput(v);
+                          setManufacturerName(mergedManufacturerNameMap[v] || "");
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturersLoading}
+                        loading={manufacturersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("standardCostMaster.manufacturerName")}
-                    value={manufacturerName}
-                    onChange={(e) => setManufacturerName(e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleLocationCodeOptions}
-                    value={locationCode || null}
-                    inputValue={locationCodeSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setLocationCodeSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setLocationCode(v);
-                      setLocationCodeSearchInput(v);
-                      setLocationName(locationNameMap[v] || "");
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={locationsLoading}
-                    loading={locationsLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.manufacturerName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
                         sx={DENSE_FIELD_SX}
-                        label={t("standardCostMaster.locationCode")}
-                        placeholder={t("standardCostMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {locationsLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                        value={manufacturerName}
+                        onChange={(e) => setManufacturerName(e.target.value)}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.locationCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleLocationCodeOptions}
+                        value={locationCode || null}
+                        inputValue={locationCodeSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setLocationCodeSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setLocationCode(v);
+                          setLocationCodeSearchInput(v);
+                          setLocationName(locationNameMap[v] || "");
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={locationsLoading}
+                        loading={locationsLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {locationsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("standardCostMaster.locationName")}
-                    value={locationName}
-                    onChange={(e) => setLocationName(e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleCorporateCodeOptions}
-                    value={corporateCode || null}
-                    inputValue={corporateCodeSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setCorporateCodeSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setCorporateCode(v);
-                      setCorporateCodeSearchInput(v);
-                      setCorporateName(corporateNameMap[v] || "");
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={corporatesLoading}
-                    loading={corporatesLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.locationName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
                         sx={DENSE_FIELD_SX}
-                        label={t("standardCostMaster.corporateCode")}
-                        placeholder={t("standardCostMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {corporatesLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                        value={locationName}
+                        onChange={(e) => setLocationName(e.target.value)}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.corporateCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleCorporateCodeOptions}
+                        value={corporateCode || null}
+                        inputValue={corporateCodeSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setCorporateCodeSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setCorporateCode(v);
+                          setCorporateCodeSearchInput(v);
+                          setCorporateName(corporateNameMap[v] || "");
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={corporatesLoading}
+                        loading={corporatesLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {corporatesLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("standardCostMaster.corporateName")}
-                    value={corporateName}
-                    onChange={(e) => setCorporateName(e.target.value)}
-                  />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.corporateName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={corporateName}
+                        onChange={(e) => setCorporateName(e.target.value)}
+                      />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("standardCostMaster.effectiveStartDate")}
-                      value={validFrom}
-                      onChange={(newValue) => setValidFrom(newValue)}
-                      views={["year", "month"]}
-                      format="yyyyMM"
-                      open={validFromPickerOpen}
-                      onOpen={() => setValidFromPickerOpen(true)}
-                      onClose={() => setValidFromPickerOpen(false)}
-                      slots={{ textField: StyledInputBase }}
-                      slotProps={{
-                        field: { clearable: true },
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          onClick: () => setValidFromPickerOpen(true),
-                          inputProps: {
-                            readOnly: true,
-                            style: {
-                              cursor: "pointer",
-                              userSelect: "none",
-                              caretColor: "transparent",
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("standardCostMaster.effectiveStartDate")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={validFrom}
+                          onChange={(newValue) => setValidFrom(newValue)}
+                          views={["year", "month"]}
+                          format="yyyyMM"
+                          open={validFromPickerOpen}
+                          onOpen={() => setValidFromPickerOpen(true)}
+                          onClose={() => setValidFromPickerOpen(false)}
+                          slots={{ textField: StyledInputBase }}
+                          slotProps={{
+                            field: { clearable: true },
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              onClick: () => setValidFromPickerOpen(true),
+                              inputProps: {
+                                readOnly: true,
+                                style: {
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  caretColor: "transparent",
+                                },
+                              },
+                              sx: {
+                                cursor: "pointer",
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                                "& input::selection": {
+                                  backgroundColor: "transparent",
+                                },
+                                ...DENSE_FIELD_SX,
+                              },
                             },
-                          },
-                          sx: {
-                            cursor: "pointer",
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
-                            "& input::selection": {
-                              backgroundColor: "transparent",
-                            },
-                            ...DENSE_FIELD_SX,
-                          },
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                  </Box>
                 </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
@@ -1702,22 +1769,24 @@ export default function StandardCostMasterScreen() {
                           placeholder={t("standardCostMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

@@ -81,6 +81,7 @@ import {
   StyledViewButton,
   StyledCancelUploadButton,
   StyledUploadSectionContent,
+  StyledSearchFieldLabel,
   StyledSnackbarAlert,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
@@ -1565,198 +1566,248 @@ export default function GpcMasterScreen() {
 
           {searchConditionExpanded && (
             <StyledSectionContent>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleManufacturerOptions}
-                    value={manufacturer || null}
-                    inputValue={manufacturerSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setManufacturerSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturer(v);
-                      setManufacturerSearchInput(v);
-                      setManufacturerName(manufacturerNameMap[v] || "");
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturersLoading}
-                    loading={manufacturersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("gpcMaster.manufacturer")}
-                        placeholder={t("gpcMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.manufacturer")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleManufacturerOptions}
+                        value={manufacturer || null}
+                        inputValue={manufacturerSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setManufacturerSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturer(v);
+                          setManufacturerSearchInput(v);
+                          setManufacturerName(manufacturerNameMap[v] || "");
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturersLoading}
+                        loading={manufacturersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("gpcMaster.manufacturerName")}
-                    value={manufacturerName}
-                    onChange={(e) => setManufacturerName(e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleManufacturerPartNumberOptions}
-                    value={manufacturerPartNumber || null}
-                    inputValue={manufacturerPartNumberSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setManufacturerPartNumberSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setManufacturerPartNumber(v);
-                      setManufacturerPartNumberSearchInput(v);
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={manufacturerPartNumbersLoading}
-                    loading={manufacturerPartNumbersLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.manufacturerName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
                         sx={DENSE_FIELD_SX}
-                        label={t("gpcMaster.manufacturerPartNumber")}
-                        placeholder={t("gpcMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {manufacturerPartNumbersLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                        value={manufacturerName}
+                        onChange={(e) => setManufacturerName(e.target.value)}
+                      />
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.manufacturerPartNumber")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleManufacturerPartNumberOptions}
+                        value={manufacturerPartNumber || null}
+                        inputValue={manufacturerPartNumberSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setManufacturerPartNumberSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setManufacturerPartNumber(v);
+                          setManufacturerPartNumberSearchInput(v);
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={manufacturerPartNumbersLoading}
+                        loading={manufacturerPartNumbersLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturerPartNumbersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    options={visibleGpcCodeOptions}
-                    value={gpcCode || null}
-                    inputValue={gpcCodeSearchInput}
-                    onInputChange={(_event, newInputValue) =>
-                      setGpcCodeSearchInput(newInputValue)
-                    }
-                    onChange={(_event, newValue) => {
-                      const v = newValue ?? "";
-                      setGpcCode(v);
-                      setGpcCodeSearchInput(v);
-                      setGpcName(gpcCodeNameMap[v] || "");
-                    }}
-                    freeSolo
-                    openOnFocus
-                    disabled={gpcCodesLoading}
-                    loading={gpcCodesLoading}
-                    filterOptions={(x) => x}
-                    ListboxComponent={PaginatedAutocompleteListbox}
-                    slotProps={paginatedListboxSlotProps}
-                    renderInput={(params) => (
-                      <StyledAutocompleteInput
-                        {...params}
-                        sx={DENSE_FIELD_SX}
-                        label={t("gpcMaster.gpcCode")}
-                        placeholder={t("gpcMaster.enterCharsToSearch")}
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {gpcCodesLoading ? (
-                                <CircularProgress size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
+                <Grid size={{ xs: 12, md: 6 }} />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.gpcCode")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Autocomplete
+                        fullWidth
+                        size="small"
+                        options={visibleGpcCodeOptions}
+                        value={gpcCode || null}
+                        inputValue={gpcCodeSearchInput}
+                        onInputChange={(_event, newInputValue) =>
+                          setGpcCodeSearchInput(newInputValue)
+                        }
+                        onChange={(_event, newValue) => {
+                          const v = newValue ?? "";
+                          setGpcCode(v);
+                          setGpcCodeSearchInput(v);
+                          setGpcName(gpcCodeNameMap[v] || "");
+                        }}
+                        freeSolo
+                        openOnFocus
+                        disabled={gpcCodesLoading}
+                        loading={gpcCodesLoading}
+                        filterOptions={(x) => x}
+                        ListboxComponent={PaginatedAutocompleteListbox}
+                        slotProps={paginatedListboxSlotProps}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {gpcCodesLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
                         }}
                       />
-                    )}
-                  />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <StyledInputBase
-                    fullWidth
-                    size="small"
-                    sx={DENSE_FIELD_SX}
-                    label={t("gpcMaster.gpcName")}
-                    value={gpcName}
-                    onChange={(e) => setGpcName(e.target.value)}
-                  />
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.gpcName")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <StyledInputBase
+                        fullWidth
+                        size="small"
+                        sx={DENSE_FIELD_SX}
+                        value={gpcName}
+                        onChange={(e) => setGpcName(e.target.value)}
+                      />
+                    </Box>
+                  </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                  <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                      enableAccessibleFieldDOMStructure={false}
-                      label={t("gpcMaster.validYearOrLater")}
-                      value={validYear}
-                      onChange={(newValue) => setValidYear(newValue)}
-                      views={["year"]}
-                      format="yyyy"
-                      open={validYearPickerOpen}
-                      onOpen={() => setValidYearPickerOpen(true)}
-                      onClose={() => setValidYearPickerOpen(false)}
-                      slots={{ textField: StyledInputBase }}
-                      slotProps={{
-                        field: { clearable: true },
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          onClick: () => setValidYearPickerOpen(true),
-                          inputProps: {
-                            readOnly: true,
-                            style: {
-                              cursor: "pointer",
-                              userSelect: "none",
-                              caretColor: "transparent",
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <StyledSearchFieldLabel variant="body2">
+                      {t("gpcMaster.validYearOrLater")}
+                    </StyledSearchFieldLabel>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          enableAccessibleFieldDOMStructure={false}
+                          value={validYear}
+                          onChange={(newValue) => setValidYear(newValue)}
+                          views={["year"]}
+                          format="yyyy"
+                          open={validYearPickerOpen}
+                          onOpen={() => setValidYearPickerOpen(true)}
+                          onClose={() => setValidYearPickerOpen(false)}
+                          slots={{ textField: StyledInputBase }}
+                          slotProps={{
+                            field: { clearable: true },
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              onClick: () => setValidYearPickerOpen(true),
+                              inputProps: {
+                                readOnly: true,
+                                style: {
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                  caretColor: "transparent",
+                                },
+                              },
+                              sx: {
+                                cursor: "pointer",
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" },
+                                "& input::selection": {
+                                  backgroundColor: "transparent",
+                                },
+                                ...DENSE_FIELD_SX,
+                              },
                             },
-                          },
-                          sx: {
-                            cursor: "pointer",
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" },
-                            "& input::selection": {
-                              backgroundColor: "transparent",
-                            },
-                            ...DENSE_FIELD_SX,
-                          },
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                  </Box>
                 </Grid>
+                <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={12}>
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
@@ -1833,22 +1884,24 @@ export default function GpcMasterScreen() {
                           placeholder={t("gpcMaster.searchAllDataPlaceholder")}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

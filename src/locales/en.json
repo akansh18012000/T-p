@@ -639,6 +639,7 @@
     "productClassificationName": "Product Classification Name",
     "transferDestinationBU3": "Transfer Destination BU3",
     "transferDestBU3": "Transfer Destination BU3",
+    "name": "Name",
     "patternId": "Pattern Id",
     "effectiveStartDate": "Effective Start Date",
     "expirationDate": "Expiration Date",
