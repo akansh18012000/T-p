@@ -22,7 +22,6 @@ import {
   CircularProgress,
   Select,
   MenuItem,
-  Typography,
 } from "@mui/material";
 import {
   StyledMainPaper,
@@ -91,6 +90,7 @@ import {
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledFormHelperText,
+  StyledSearchFieldLabel,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
 
@@ -1268,11 +1268,9 @@ function LocalItemConversionMasterScreen() {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.systemId")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Autocomplete
                         fullWidth
@@ -1297,35 +1295,38 @@ function LocalItemConversionMasterScreen() {
                         filterOptions={(x) => x}
                         ListboxComponent={PaginatedAutocompleteListbox}
                         slotProps={paginatedListboxSlotProps}
-                        renderInput={(params) => (
-                          <StyledAutocompleteInput
-                            {...params}
-                            sx={DENSE_FIELD_SX}
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {systemIdsLoading ? (
-                                    <CircularProgress size={18} />
-                                  ) : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              ),
-                            }}
-                          />
-                        )}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {systemIdsLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
                       />
                     </Box>
                   </Box>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.yearAndMonth")}
                         <Box component="span" sx={{ color: "error.main", ml: 0.25 }}>*</Box>
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <LocalizationProvider dateAdapter={AdapterDateFns}>
                         <DatePicker
@@ -1380,11 +1381,9 @@ function LocalItemConversionMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.localItemCode")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <StyledInputBase
                         fullWidth
@@ -1403,11 +1402,9 @@ function LocalItemConversionMasterScreen() {
                 <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.manufacturerCode")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Autocomplete
                         fullWidth
@@ -1436,34 +1433,37 @@ function LocalItemConversionMasterScreen() {
                         filterOptions={(x) => x}
                         ListboxComponent={PaginatedAutocompleteListbox}
                         slotProps={paginatedListboxSlotProps}
-                        renderInput={(params) => (
-                          <StyledAutocompleteInput
-                            {...params}
-                            sx={DENSE_FIELD_SX}
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {manufacturersLoading ? (
-                                    <CircularProgress size={18} />
-                                  ) : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              ),
-                            }}
-                          />
-                        )}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
                       />
                     </Box>
                   </Box>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.manufacturerName")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <StyledInputBase
                         fullWidth
@@ -1481,11 +1481,9 @@ function LocalItemConversionMasterScreen() {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.manufacturerPartNumberLabel")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Autocomplete
                         fullWidth
@@ -1511,23 +1509,28 @@ function LocalItemConversionMasterScreen() {
                         filterOptions={(x) => x}
                         ListboxComponent={PaginatedAutocompleteListbox}
                         slotProps={paginatedListboxSlotProps}
-                        renderInput={(params) => (
-                          <StyledAutocompleteInput
-                            {...params}
-                            sx={DENSE_FIELD_SX}
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {manufacturersLoading ? (
-                                    <CircularProgress size={18} />
-                                  ) : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              ),
-                            }}
-                          />
-                        )}
+                        renderInput={(params) => {
+                          const { InputProps, ...restParams } = params;
+                          return (
+                            <StyledAutocompleteInput
+                              {...restParams}
+                              sx={DENSE_FIELD_SX}
+                              slotProps={{
+                                input: {
+                                  ...InputProps,
+                                  endAdornment: (
+                                    <>
+                                      {manufacturersLoading ? (
+                                        <CircularProgress size={18} />
+                                      ) : null}
+                                      {InputProps.endAdornment}
+                                    </>
+                                  ),
+                                },
+                              }}
+                            />
+                          );
+                        }}
                       />
                     </Box>
                   </Box>
@@ -1535,16 +1538,14 @@ function LocalItemConversionMasterScreen() {
                 <Grid size={{ xs: 12, md: 6 }} />
                 <Grid size={{ xs: 12, md: 6 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box sx={{ width: "140px", textAlign: "right", flexShrink: 0 }}>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    <StyledSearchFieldLabel variant="body2">
                         {t("localItemConversion.itemNotRegistered")}
-                      </Typography>
-                    </Box>
+                    </StyledSearchFieldLabel>
                     <StyledCheckbox
                       size="small"
                       checked={itemNotRegistered}
                       onChange={(e) => setItemNotRegistered(e.target.checked)}
-                      inputProps={{ "aria-label": t("localItemConversion.itemNotRegistered") }}
+                      slotProps={{ input: { "aria-label": t("localItemConversion.itemNotRegistered") } }}
                     />
                   </Box>
                 </Grid>
@@ -1627,22 +1628,24 @@ function LocalItemConversionMasterScreen() {
                           )}
                           value={csvSearchTerm}
                           onChange={(e) => setCsvSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <StyledSearchIcon />
-                              </InputAdornment>
-                            ),
-                            endAdornment: csvSearchTerm && (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setCsvSearchTerm("")}
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </InputAdornment>
-                            ),
+                          slotProps={{
+                            input: {
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <StyledSearchIcon />
+                                </InputAdornment>
+                              ),
+                              endAdornment: csvSearchTerm && (
+                                <InputAdornment position="end">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setCsvSearchTerm("")}
+                                  >
+                                    <ClearIcon />
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            },
                           }}
                         />
                         <StyledSpacer />

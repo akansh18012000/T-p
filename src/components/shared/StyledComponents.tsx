@@ -181,6 +181,13 @@ export const StyledFormLabel = styled(FormLabel)(({ theme }) => ({
   "& .MuiFormLabel-asterisk": { color: theme.palette.error.red500! },
 }));
 
+export const StyledSearchFieldLabel = styled(Typography)({
+  width: "140px",
+  textAlign: "right",
+  flexShrink: 0,
+  fontSize: "0.875rem",
+});
+
 export const StyledInputTextField = StyledInputBase;
 
 // Compact, font-only sizing for search-condition input fields (label + value at
