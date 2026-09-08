@@ -483,7 +483,11 @@ export default function KitItemClassificationMasterScreen() {
     );
 
     if (insertAtPagePosition && base.rows.length > 0) {
-      const insertIndex = pageOffset;
+      const insertIndex = pagedRowIndices.length > 0
+        ? pagedRowIndices.length < rowsPerPage
+          ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+          : pagedRowIndices[pagedRowIndices.length - 1]
+        : base.rows.length;
       const newRows = [
         ...base.rows.slice(0, insertIndex),
         emptyRow,
@@ -530,7 +534,11 @@ export default function KitItemClassificationMasterScreen() {
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
       .map((idx) => [...base.rows[idx]]);
-    const insertIndex = Math.min(pageOffset, base.rows.length);
+    const insertIndex = pagedRowIndices.length > 0
+      ? pagedRowIndices.length < rowsPerPage
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+        : pagedRowIndices[pagedRowIndices.length - 1]
+      : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
       ...selectedRows,

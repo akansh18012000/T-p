@@ -624,8 +624,12 @@ export default function CommonConversionMasterScreen() {
     const newRow = base.headers.map((_, i) =>
       COMMON_CONVERSION_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
     );
-    // Insert new row at appropriate position based on current page
-    const insertIndex = Math.min(pageOffset, base.rows.length);
+    // Insert at the bottom of the current page
+    const insertIndex = pagedRowIndices.length > 0
+      ? pagedRowIndices.length < rowsPerPage
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+        : pagedRowIndices[pagedRowIndices.length - 1]
+      : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
       newRow,
@@ -663,7 +667,11 @@ export default function CommonConversionMasterScreen() {
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
       .map((idx) => [...base.rows[idx]]);
-    const insertIndex = Math.min(pageOffset, base.rows.length);
+    const insertIndex = pagedRowIndices.length > 0
+      ? pagedRowIndices.length < rowsPerPage
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+        : pagedRowIndices[pagedRowIndices.length - 1]
+      : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
       ...selectedRows,
