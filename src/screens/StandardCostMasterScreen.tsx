@@ -565,7 +565,7 @@ export default function StandardCostMasterScreen() {
   // tells the manufacturer context to also fetch the std-cost manufacturer
   // codes/names and expose the merged result as stdCostManufacturerNameMap.
   useEffect(() => {
-    ensureManufacturerData(true);
+    ensureManufacturerData();
     ensureLocationData();
     ensureCorporateData();
   }, [ensureManufacturerData, ensureLocationData, ensureCorporateData]);

@@ -33,7 +33,7 @@ interface ManufacturerDataContextValue {
   // Status of the opt-in std-cost manufacturer names fetch (see ensureLoaded).
   // Stays "idle" for callers that never pass includeStdCostManufacturerNames.
   stdCostManufacturerNamesStatus: ManufacturerDataStatus;
-  ensureLoaded: (includeStdCostManufacturerNames?: boolean) => void;
+  ensureLoaded: (includeStdCostManufacturerNames?: boolean) => void; // default true
 }
 
 const ManufacturerDataContext =
@@ -74,7 +74,7 @@ export function ManufacturerDataProvider({
     ((includeStdCostManufacturerNames?: boolean) => void) | null
   >(null);
   if (ensureLoadedRef.current === null) {
-    ensureLoadedRef.current = (includeStdCostManufacturerNames = false) => {
+    ensureLoadedRef.current = (includeStdCostManufacturerNames = true) => {
       if (statusRef.current === "idle") {
         statusRef.current = "loading";
         setStatus("loading");
