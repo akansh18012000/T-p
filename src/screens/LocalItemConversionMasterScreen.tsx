@@ -676,9 +676,14 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    // Insert new row at the bottom of the current page
+    // Insert at the last visible position on the current page. When the page is
+    // full, insert AT the last index (displacing that row to the next page) so
+    // the new row lands as the final visible row. When the page has spare
+    // capacity, insert after the last row so it simply appends.
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+      ? pagedRowIndices.length < rowsPerPage
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+        : pagedRowIndices[pagedRowIndices.length - 1]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -718,7 +723,9 @@ function LocalItemConversionMasterScreen() {
       .sort((a, b) => a - b)
       .map((idx) => [...base.rows[idx]]);
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+      ? pagedRowIndices.length < rowsPerPage
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+        : pagedRowIndices[pagedRowIndices.length - 1]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
