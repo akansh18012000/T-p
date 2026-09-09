@@ -676,24 +676,24 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    // Each successive empty row lands below any previously added new rows on
-    // this page; non-new rows are displaced to the next page one at a time.
-    const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
+    const availableSlots = rowsPerPage - pagedRowIndices.length;
+    // Mirror the logic in handleAddSelectedRows (N=1):
+    // - Page not full: append after the last visible row.
+    // - Page full: insert at the last slot, displacing that row to the next page.
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices.length < rowsPerPage
+      ? availableSlots >= 1
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
+        : pagedRowIndices[pagedRowIndices.length - 1]
       : base.rows.length;
-    const newRows = [
-      ...base.rows.slice(0, insertIndex),
-      newRow,
-      ...base.rows.slice(insertIndex),
-    ];
     shiftIndicesForInsertion(insertIndex, 1);
     markRowsAsNew([insertIndex]);
     setCsvData({
       headers: base.headers,
-      rows: newRows,
+      rows: [
+        ...base.rows.slice(0, insertIndex),
+        newRow,
+        ...base.rows.slice(insertIndex),
+      ],
     });
     setRowMetadata((prev) => [
       ...prev.slice(0, insertIndex),
