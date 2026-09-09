@@ -127,6 +127,7 @@ import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenCon
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 
 /** Currency type options keyed by backend code (11–14) with i18n labels */
 const CURRENCY_TYPE_OPTIONS = [
@@ -146,6 +147,7 @@ interface FxRateSearchEnvelope {
 }
 
 interface FxRateSearchRow {
+  processing_status?: string | null;
   proc_year: string;
   proc_month: number | string;
   proc_period: string;
@@ -165,11 +167,11 @@ function getEmptyCsvData(): CsvData {
 
 const DQ_SCREEN_CONFIG: DqScreenConfig = {
   columns: [
-    { colIndex: 0, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[0].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
-    { colIndex: 1, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 1, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
     { colIndex: 2, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }] },
     { colIndex: 3, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }] },
-    { colIndex: 4, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }, { type: "decimal" }] },
+    { colIndex: 4, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 5, labelKey: FX_RATE_ENTRY_MASTER_COLUMNS[5].labelKey, rules: [{ type: "null" }, { type: "decimal" }] },
   ],
 };
 
@@ -237,11 +239,11 @@ function FxRateEntryMasterScreen() {
   // CSV data state
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   // Column indices for special cell rendering
-  const fromCurrencyColIndex = 1;
-  const toCurrencyColIndex = 2;
-  const currencyTypeColIndex = 3;
-  const overwriteFlagColIndex = 5;
-  const deletionFlagColIndex = 6;
+  const fromCurrencyColIndex = 2;
+  const toCurrencyColIndex = 3;
+  const currencyTypeColIndex = 4;
+  const overwriteFlagColIndex = 6;
+  const deletionFlagColIndex = 7;
   const [searchExecuted, setSearchExecuted] = useState(false);
   // Increments on every executed search; drives the pagination reset so a new
   // search returns to page 1 while local row add/delete does not.
@@ -289,7 +291,8 @@ function FxRateEntryMasterScreen() {
     newRowCount,
   } = useNewRowTracking();
 
-  const handleSearch = async () => {
+  const handleSearch = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
     setSearchExecuted(true);
     setSearchGeneration((n) => n + 1);
     setSearchLoading(true);
@@ -320,6 +323,7 @@ function FxRateEntryMasterScreen() {
       // as numbers despite the string types, which breaks the string[][] CsvData
       // contract (cell comparisons, CSV download).
       const mappedRows: string[][] = rows.map((r) => [
+        String(r.processing_status ?? ""),
         formatDateFieldForDisplay(r.proc_period, "yearMonth"),
         String(r.from_currency ?? ""),
         String(r.to_currency ?? ""),
@@ -334,16 +338,20 @@ function FxRateEntryMasterScreen() {
       });
       originalRowsRef.current = mappedRows.map((r) => [...r]);
       clearNewRowTracking();
-      showSnackbar(
-        mappedRows.length > 0
-          ? t("fxRateEntryMaster.searchCompletedWithData")
-          : t("fxRateEntryMaster.searchCompletedNoResults"),
-        mappedRows.length > 0 ? "success" : "info",
-      );
+      if (!silent) {
+        showSnackbar(
+          mappedRows.length > 0
+            ? t("fxRateEntryMaster.searchCompletedWithData")
+            : t("fxRateEntryMaster.searchCompletedNoResults"),
+          mappedRows.length > 0 ? "success" : "info",
+        );
+      }
     } catch (e) {
       console.error(e);
       setCsvData(getEmptyCsvData());
-      showSnackbar(t("fxRateEntryMaster.searchCompletedNoResults"), "info");
+      if (!silent) {
+        showSnackbar(t("fxRateEntryMaster.searchCompletedNoResults"), "info");
+      }
     } finally {
       setSearchLoading(false);
     }
@@ -416,7 +424,7 @@ function FxRateEntryMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => { const r = [...base.rows[idx]]; r[0] = ""; return r; });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -506,7 +514,7 @@ function FxRateEntryMasterScreen() {
     }
 
     const getKey = (row: string[]) =>
-      [row[0], row[1], row[2], row[3]].map((v) => String(v ?? "").trim()).join("|");
+      [row[1], row[2], row[3], row[4]].map((v) => String(v ?? "").trim()).join("|");
     const allTargetIndices = [...createdRowIndices, ...updatedRowIndices];
     const claimedOriginalIndices = new Set<number>(updatedRowOriginalIndices);
     const duplicateRowNumbers: number[] = [];
@@ -554,13 +562,13 @@ function FxRateEntryMasterScreen() {
     }
 
     const payloadRows = rowsToSubmit.map((row) => ({
-      proc_period: row[0],
-      from_currency: row[1],
-      to_currency: row[2],
-      currency_type: row[3],
-      rate: Number(row[4]),
-      overwrite_flag: row[5] === "1" ? "1" : "0",
-      delete_flg: row[6] === "1" ? "1" : "0",
+      proc_period: row[1],
+      from_currency: row[2],
+      to_currency: row[3],
+      currency_type: row[4],
+      rate: Number(row[5]),
+      overwrite_flag: row[6] === "1" ? "1" : "0",
+      delete_flg: row[7] === "1" ? "1" : "0",
     }));
 
       setRegistering(true);
@@ -600,14 +608,7 @@ function FxRateEntryMasterScreen() {
         );
       }
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring the original
-      // searched rows.
-      setCsvData({
-        ...csvData,
-        rows: originalRowsRef.current.map((row) => [...row]),
-      });
-      clearNewRowTracking();
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("fxRateEntryMaster.registrationFailed"), "error");
@@ -690,11 +691,11 @@ function FxRateEntryMasterScreen() {
 
     const enValidation = validateCsvColumns(
       parsed.headers,
-      FX_RATE_ENTRY_MASTER_HEADERS,
+      FX_RATE_ENTRY_MASTER_HEADERS.slice(1),
     );
     const jaValidation = validateCsvColumns(
       parsed.headers,
-      FX_RATE_ENTRY_MASTER_HEADERS_JA,
+      FX_RATE_ENTRY_MASTER_HEADERS_JA.slice(1),
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
@@ -1027,7 +1028,7 @@ function FxRateEntryMasterScreen() {
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
-                      onClick={handleSearch}
+                      onClick={() => handleSearch()}
                       startIcon={<SearchIcon />}
                     >
                       {t("fxRateEntryMaster.search")}
@@ -1190,6 +1191,7 @@ function FxRateEntryMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1201,6 +1203,7 @@ function FxRateEntryMasterScreen() {
                                         <StyledSelectionRowCheckbox
                                           checked={selectedRowIndices.has(originalRowIndex)}
                                           onChange={() => toggleRowSelection(originalRowIndex)}
+                                          disabled={locked}
                                         />
                                       </StyledSelectionCheckboxCell>
                                     )}
@@ -1213,7 +1216,9 @@ function FxRateEntryMasterScreen() {
                                         $deletionFlag={colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex}
                                         $rowIndex={i}
                                       >
-                                        {colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex ? (
+                                        {colIndex === 0 ? (
+                                          <Box sx={cell === PROCESSING_STATUS_TO_BE_PROCESS ? { fontWeight: "bold" } : {}}>{cell}</Box>
+                                        ) : colIndex === deletionFlagColIndex || colIndex === overwriteFlagColIndex ? (
                                           <StyledCheckbox
                                             size="small"
                                             checked={cell === "1"}
@@ -1224,7 +1229,10 @@ function FxRateEntryMasterScreen() {
                                                 e.target.checked ? "1" : "0",
                                               )
                                             }
+                                            disabled={locked}
                                           />
+                                        ) : locked ? (
+                                          <Box>{cell}</Box>
                                         ) : colIndex === fromCurrencyColIndex || colIndex === toCurrencyColIndex ? (
                                           <Select
                                             value={cell}

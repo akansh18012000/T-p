@@ -1009,6 +1009,7 @@
   },
   "tableCommon": {
     "rowNumber": "#",
+    "processingStatus": "処理ステータス",
     "deletionFlagInfo": "このレコードを削除する場合は、このフラグをオンにしてください。",
     "overwritePreventionFlagInfo": "このレコードを上書きから保護する場合は、このフラグをオンにします。上書きを許可する場合はオフにしてください。"
   },

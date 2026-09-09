@@ -12,7 +12,6 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
   Typography,
-  TextField,
   Grid,
   TableBody,
   TableCell,
@@ -74,6 +73,7 @@ import {
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 import {
   StyledMainPaper,
   StyledPageHeaderBox,
@@ -331,17 +331,6 @@ const StyledCheckbox = styled(Checkbox)(({ theme }) => ({
   },
 }));
 
-const StyledCellTextField = styled(TextField)({
-  // Inherit the surrounding cell font so editable values match uneditable text.
-  "& .MuiInput-input": {
-    fontSize: "inherit",
-  },
-  "& .MuiInput-root": {
-    alignItems: "flex-start",
-    fontSize: "inherit",
-  },
-});
-
 const StyledSnackbarAlert = styled(Alert)({
   width: "100%",
 });
@@ -372,6 +361,7 @@ interface SearchPayload {
 }
 
 interface SearchApiRow {
+  processing_status?: string | null;
   item_code: string;
   manufacture_part_number: string;
   manufacturer: string;
@@ -465,8 +455,8 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
     { colIndex: COL_EFFECTIVE_START, labelKey: STANDARD_COST_MASTER_COLUMNS[COL_EFFECTIVE_START].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 6 }, { type: "regex", pattern: /^[0-9]{6}$/ }] },
     { colIndex: COL_CURRENCY,        labelKey: STANDARD_COST_MASTER_COLUMNS[COL_CURRENCY].labelKey,        rules: [{ type: "null" }] },
     { colIndex: COL_STANDARD_COST,   labelKey: STANDARD_COST_MASTER_COLUMNS[COL_STANDARD_COST].labelKey,   rules: [{ type: "null" }, { type: "decimal" }, { type: "nonNegative" }] },
-    { colIndex: 10,                  labelKey: STANDARD_COST_MASTER_COLUMNS[10].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1"] }] },
-    { colIndex: 11,                  labelKey: STANDARD_COST_MASTER_COLUMNS[11].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1", "9"] }] },
+    { colIndex: 11,                  labelKey: STANDARD_COST_MASTER_COLUMNS[11].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1"] }] },
+    { colIndex: 12,                  labelKey: STANDARD_COST_MASTER_COLUMNS[12].labelKey,                  rules: [{ type: "supportedValues", allowedValues: ["0", "1", "9"] }] },
   ],
 };
 
@@ -746,6 +736,7 @@ export default function StandardCostMasterScreen() {
       // back as numbers, which would break the string[][] CsvData contract and
       // crash escapeCsvField (field.includes) on download.
       const mappedRows = rows.map((r) => [
+        String(r.processing_status ?? ""),
         String(r.manufacture_part_number ?? ""),
         String(r.manufacturer ?? ""),
         String(r.manufacturer_name ?? ""),
@@ -856,7 +847,7 @@ export default function StandardCostMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => { const r = [...base.rows[idx]]; r[0] = ""; return r; });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -1012,18 +1003,18 @@ export default function StandardCostMasterScreen() {
       return {
         manufacture_part_number: r[COL_MFR_PART_NUMBER] ?? "",
         manufacturer: r[COL_MANUFACTURER] ?? "",
-        manufacturer_name: r[2] ?? "",
+        manufacturer_name: r[3] ?? "",
         manufacturer_detail: r[COL_LOCATION_CODE] ?? "",
-        manufacturer_detail_name: r[4] ?? "",
+        manufacturer_detail_name: r[5] ?? "",
         company_code: r[COL_CORPORATE_CODE] ?? "",
-        company_name: r[6] ?? "",
+        company_name: r[7] ?? "",
         fiscal_month_from: r[COL_EFFECTIVE_START] ?? "",
         fiscal_month_to: "",
         currency_code: r[COL_CURRENCY] ?? "",
         standard_cost: r[COL_STANDARD_COST] ?? "",
         uptake_from_flg: "0",
-        overwrite_ban_flg: r[10] || "0",
-        delete_flg: r[11] || "0",
+        overwrite_ban_flg: r[11] || "0",
+        delete_flg: r[12] || "0",
       };
     };
 
@@ -1044,20 +1035,6 @@ export default function StandardCostMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "standardCostMaster.createdAndUpdatedRows";
@@ -1067,6 +1044,7 @@ export default function StandardCostMasterScreen() {
         messageKey = "standardCostMaster.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("standardCostMaster.registrationFailed"), "error");
@@ -1173,11 +1151,11 @@ export default function StandardCostMasterScreen() {
     // Accept either the English or Japanese header set.
     const enValidation = validateCsvColumns(
       parsed.headers,
-      STANDARD_COST_MASTER_HEADERS,
+      STANDARD_COST_MASTER_HEADERS.slice(1),
     );
     const jaValidation = validateCsvColumns(
       parsed.headers,
-      STANDARD_COST_MASTER_HEADERS_JA,
+      STANDARD_COST_MASTER_HEADERS_JA.slice(1),
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
@@ -1880,6 +1858,7 @@ export default function StandardCostMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1890,6 +1869,7 @@ export default function StandardCostMasterScreen() {
                                         <StyledSelectionRowCheckbox
                                           checked={selectedRowIndices.has(originalRowIndex)}
                                           onChange={() => toggleRowSelection(originalRowIndex)}
+                                          disabled={locked}
                                         />
                                       </StyledSelectionCheckboxCell>
                                     )}
@@ -1917,7 +1897,7 @@ export default function StandardCostMasterScreen() {
                                     {row.map((cell, colIndex) => {
                                       const colConfig = STANDARD_COST_MASTER_COLUMNS[colIndex];
                                       const isCheckbox = colConfig?.isCheckbox;
-                                      const isEditable = colConfig?.editable !== false;
+                                      const isEditable = !locked && colConfig?.editable !== false;
                                       const isSearchable = colConfig?.searchable && isEditable;
                                       const searchOptions =
                                         colConfig?.key === "manufacturer"
@@ -1945,7 +1925,9 @@ export default function StandardCostMasterScreen() {
                                             colIndex + 1,
                                           )}
                                         >
-                                          {isCheckbox ? (
+                                          {colIndex === 0 ? (
+                                            <Box sx={cell === PROCESSING_STATUS_TO_BE_PROCESS ? { fontWeight: "bold" } : {}}>{cell}</Box>
+                                          ) : isCheckbox ? (
                                             <StyledCheckbox
                                               size="small"
                                               checked={cell === "1"}
@@ -1956,6 +1938,7 @@ export default function StandardCostMasterScreen() {
                                                   e.target.checked ? "1" : "0",
                                                 )
                                               }
+                                              disabled={locked}
                                             />
                                           ) : (
                                             <SearchableCell

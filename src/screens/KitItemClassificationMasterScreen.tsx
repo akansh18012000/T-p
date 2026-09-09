@@ -7,8 +7,6 @@ import { useTranslation } from "react-i18next";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import {
   Box,
-  Paper,
-  TextField,
   Grid,
   TableBody,
   TableHead,
@@ -91,10 +89,7 @@ import {
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
   Clear as ClearIcon,
-  ExpandLess as ExpandLessIcon,
-  ExpandMore as ExpandMoreIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
-  DescriptionOutlined as DescriptionOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
@@ -132,6 +127,7 @@ import {
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 const KIT_ITEM_COMBINED_SEARCH_API_URL =
@@ -140,6 +136,7 @@ const KIT_ITEM_COMBINED_CREATE_API_URL =
   "/api/v1/kit-item-combined/create";
 
 interface KitItemCombinedSearchRow {
+  processing_status?: string | null;
   kit_manufacture_part_number: string | null;
   kit_manufacturer: string | null;
   cmpnt_mfr_part_number: string | null;
@@ -183,22 +180,22 @@ interface ExistingRowMeta {
 }
 
 const COL_MAX_LENGTHS: Record<number, number> = {
-  0: 40,
-  1: 25,
-  2: 40,
-  3: 25,
+  1: 40,
+  2: 25,
+  3: 40,
   4: 25,
+  5: 25,
 };
 
 const DQ_SCREEN_CONFIG: DqScreenConfig = {
   columns: [
-    { colIndex: 0, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[0].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
-    { colIndex: 1, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
-    { colIndex: 2, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
-    { colIndex: 3, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
-    { colIndex: 4, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[4].labelKey, rules: [{ type: "length", maxLength: 25 }] },
-    { colIndex: 5, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[5].labelKey, rules: [{ type: "null" }] },
-    { colIndex: 6, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[6].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
+    { colIndex: 1, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: 2, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
+    { colIndex: 3, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 40 }] },
+    { colIndex: 4, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }, { type: "length", maxLength: 25 }] },
+    { colIndex: 5, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[5].labelKey, rules: [{ type: "length", maxLength: 25 }] },
+    { colIndex: 6, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[6].labelKey, rules: [{ type: "null" }] },
+    { colIndex: 7, labelKey: KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[7].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
   ],
 };
 // AI Generated Code by Deloitte + Cursor (END)
@@ -422,6 +419,7 @@ export default function KitItemClassificationMasterScreen() {
       // as numbers despite the string types, which breaks the string[][] CsvData
       // contract (cell comparisons, CSV download).
       const mappedRows: string[][] = apiRows.map((r) => [
+        String(r.processing_status ?? ""),
         String(r.kit_manufacture_part_number ?? ""),
         String(r.kit_manufacturer ?? ""),
         String(r.cmpnt_mfr_part_number ?? ""),
@@ -534,7 +532,7 @@ export default function KitItemClassificationMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => { const r = [...base.rows[idx]]; r[0] = ""; return r; });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -683,15 +681,15 @@ export default function KitItemClassificationMasterScreen() {
     ): KitItemCombinedCreateRow => {
       const r = csvData.rows[idx];
       return {
-        kit_manufacture_part_number: r[0],
-        kit_manufacturer: r[1],
-        cmpnt_mfr_part_number: r[2],
-        cmpnt_mfr: r[3],
-        cmpnt_mfr_details: r[4] ?? "",
-        qty: r[5],
+        kit_manufacture_part_number: r[1],
+        kit_manufacturer: r[2],
+        cmpnt_mfr_part_number: r[3],
+        cmpnt_mfr: r[4],
+        cmpnt_mfr_details: r[5] ?? "",
+        qty: r[6],
         kit_item_code: meta?.kit_item_code ?? "",
         child_item_code: meta?.child_item_code ?? "",
-        delete_flg: r[6] || "0",
+        delete_flg: r[7] || "0",
       };
     };
 
@@ -717,20 +715,6 @@ export default function KitItemClassificationMasterScreen() {
         throw new Error(`HTTP ${res.status}`);
       }
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "kitItemClassification.createdAndUpdatedRows";
@@ -740,6 +724,7 @@ export default function KitItemClassificationMasterScreen() {
         messageKey = "kitItemClassification.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("kitItemClassification.registrationFailed"), "error");
@@ -822,11 +807,11 @@ export default function KitItemClassificationMasterScreen() {
 
     const enValidation = validateCsvColumns(
       parsed.headers,
-      KIT_ITEM_CLASSIFICATION_MASTER_HEADERS,
+      KIT_ITEM_CLASSIFICATION_MASTER_HEADERS.slice(1),
     );
     const jaValidation = validateCsvColumns(
       parsed.headers,
-      KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA,
+      KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA.slice(1),
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
@@ -1333,6 +1318,7 @@ export default function KitItemClassificationMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1344,6 +1330,7 @@ export default function KitItemClassificationMasterScreen() {
                                         <StyledSelectionRowCheckbox
                                           checked={selectedRowIndices.has(originalRowIndex)}
                                           onChange={() => toggleRowSelection(originalRowIndex)}
+                                          disabled={locked}
                                         />
                                       </StyledSelectionCheckboxCell>
                                     )}
@@ -1359,8 +1346,9 @@ export default function KitItemClassificationMasterScreen() {
                                       const colConfig = KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS[colIndex];
                                       const isCheckbox = colConfig?.isCheckbox;
                                       const isEditable =
-                                        isNewRow(originalRowIndex) ||
-                                        colConfig?.editable !== false;
+                                        !locked &&
+                                        (isNewRow(originalRowIndex) ||
+                                        colConfig?.editable !== false);
 
                                       return (
                                         <StyledTableDataCell
@@ -1377,7 +1365,9 @@ export default function KitItemClassificationMasterScreen() {
                                             colIndex + 1,
                                           )}
                                         >
-                                          {isCheckbox ? (
+                                          {colIndex === 0 ? (
+                                            <Box sx={cell === PROCESSING_STATUS_TO_BE_PROCESS ? { fontWeight: "bold" } : {}}>{cell}</Box>
+                                          ) : isCheckbox ? (
                                             <StyledCheckbox
                                               size="small"
                                               checked={cell === "1"}
@@ -1388,6 +1378,7 @@ export default function KitItemClassificationMasterScreen() {
                                                   e.target.checked ? "1" : "0",
                                                 )
                                               }
+                                              disabled={locked}
                                             />
                                           ) : (
                                             <SearchableCell

@@ -11,7 +11,6 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
   Grid,
-  Table,
   TableBody,
   TableHead,
   TableRow,
@@ -39,6 +38,7 @@ import { FreezeColumnsButton } from "../components/shared/FreezeColumnsButton.js
 import { usePermissions } from "../hooks/usePermissions.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { GLOBAL_DAD_MASTER_HEADERS, GLOBAL_DAD_MASTER_COLUMNS, GLOBAL_DAD_MASTER_FREEZE_CONFIG } from "../constants/tableColumns.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { FreezeColumnsDialog } from "../components/shared/FreezeColumnsDialog.js";
 import { useFreezeColumns } from "../hooks/useFreezeColumns.js";
@@ -137,6 +137,7 @@ interface SearchPayload {
 }
 
 interface SearchApiRow {
+  processing_status?: string;
   local_custom_code: string;
   system_id: string;
   sales_entity_code: string;
@@ -478,9 +479,6 @@ export default function GlobalDadMasterScreen() {
       : bu3NameMapEn[transferDestBU3]) || "";
 
   const [csvData, setCsvData] = useState<CsvData | null>(null);
-  const deletionFlagColIndex = GLOBAL_DAD_MASTER_COLUMNS.findIndex(
-    (col) => col.isCheckbox === true,
-  );
   const [searchExecuted, setSearchExecuted] = useState(false);
   // Increments on every executed search; drives the pagination reset so a new
   // search returns to page 1 while local row add/delete does not.
@@ -626,6 +624,7 @@ export default function GlobalDadMasterScreen() {
         const code = String(r.local_custom_code ?? "");
         const itemCls = String(r.item_cls_code ?? "");
         return [
+          String(r.processing_status ?? ""),
           String(r.system_id ?? ""),
           String(r.sales_entity_code ?? ""),
           code,
@@ -731,7 +730,11 @@ export default function GlobalDadMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => {
+        const copy = [...base.rows[idx]];
+        copy[0] = "";
+        return copy;
+      });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -913,20 +916,6 @@ export default function GlobalDadMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "globalDadMaster.createdAndUpdatedRows";
@@ -936,6 +925,7 @@ export default function GlobalDadMasterScreen() {
         messageKey = "globalDadMaster.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("globalDadMaster.registrationFailed"), "error");
@@ -966,19 +956,6 @@ export default function GlobalDadMasterScreen() {
     setCsvData({ ...csvData, rows: newRows });
   };
 
-  const handleDeleteMarkedRows = () => {
-    if (!csvData || deletionFlagColIndex < 0) return;
-    const rowsToDelete = csvData.rows.filter(
-      (row) => row[deletionFlagColIndex] === "1",
-    );
-    if (rowsToDelete.length === 0) return;
-    const newRows = csvData.rows.filter(
-      (row) => row[deletionFlagColIndex] !== "1",
-    );
-    setCsvData({ ...csvData, rows: newRows });
-    showSnackbar(t("globalDadMaster.rowsDeleted"), "success");
-  };
-
   const displayData = csvData || getEmptyCsvData();
 
   const searchOptionsByColumn: Record<string, string[]> = {
@@ -1002,9 +979,6 @@ export default function GlobalDadMasterScreen() {
     isLastFrozenColumn,
   } = useFreezeColumns("freezeColumns_GlobalDadMaster", freezeColumnsConfig);
 
-  const rowsWithDeletionFlag = displayData.rows.filter(
-    (row) => row[deletionFlagColIndex] === "1",
-  ).length;
   const filteredRowIndices = csvSearchTerm.trim()
     ? displayData.rows
         .map((_, idx) => idx)
@@ -1651,6 +1625,7 @@ export default function GlobalDadMasterScreen() {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
                                 const isNewRowItem = isNewRow(originalRowIndex);
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1700,10 +1675,15 @@ export default function GlobalDadMasterScreen() {
                                             colIndex + 1,
                                           )}
                                         >
-                                          {isCheckbox ? (
+                                          {colIndex === 0 ? (
+                                            <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit", fontWeight: cell === PROCESSING_STATUS_TO_BE_PROCESS ? "bold" : "normal" }}>
+                                              {cell}
+                                            </Box>
+                                          ) : isCheckbox ? (
                                             <StyledCheckbox
                                               size="small"
                                               checked={cell === "1"}
+                                              disabled={locked}
                                               onChange={(e) =>
                                                 handleCellEdit(
                                                   originalRowIndex,
@@ -1722,8 +1702,8 @@ export default function GlobalDadMasterScreen() {
                                                   value,
                                                 )
                                               }
-                                              editable={isEditable}
-                                              searchable={isSearchable}
+                                              editable={!locked && isEditable}
+                                              searchable={!locked && isSearchable}
                                               searchOptions={searchOptions}
                                               searchTitle={colConfig?.label}
                                               paginated={isPaginated}

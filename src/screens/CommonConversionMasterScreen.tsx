@@ -128,6 +128,7 @@ import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { usePermissions } from "../hooks/usePermissions.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
@@ -178,6 +179,7 @@ interface SearchPayload {
 }
 
 interface SearchApiRow {
+  processing_status?: string;
   system_id: string;
   column_id: string;
   column_name: string;
@@ -236,28 +238,28 @@ interface CommonConversionCreatePayload {
 }
 
 const COL_MAX_LENGTHS: Record<number, number> = {
-  0: 8, 1: 300, 2: 20, 3: 30, 4: 300, 5: 30, 6: 300, 7: 30, 8: 300, 9: 300,
-  10: 300, 11: 300, 12: 300, 13: 300, 14: 300,
+  1: 8, 2: 300, 3: 20, 4: 30, 5: 300, 6: 30, 7: 300, 8: 30, 9: 300, 10: 300,
+  11: 300, 12: 300, 13: 300, 14: 300, 15: 300,
 };
 
 const DQ_SCREEN_CONFIG: DqScreenConfig = {
   columns: [
-    { colIndex: 0,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[0].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 8 }] },
-    { colIndex: 1,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[1].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
-    { colIndex: 2,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[2].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 20 }] },
-    { colIndex: 3,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[3].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
-    { colIndex: 4,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[4].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
-    { colIndex: 5,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[5].labelKey,  rules: [{ type: "length", maxLength: 30 }] },
-    { colIndex: 6,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[6].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
-    { colIndex: 7,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[7].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
-    { colIndex: 8,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[8].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
-    { colIndex: 9,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[9].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 1,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[1].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 8 }] },
+    { colIndex: 2,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[2].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
+    { colIndex: 3,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[3].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 20 }] },
+    { colIndex: 4,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[4].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
+    { colIndex: 5,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[5].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 6,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[6].labelKey,  rules: [{ type: "length", maxLength: 30 }] },
+    { colIndex: 7,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[7].labelKey,  rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 8,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[8].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 30 }] },
+    { colIndex: 9,  labelKey: COMMON_CONVERSION_MASTER_COLUMNS[9].labelKey,  rules: [{ type: "null" }, { type: "length", maxLength: 300 }] },
     { colIndex: 10, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[10].labelKey, rules: [{ type: "length", maxLength: 300 }] },
     { colIndex: 11, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[11].labelKey, rules: [{ type: "length", maxLength: 300 }] },
     { colIndex: 12, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[12].labelKey, rules: [{ type: "length", maxLength: 300 }] },
     { colIndex: 13, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[13].labelKey, rules: [{ type: "length", maxLength: 300 }] },
     { colIndex: 14, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[14].labelKey, rules: [{ type: "length", maxLength: 300 }] },
-    { colIndex: 15, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[15].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
+    { colIndex: 15, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[15].labelKey, rules: [{ type: "length", maxLength: 300 }] },
+    { colIndex: 16, labelKey: COMMON_CONVERSION_MASTER_COLUMNS[16].labelKey, rules: [{ type: "supportedValues", allowedValues: ["0", "1"], nullAllowed: true }] },
   ],
 };
 
@@ -413,12 +415,12 @@ export default function CommonConversionMasterScreen() {
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
     (h) => h === "Deletion Flag",
   );
-  const itemIdColIndex = 0;
-  const itemNameColIndex = 1;
+  const itemIdColIndex = 1;
+  const itemNameColIndex = 2;
   const systemIdColIndex = COMMON_CONVERSION_MASTER_COLUMNS.findIndex(
     (c) => c.key === "systemId",
   );
-  const abstractColIndex = 9;
+  const abstractColIndex = 10;
   const [searchExecuted, setSearchExecuted] = useState(false);
   // Increments on every executed search; drives the pagination reset so a new
   // search returns to page 1 while local row add/delete does not.
@@ -555,6 +557,7 @@ export default function CommonConversionMasterScreen() {
       // can arrive as numbers despite the string types, which breaks the
       // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = rows.map((r) => [
+        String(r.processing_status ?? ""),
         String(r.column_id ?? ""),
         String(r.column_name ?? ""),
         String(r.system_id ?? ""),
@@ -666,7 +669,11 @@ export default function CommonConversionMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => {
+        const copy = [...base.rows[idx]];
+        copy[0] = "";
+        return copy;
+      });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -818,22 +825,22 @@ export default function CommonConversionMasterScreen() {
     const buildRow = (idx: number): CommonConversionCreateRow => {
       const r = rows[idx];
       return {
-        column_id: r[0] ?? "",
-        column_name: r[1] ?? "",
-        system_id: r[2] ?? "",
-        convert_code_before_1: r[3] ?? "",
-        convert_name_before_1: r[4] ?? "",
-        convert_code_before_2: r[5] ?? "",
-        convert_name_before_2: r[6] ?? "",
-        convert_code_after: r[7] ?? "",
-        convert_name_after: r[8] ?? "",
-        description: r[9] ?? "",
-        reserve1: r[10] ?? "",
-        reserve2: r[11] ?? "",
-        reserve3: r[12] ?? "",
-        reserve4: r[13] ?? "",
-        reserve5: r[14] ?? "",
-        delete_flg_pfm: r[15] || "0",
+        column_id: r[1] ?? "",
+        column_name: r[2] ?? "",
+        system_id: r[3] ?? "",
+        convert_code_before_1: r[4] ?? "",
+        convert_name_before_1: r[5] ?? "",
+        convert_code_before_2: r[6] ?? "",
+        convert_name_before_2: r[7] ?? "",
+        convert_code_after: r[8] ?? "",
+        convert_name_after: r[9] ?? "",
+        description: r[10] ?? "",
+        reserve1: r[11] ?? "",
+        reserve2: r[12] ?? "",
+        reserve3: r[13] ?? "",
+        reserve4: r[14] ?? "",
+        reserve5: r[15] ?? "",
+        delete_flg_pfm: r[16] || "0",
       };
     };
 
@@ -855,20 +862,6 @@ export default function CommonConversionMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "commonConversionMaster.createdAndUpdatedRows";
@@ -878,6 +871,7 @@ export default function CommonConversionMasterScreen() {
         messageKey = "commonConversionMaster.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("commonConversionMaster.registrationFailed"), "error");
@@ -963,13 +957,14 @@ export default function CommonConversionMasterScreen() {
     }
 
     // Accept a CSV whose headers match either the English or Japanese column set.
+    // Skip processing_status (index 0) — it is server-computed and not part of the upload format.
     const enValidation = validateCsvColumns(
       parsed.headers,
-      COMMON_CONVERSION_MASTER_HEADERS,
+      COMMON_CONVERSION_MASTER_HEADERS.slice(1),
     );
     const jaValidation = validateCsvColumns(
       parsed.headers,
-      COMMON_CONVERSION_MASTER_HEADERS_JA,
+      COMMON_CONVERSION_MASTER_HEADERS_JA.slice(1),
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
@@ -1643,6 +1638,7 @@ export default function CommonConversionMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1681,10 +1677,15 @@ export default function CommonConversionMasterScreen() {
                                           colIndex + 1,
                                         )}
                                       >
-                                        {colIndex === deletionFlagColIndex ? (
+                                        {colIndex === 0 ? (
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit", fontWeight: cell === PROCESSING_STATUS_TO_BE_PROCESS ? "bold" : "normal" }}>
+                                            {cell}
+                                          </Box>
+                                        ) : colIndex === deletionFlagColIndex ? (
                                           <StyledCheckbox
                                             size="small"
                                             checked={cell === "1"}
+                                            disabled={locked}
                                             onChange={(e) =>
                                               handleCellEdit(
                                                 originalRowIndex,
@@ -1703,11 +1704,11 @@ export default function CommonConversionMasterScreen() {
                                                 v,
                                               )
                                             }
-                                            editable
-                                            searchable
+                                            editable={!locked}
+                                            searchable={!locked}
                                             searchOptions={itemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.itemId")}
-                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[0] } }}
+                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[itemIdColIndex] } }}
                                           />
                                         ) : colIndex === systemIdColIndex ? (
                                           <SearchableCell
@@ -1719,11 +1720,11 @@ export default function CommonConversionMasterScreen() {
                                                 v,
                                               )
                                             }
-                                            editable
-                                            searchable
+                                            editable={!locked}
+                                            searchable={!locked}
                                             searchOptions={systemIdAllOptions}
                                             searchTitle={t("commonConversionMaster.searchCondition") + " - " + t("commonConversionMaster.systemId")}
-                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[2] } }}
+                                            textFieldProps={{ inputProps: { maxLength: COL_MAX_LENGTHS[systemIdColIndex] } }}
                                           />
                                         ) : colIndex === itemNameColIndex ? (
                                           <SearchableCell
@@ -1731,6 +1732,10 @@ export default function CommonConversionMasterScreen() {
                                             onChange={() => {}}
                                             editable={false}
                                           />
+                                        ) : locked ? (
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
+                                            {cell}
+                                          </Box>
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}

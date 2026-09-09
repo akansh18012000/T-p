@@ -1,5 +1,4 @@
 ﻿import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useRowSelectionMode } from "../hooks/useRowSelectionMode.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
@@ -90,13 +89,14 @@ import {
   StyledSearchIcon,
   StyledTablePagination,
 } from "../components/shared/StyledComponents.js";
-import { parseCsv, stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
+import { stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 
 type GroupWithName = { id: string; name: string; key: string };
 type CodeWithName = { code: string; name: string };
@@ -129,6 +129,7 @@ const CODE_API_URL = "/api/v1/common-master/get_dim_common_code";
 
 type CommonMasterSearchItem = {
   id: string | null;
+  processing_status?: string | null;
   column_id: number | string | null;
   column_group_id: string | null;
   display_order: number | string | null;
@@ -207,8 +208,8 @@ const paginatedListboxSlotProps = {
 
 const DQ_SCREEN_CONFIG: DqScreenConfig = {
   columns: [
-    { colIndex: 1, labelKey: COMMON_MASTER_COLUMNS[1].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[A-Za-z0-9]+$/ }] },
-    { colIndex: 3, labelKey: COMMON_MASTER_COLUMNS[3].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]/ }] },
+    { colIndex: 2, labelKey: COMMON_MASTER_COLUMNS[2].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[A-Za-z0-9]+$/ }] },
+    { colIndex: 4, labelKey: COMMON_MASTER_COLUMNS[4].labelKey, rules: [{ type: "null" }, { type: "regex", pattern: /^[0-9]/ }] },
   ],
 };
 
@@ -373,15 +374,13 @@ export default function CommonMasterScreen() {
         .slice(0, MAX_VISIBLE_OPTIONS)
     : codeOptions.map((o) => o.code).slice(0, MAX_VISIBLE_OPTIONS);
 
-  const codeSelected = codeOptions.find((o) => o.code === code);
-
   const [csvData, setCsvData] = useState<CsvData | null>(null);
   const deletionFlagColIndex = DEFAULT_CSV_HEADERS.findIndex(
     (h) => h === "Deletion Flag",
   );
-  const columnIdColIndex = 0;
-  const groupIdColIndex = 1;
-  const groupNameColIndex = 2;
+  const columnIdColIndex = 1;
+  const groupIdColIndex = 2;
+  const groupNameColIndex = 3;
   const [searchExecuted, setSearchExecuted] = useState(false);
   // Increments on every executed search; drives the pagination reset so a new
   // search returns to page 1 while local row add/delete does not.
@@ -467,6 +466,7 @@ export default function CommonMasterScreen() {
       // the string types, which breaks the string[][] CsvData contract (cell
       // comparisons, CSV download).
       const rows: string[][] = result.data.map((item) => [
+        String(item.processing_status ?? ""),
         item.column_id != null ? String(item.column_id) : "",
         String(item.column_group_id ?? ""),
         String(item.column_name ?? ""),
@@ -602,6 +602,7 @@ export default function CommonMasterScreen() {
         // Copied rows become new rows — clear the Column Id so it isn't
         // carried over (the API assigns a fresh one on create).
         copy[columnIdColIndex] = "";
+        copy[0] = "";
         return copy;
       });
     const N = selectedRows.length;
@@ -761,19 +762,19 @@ export default function CommonMasterScreen() {
         ...(!isNew && columnIdValue
           ? { column_id: Number(columnIdValue) }
           : {}),
-        column_group_id: r[1].trim(),
-        column_name: r[2].trim(),
-        code: r[3].trim(),
-        name_en: r[4].trim(),
-        name_jp: r[5].trim(),
-        description: r[6].trim(),
-        sort_order: r[7].trim(),
-        reserve1: r[8].trim(),
-        reserve2: r[9].trim(),
-        reserve3: r[10].trim(),
-        reserve4: r[11].trim(),
-        reserve5: r[12].trim(),
-        delete_flg_pfm: r[13] === "1" ? 1 : 0,
+        column_group_id: r[2].trim(),
+        column_name: r[3].trim(),
+        code: r[4].trim(),
+        name_en: r[5].trim(),
+        name_jp: r[6].trim(),
+        description: r[7].trim(),
+        sort_order: r[8].trim(),
+        reserve1: r[9].trim(),
+        reserve2: r[10].trim(),
+        reserve3: r[11].trim(),
+        reserve4: r[12].trim(),
+        reserve5: r[13].trim(),
+        delete_flg_pfm: r[14] === "1" ? 1 : 0,
       };
     });
 
@@ -822,20 +823,6 @@ export default function CommonMasterScreen() {
         throw new Error(`Create API responded ${response.status}`);
       }
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows (no id) and discard edits by restoring each
-      // surviving row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "commonMaster.createdAndUpdatedRows";
@@ -845,6 +832,7 @@ export default function CommonMasterScreen() {
         messageKey = "commonMaster.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await executeSearch(lastSearchPayloadRef.current!, { silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("commonMaster.registrationFailed"), "error");
@@ -893,19 +881,6 @@ export default function CommonMasterScreen() {
     setCsvData({ ...csvData, rows: newRows });
   };
 
-  const handleDeleteMarkedRows = () => {
-    if (!csvData || deletionFlagColIndex < 0) return;
-    const rowsToDelete = csvData.rows.filter(
-      (row) => row[deletionFlagColIndex] === "1",
-    );
-    if (rowsToDelete.length === 0) return;
-    const newRows = csvData.rows.filter(
-      (row) => row[deletionFlagColIndex] !== "1",
-    );
-    setCsvData({ ...csvData, rows: newRows });
-    showSnackbar(t("commonMaster.rowsDeleted"), "success");
-  };
-
   const displayData = csvData || getEmptyCsvData();
 
   const freezeColumnsConfig = COMMON_MASTER_FREEZE_CONFIG.map((c) => ({
@@ -922,9 +897,6 @@ export default function CommonMasterScreen() {
     isLastFrozenColumn,
   } = useFreezeColumns("freezeColumns_CommonMaster", freezeColumnsConfig);
 
-  const rowsWithDeletionFlag = displayData.rows.filter(
-    (row) => row[deletionFlagColIndex] === "1",
-  ).length;
   const filteredRowIndices = csvSearchTerm.trim()
     ? displayData.rows
         .map((_, idx) => idx)
@@ -1383,6 +1355,7 @@ export default function CommonMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1422,7 +1395,11 @@ export default function CommonMasterScreen() {
                                           colIndex + 1,
                                         )}
                                       >
-                                        {colIndex === columnIdColIndex ? (
+                                        {colIndex === 0 ? (
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit", fontWeight: cell === PROCESSING_STATUS_TO_BE_PROCESS ? "bold" : "normal" }}>
+                                            {cell}
+                                          </Box>
+                                        ) : colIndex === columnIdColIndex ? (
                                           <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
                                             {cell}
                                           </Box>
@@ -1430,6 +1407,7 @@ export default function CommonMasterScreen() {
                                           <StyledCheckbox
                                             size="small"
                                             checked={cell === "1"}
+                                            disabled={locked}
                                             onChange={(e) =>
                                               handleCellEdit(
                                                 originalRowIndex,
@@ -1448,8 +1426,8 @@ export default function CommonMasterScreen() {
                                                 v,
                                               )
                                             }
-                                            editable={isNewRow(originalRowIndex)}
-                                            searchable={isNewRow(originalRowIndex)}
+                                            editable={!locked && isNewRow(originalRowIndex)}
+                                            searchable={!locked && isNewRow(originalRowIndex)}
                                             searchOptions={groupOptions.map((o) => ({
                                               value: o.id,
                                               label: `${o.id} - ${o.name}`,
@@ -1473,7 +1451,7 @@ export default function CommonMasterScreen() {
                                             searchTitle={t("commonMaster.searchCondition") + " - " + t("commonMaster.groupId")}
                                           />
                                         ) : colIndex === groupNameColIndex ? (
-                                          isNewRow(originalRowIndex) ? (
+                                          !locked && isNewRow(originalRowIndex) ? (
                                             <StyledCellTextField
                                               value={cell}
                                               onChange={(e) =>
@@ -1494,6 +1472,10 @@ export default function CommonMasterScreen() {
                                               {cell}
                                             </Box>
                                           )
+                                        ) : locked ? (
+                                          <Box sx={{ py: 0.5, px: 0.5, fontSize: "inherit" }}>
+                                            {cell}
+                                          </Box>
                                         ) : (
                                           <StyledCellTextField
                                             value={cell}

@@ -118,6 +118,7 @@ import { useGpcData } from "../context/GpcDataContext.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
@@ -220,6 +221,7 @@ interface SearchPayload {
 }
 
 interface SearchApiRow {
+  processing_status: string;
   manufacturer: string;
   manufacture_part_number: string;
   manufacturer_name: string;
@@ -828,6 +830,7 @@ export default function GpcMasterScreen() {
       // can arrive as numbers despite the string types, which breaks the
       // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = rows.map((r) => [
+        String(r.processing_status ?? ""),
         String(r.manufacturer ?? ""),
         String(r.manufacturer_name ?? ""),
         String(r.manufacture_part_number ?? ""),
@@ -939,7 +942,11 @@ export default function GpcMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
+      .map((idx) => {
+        const row = [...base.rows[idx]];
+        row[0] = ""; // clear processing_status — server will compute it after save
+        return row;
+      });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -1190,17 +1197,21 @@ export default function GpcMasterScreen() {
     // 5. Build payload.
     const buildRow = (idx: number): GpcMasterCreateRow => {
       const r = rowsForValidation[idx];
+      const colManufacturerName = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "manufacturerName");
+      const colGpcName = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "gpcName");
+      const colOverwrite = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "overwritePreventionFlag");
+      const colDeletion = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "deletionFlag");
       return {
         manufacturer: r[COL_MANUFACTURER] ?? "",
-        manufacturer_name: r[1] ?? "",
+        manufacturer_name: r[colManufacturerName] ?? "",
         manufacture_part_number: r[COL_MFR_PART_NUMBER] ?? "",
         gpc_code: r[COL_GPC_CODE] ?? "",
-        gpc_name: r[4] ?? "",
+        gpc_name: r[colGpcName] ?? "",
         fiscal_year: r[COL_VALID_YEAR] ?? "",
         bu_lv3_code: r[COL_BU3_CODE] ?? "",
         bu_lv3_name: r[COL_BU3_NAME] ?? "",
-        overwrite_ban_flg: r[8] || "0",
-        delete_flg: r[9] || "0",
+        overwrite_ban_flg: r[colOverwrite] || "0",
+        delete_flg: r[colDeletion] || "0",
       };
     };
 
@@ -1221,20 +1232,6 @@ export default function GpcMasterScreen() {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    // Revert the table to the last search results without re-querying:
-    // drop newly added rows and discard edits by restoring each surviving
-    // row from its original search snapshot.
-    const restoredRows: string[][] = [];
-    const restoredMeta: typeof rowMetadata = [];
-    rowMetadata.forEach((meta, idx) => {
-      if (meta === null || idx >= csvData.rows.length) return;
-      restoredRows.push([...meta.original]);
-      restoredMeta.push(meta);
-    });
-    setCsvData({ ...csvData, rows: restoredRows });
-    setRowMetadata(restoredMeta);
-    clearNewRowTracking();
-
     let messageKey: string;
     if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
       messageKey = "gpcMaster.createdAndUpdatedRows";
@@ -1244,6 +1241,7 @@ export default function GpcMasterScreen() {
       messageKey = "gpcMaster.updatedExistingRows";
     }
     showSnackbar(t(messageKey), "success");
+    await handleSearch({ silent: true });
     } catch (e) {
       console.error(e);
       showSnackbar(t("gpcMaster.registrationFailed"), "error");
@@ -1378,10 +1376,11 @@ export default function GpcMasterScreen() {
       return;
     }
 
-    const enValidation = validateCsvColumns(parsed.headers, GPC_MASTER_HEADERS);
+    // Skip processing_status (index 0) — it's server-computed and not part of the upload template.
+    const enValidation = validateCsvColumns(parsed.headers, GPC_MASTER_HEADERS.slice(1));
     const jaValidation = validateCsvColumns(
       parsed.headers,
-      GPC_MASTER_HEADERS_JA,
+      GPC_MASTER_HEADERS_JA.slice(1),
     );
     if (!enValidation.isValid && !jaValidation.isValid) {
       setUploadStatus("idle");
@@ -2041,8 +2040,9 @@ export default function GpcMasterScreen() {
                                     </StyledTableIndexCell>
                                     {row.map((cell, colIndex) => {
                                       const colConfig = GPC_MASTER_COLUMNS[colIndex];
+                                      const locked = isRowLocked(row);
                                       const isCheckbox = colConfig?.isCheckbox;
-                                      const isEditable = colConfig?.editable !== false;
+                                      const isEditable = colConfig?.editable !== false && !locked;
                                       const isSearchable = colConfig?.searchable && isEditable;
                                       // Show a green loader in the BU3 Code/Name
                                       // cells while their profit-center lookup runs.
@@ -2094,7 +2094,9 @@ export default function GpcMasterScreen() {
                                             colIndex + 1,
                                           )}
                                         >
-                                          {isBu3Loading ? (
+                                          {colIndex === 0 ? (
+                                            <Box sx={cell === PROCESSING_STATUS_TO_BE_PROCESS ? { fontWeight: "bold" } : {}}>{cell}</Box>
+                                          ) : isBu3Loading ? (
                                             <Box
                                               sx={{
                                                 display: "flex",
@@ -2111,6 +2113,7 @@ export default function GpcMasterScreen() {
                                             <StyledCheckbox
                                               size="small"
                                               checked={cell === "1"}
+                                              disabled={locked}
                                               onChange={(e) =>
                                                 handleCellEdit(
                                                   originalRowIndex,

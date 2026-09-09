@@ -8,6 +8,7 @@ import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import {
+  Box,
   TableBody,
   TableHead,
   TableRow,
@@ -26,6 +27,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import { formatDateTimeForDisplay, cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 import { downloadCsvWithPicker } from "../utils/csvUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -83,8 +85,8 @@ const YearMonthContentBox = styled(StyledContentBox)({
 });
 
 const TABLE_HEADERS = YEAR_MONTH_MASTER_HEADERS;
-const LAST_UPDATED_DATE_COL_INDEX = 4;
-const LAST_UPDATED_BY_COL_INDEX = 5;
+const LAST_UPDATED_DATE_COL_INDEX = 5;
+const LAST_UPDATED_BY_COL_INDEX = 6;
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 const FETCH_API_URL = "/api/v1/process-month/fetch";
@@ -98,6 +100,7 @@ type ProcessMonthFetchPayload = {
 
 type ProcessMonthFetchItem = {
   id: string;
+  processing_status?: string | null;
   proc_type: string | null;
   proc_type_name: string | null;
   proc_year: string | null;
@@ -113,6 +116,7 @@ type ProcessMonthFetchResponse = {
 
 function mapFetchItemToRow(item: ProcessMonthFetchItem): string[] {
   return [
+    String(item.processing_status ?? ""),
     item.proc_type ?? "",
     item.proc_type_name ?? "",
     item.proc_year ?? "",
@@ -122,10 +126,10 @@ function mapFetchItemToRow(item: ProcessMonthFetchItem): string[] {
   ];
 }
 
-const PROC_TYPE_COL_INDEX = 0;
-const PROC_TYPE_NAME_COL_INDEX = 1;
-const PROC_YEAR_COL_INDEX = 2;
-const PROC_PERIOD_COL_INDEX = 3;
+const PROC_TYPE_COL_INDEX = 1;
+const PROC_TYPE_NAME_COL_INDEX = 2;
+const PROC_YEAR_COL_INDEX = 3;
+const PROC_PERIOD_COL_INDEX = 4;
 const EDITABLE_COL_INDICES = [
   PROC_TYPE_COL_INDEX,
   PROC_TYPE_NAME_COL_INDEX,
@@ -325,14 +329,16 @@ function YearMonthMasterScreen() {
     if (selectedCount === 0) return;
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) =>
-        rows[idx].map((cell, colIndex) =>
+      .map((idx) => {
+        const r = rows[idx].map((cell, colIndex) =>
           colIndex === LAST_UPDATED_DATE_COL_INDEX ||
           colIndex === LAST_UPDATED_BY_COL_INDEX
             ? ""
             : cell,
-        ),
-      );
+        );
+        r[0] = "";
+        return r;
+      });
     const N = selectedRows.length;
     const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
@@ -507,20 +513,6 @@ function YearMonthMasterScreen() {
         throw new Error(`Create API responded ${response.status}`);
       }
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows (no id) and discard edits by restoring each
-      // surviving row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setRows(restoredRows);
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "yearMonthMaster.createdAndUpdatedRows";
@@ -530,6 +522,7 @@ function YearMonthMasterScreen() {
         messageKey = "yearMonthMaster.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await refreshProcessMonthData();
     } catch (e) {
       console.error(e);
       showSnackbar(t("yearMonthMaster.registrationFailed"), "error");
@@ -701,6 +694,7 @@ function YearMonthMasterScreen() {
                       {pagedRowIndices.map((displayIndex, i) => {
                         const originalRowIndex = displayIndex;
                         const row = rows[originalRowIndex];
+                        const locked = isRowLocked(row);
                         return (
                           <StyledTableBodyRow key={originalRowIndex} $index={i}>
                             {isSelectingRows && (
@@ -708,6 +702,7 @@ function YearMonthMasterScreen() {
                                 <StyledSelectionRowCheckbox
                                   checked={selectedRowIndices.has(originalRowIndex)}
                                   onChange={() => toggleRowSelection(originalRowIndex)}
+                                  disabled={locked}
                                 />
                               </StyledSelectionCheckboxCell>
                             )}
@@ -716,13 +711,17 @@ function YearMonthMasterScreen() {
                             </StyledTableIndexCell>
                             {row.map((cell, colIndex) => (
                               <StyledTableDataCell key={colIndex} $rowIndex={i}>
-                                {colIndex === LAST_UPDATED_DATE_COL_INDEX ||
+                                {colIndex === 0 ? (
+                                  <Box sx={cell === PROCESSING_STATUS_TO_BE_PROCESS ? { fontWeight: "bold" } : {}}>{cell}</Box>
+                                ) : colIndex === LAST_UPDATED_DATE_COL_INDEX ||
                                 colIndex === LAST_UPDATED_BY_COL_INDEX ? (
                                   <SearchableCell
                                     value={cell}
                                     onChange={() => {}}
                                     editable={false}
                                   />
+                                ) : locked ? (
+                                  <Box>{cell}</Box>
                                 ) : (
                                   <StyledCellTextField
                                     value={cell}

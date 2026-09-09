@@ -15,7 +15,6 @@ import {
   TableHead,
   TableRow,
   Snackbar,
-  FormControlLabel,
   IconButton,
   InputAdornment,
   Autocomplete,
@@ -70,7 +69,6 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
   StyledCheckbox,
-  StyledCellTextField,
   StyledDragDropZone,
   StyledUploadIconCircle,
   StyledCloudUploadIcon,
@@ -100,10 +98,7 @@ import {
   AppRegistration as AppRegistrationIcon,
   GetApp as GetAppIcon,
   Clear as ClearIcon,
-  ExpandLess as ExpandLessIcon,
-  ExpandMore as ExpandMoreIcon,
   CloudUploadOutlined as CloudUploadOutlinedIcon,
-  DescriptionOutlined as DescriptionOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
@@ -159,6 +154,7 @@ import {
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
 
 // Global Item Type dropdown options. The code (value) is stored in the cell and
 // sent in the create/update API call; the dropdown shows "code : value".
@@ -250,6 +246,7 @@ interface LocalItemSearchPayload {
 }
 
 interface LocalItemSearchApiRow {
+  processing_status: string;
   local_system_id: string;
   local_item_code: string;
   manufacturer: string;
@@ -309,6 +306,47 @@ type LocalItemRowMeta = { original: string[] } | null;
 
 function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
+}
+
+// Computes where a batch of new rows should land so repeated "add row"
+// actions stack together at the bottom of the current page instead of
+// pushing each other onto the next page. Any rows already marked "new" on
+// the current page are pulled out and re-inserted together with the
+// incoming batch, evicting enough trailing original rows to keep the whole
+// batch visible on this page (mirrors a single insert when there's no
+// pre-existing new-row block, i.e. N=1 with no existingNewIndices).
+function computeNewRowBatchInsertion(
+  baseRows: string[][],
+  pagedRowIndices: number[],
+  isNewRow: (index: number) => boolean,
+  rowsPerPage: number,
+  rowsToAdd: string[][],
+) {
+  const existingNewIndices = pagedRowIndices.filter((idx) => isNewRow(idx));
+  const existingNewRows = existingNewIndices.map((idx) => baseRows[idx]);
+  const rowsWithoutExistingNew = baseRows.filter(
+    (_, idx) => !existingNewIndices.includes(idx),
+  );
+  const remainingPagedIndices = pagedRowIndices.filter(
+    (idx) => !existingNewIndices.includes(idx),
+  );
+  const batch = [...existingNewRows, ...rowsToAdd];
+  const N = batch.length;
+  const availableSlots = rowsPerPage - remainingPagedIndices.length;
+  const insertIndex =
+    remainingPagedIndices.length > 0
+      ? availableSlots >= N
+        ? remainingPagedIndices[remainingPagedIndices.length - 1] + 1
+        : remainingPagedIndices[
+            Math.max(0, remainingPagedIndices.length - (N - availableSlots))
+          ]
+      : rowsWithoutExistingNew.length;
+  const rows = [
+    ...rowsWithoutExistingNew.slice(0, insertIndex),
+    ...batch,
+    ...rowsWithoutExistingNew.slice(insertIndex),
+  ];
+  return { rows, insertIndex, batchSize: N, existingNewIndices };
 }
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
@@ -505,15 +543,15 @@ function LocalItemConversionMasterScreen() {
   };
 
   // Column indices for code-to-name auto-population on cell edit. Manufacturer
-  // name (col 3) is filled from the shared manufacturer context.
+  // name is filled from the shared manufacturer context.
   const codeToNameColumnMap: Record<
     number,
     { nameColIndex: number; lookupMap: Record<string, string> }
   > = {
-    2: { nameColIndex: 3, lookupMap: manufacturerNameMap }, // manufacturer -> manufacturerName
-    6: { nameColIndex: 7, lookupMap: gpcCodeNameMap }, // gpcCode -> gpcName
-    8: { nameColIndex: 9, lookupMap: locationNameMap }, // locationCode -> locationName
-    10: { nameColIndex: 11, lookupMap: corporateNameMap }, // corporateCode -> corporateName
+    [COL_MANUFACTURER]: { nameColIndex: COL_MANUFACTURER_NAME, lookupMap: manufacturerNameMap },
+    [COL_GPC_CODE]: { nameColIndex: COL_GPC_NAME, lookupMap: gpcCodeNameMap },
+    [COL_LOCATION_CODE]: { nameColIndex: COL_LOCATION_NAME, lookupMap: locationNameMap },
+    [COL_CORPORATE_CODE]: { nameColIndex: COL_CORPORATE_NAME, lookupMap: corporateNameMap },
   };
 
   // Upload file state (selectedFile from context)
@@ -565,15 +603,18 @@ function LocalItemConversionMasterScreen() {
     handleSelectAllChange,
     selectedCount,
   } = useRowSelectionMode();
-  const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
+  const { isNewRow, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
-  const handleSearch = async () => {
-    const errors: Record<string, string> = {};
-    if (!yearMonth) {
-      errors.yearMonth = t("localItemConversion.yearAndMonthRequired");
+  const handleSearch = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      const errors: Record<string, string> = {};
+      if (!yearMonth) {
+        errors.yearMonth = t("localItemConversion.yearAndMonthRequired");
+      }
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) return;
     }
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
 
     setSearchExecuted(true);
     setSearchGeneration((n) => n + 1);
@@ -611,6 +652,7 @@ function LocalItemConversionMasterScreen() {
       // can arrive as numbers despite the string types, which breaks the
       // string[][] CsvData contract (cell comparisons, CSV download).
       const mappedRows = apiRows.map((r) => [
+        String(r.processing_status ?? ""), // Processing Status
         String(r.local_system_id ?? ""), // System ID
         String(r.local_item_code ?? ""), // Local Item Code
         String(r.manufacturer ?? ""), // Manufacturer
@@ -635,19 +677,23 @@ function LocalItemConversionMasterScreen() {
       setRowMetadata(mappedRows.map((row) => ({ original: [...row] })));
       searchSnapshotRef.current = mappedRows.map((row) => [...row]);
       clearNewRowTracking();
-      showSnackbar(
-        mappedRows.length > 0
-          ? t("localItemConversion.searchCompletedWithData")
-          : t("localItemConversion.searchCompletedNoResults"),
-        mappedRows.length > 0 ? "success" : "info",
-      );
+      if (!silent) {
+        showSnackbar(
+          mappedRows.length > 0
+            ? t("localItemConversion.searchCompletedWithData")
+            : t("localItemConversion.searchCompletedNoResults"),
+          mappedRows.length > 0 ? "success" : "info",
+        );
+      }
     } catch (err) {
       console.error("Local item search failed:", err);
       setCsvData(getEmptyCsvData());
       setRowMetadata([]);
       searchSnapshotRef.current = [];
       clearNewRowTracking();
-      showSnackbar(t("localItemConversion.searchCompletedNoResults"), "info");
+      if (!silent) {
+        showSnackbar(t("localItemConversion.searchCompletedNoResults"), "info");
+      }
     } finally {
       setSearchLoading(false);
     }
@@ -676,30 +722,29 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    const availableSlots = rowsPerPage - pagedRowIndices.length;
-    // Mirror the logic in handleAddSelectedRows (N=1):
-    // - Page not full: append after the last visible row.
-    // - Page full: insert at the last slot, displacing that row to the next page.
-    const insertIndex = pagedRowIndices.length > 0
-      ? availableSlots >= 1
-        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
-      : base.rows.length;
-    shiftIndicesForInsertion(insertIndex, 1);
-    markRowsAsNew([insertIndex]);
-    setCsvData({
-      headers: base.headers,
-      rows: [
-        ...base.rows.slice(0, insertIndex),
-        newRow,
-        ...base.rows.slice(insertIndex),
-      ],
+    const { rows, insertIndex, batchSize, existingNewIndices } =
+      computeNewRowBatchInsertion(
+        base.rows,
+        pagedRowIndices,
+        isNewRow,
+        rowsPerPage,
+        [newRow],
+      );
+    [...existingNewIndices]
+      .sort((a, b) => b - a)
+      .forEach((idx) => shiftIndicesForDeletion(idx));
+    shiftIndicesForInsertion(insertIndex, batchSize);
+    setCsvData({ headers: base.headers, rows });
+    setRowMetadata((prev) => {
+      const withoutExistingNew = prev.filter(
+        (_, idx) => !existingNewIndices.includes(idx),
+      );
+      return [
+        ...withoutExistingNew.slice(0, insertIndex),
+        ...Array<LocalItemRowMeta>(batchSize).fill(null),
+        ...withoutExistingNew.slice(insertIndex),
+      ];
     });
-    setRowMetadata((prev) => [
-      ...prev.slice(0, insertIndex),
-      null,
-      ...prev.slice(insertIndex),
-    ]);
     showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
 
@@ -720,30 +765,34 @@ function LocalItemConversionMasterScreen() {
     const base = csvData || getEmptyCsvData();
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
-      .map((idx) => [...base.rows[idx]]);
-    const N = selectedRows.length;
-    const availableSlots = rowsPerPage - pagedRowIndices.length;
-    const insertIndex = pagedRowIndices.length > 0
-      ? availableSlots >= N
-        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
-      : base.rows.length;
-    const newRows = [
-      ...base.rows.slice(0, insertIndex),
-      ...selectedRows,
-      ...base.rows.slice(insertIndex),
-    ];
-    shiftIndicesForInsertion(insertIndex, selectedRows.length);
-    markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
-    setCsvData({
-      headers: base.headers,
-      rows: newRows,
+      .map((idx) => {
+        const copied = [...base.rows[idx]];
+        copied[0] = ""; // clear processing_status — server computes it after save
+        return copied;
+      });
+    const { rows, insertIndex, batchSize, existingNewIndices } =
+      computeNewRowBatchInsertion(
+        base.rows,
+        pagedRowIndices,
+        isNewRow,
+        rowsPerPage,
+        selectedRows,
+      );
+    [...existingNewIndices]
+      .sort((a, b) => b - a)
+      .forEach((idx) => shiftIndicesForDeletion(idx));
+    shiftIndicesForInsertion(insertIndex, batchSize);
+    setCsvData({ headers: base.headers, rows });
+    setRowMetadata((prev) => {
+      const withoutExistingNew = prev.filter(
+        (_, idx) => !existingNewIndices.includes(idx),
+      );
+      return [
+        ...withoutExistingNew.slice(0, insertIndex),
+        ...Array<LocalItemRowMeta>(batchSize).fill(null),
+        ...withoutExistingNew.slice(insertIndex),
+      ];
     });
-    setRowMetadata((prev) => [
-      ...prev.slice(0, insertIndex),
-      ...selectedRows.map(() => null),
-      ...prev.slice(insertIndex),
-    ]);
     exitSelectionMode();
     showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
@@ -909,20 +958,6 @@ function LocalItemConversionMasterScreen() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      // Revert the table to the last search results without re-querying:
-      // drop newly added rows and discard edits by restoring each surviving
-      // row from its original search snapshot.
-      const restoredRows: string[][] = [];
-      const restoredMeta: typeof rowMetadata = [];
-      rowMetadata.forEach((meta, idx) => {
-        if (meta === null || idx >= csvData.rows.length) return;
-        restoredRows.push([...meta.original]);
-        restoredMeta.push(meta);
-      });
-      setCsvData({ ...csvData, rows: restoredRows });
-      setRowMetadata(restoredMeta);
-      clearNewRowTracking();
-
       let messageKey: string;
       if (newRowIndices.length > 0 && editedRowIndices.length > 0) {
         messageKey = "localItemConversion.createdAndUpdatedRows";
@@ -932,6 +967,7 @@ function LocalItemConversionMasterScreen() {
         messageKey = "localItemConversion.updatedExistingRows";
       }
       showSnackbar(t(messageKey), "success");
+      await handleSearch({ silent: true });
     } catch (e) {
       console.error("Local item registration failed:", e);
       showSnackbar(t("localItemConversion.registrationFailed"), "error");
@@ -966,27 +1002,6 @@ function LocalItemConversionMasterScreen() {
     });
     
     setCsvData({ ...csvData, rows: newRows });
-  };
-
-  const handleDeleteRow = (rowIndex: number) => {
-    if (!csvData) return;
-    const newRows = csvData.rows.filter((_, idx) => idx !== rowIndex);
-    setCsvData({ ...csvData, rows: newRows });
-    setRowMetadata((prev) => prev.filter((_, idx) => idx !== rowIndex));
-    showSnackbar(t("localItemConversion.rowDeleted"), "success");
-  };
-
-  const handleDeleteMarkedRows = () => {
-    if (!csvData) return;
-    const rowsToDelete = csvData.rows.filter(
-      (row) => row[COL_DELETION_FLAG] === "1",
-    );
-    if (rowsToDelete.length === 0) return;
-    const newRows = csvData.rows.filter(
-      (row) => row[COL_DELETION_FLAG] !== "1",
-    );
-    setCsvData({ ...csvData, rows: newRows });
-    showSnackbar(t("localItemConversion.rowsDeleted"), "success");
   };
 
   const handleUploadDrag = (e: React.DragEvent) => {
@@ -1045,13 +1060,14 @@ function LocalItemConversionMasterScreen() {
       return;
     }
 
-    // Exclude the deletion flag column from upload validation — it was removed
-    // from the UI and the downloadable template, so uploaded files won't have it.
+    // Exclude the processing_status column (index 0, server-computed) and the
+    // deletion flag column from upload validation — neither is in the downloadable
+    // template, so uploaded files won't have them.
     const validationHeadersEN = LOCAL_ITEM_CONVERSION_MASTER_HEADERS.filter(
-      (_, i) => i !== COL_DELETION_FLAG,
+      (_, i) => i !== 0 && i !== COL_DELETION_FLAG,
     );
     const validationHeadersJA = LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA.filter(
-      (_, i) => i !== COL_DELETION_FLAG,
+      (_, i) => i !== 0 && i !== COL_DELETION_FLAG,
     );
     const enValidation = validateCsvColumns(parsed.headers, validationHeadersEN);
     const jaValidation = validateCsvColumns(parsed.headers, validationHeadersJA);
@@ -1566,7 +1582,7 @@ function LocalItemConversionMasterScreen() {
                   <StyledSearchButtonsBox>
                     <StyledSearchButton
                       variant="contained"
-                      onClick={handleSearch}
+                      onClick={() => handleSearch()}
                       startIcon={<SearchIcon />}
                     >
                       {t("localItemConversion.search")}
@@ -1725,7 +1741,7 @@ function LocalItemConversionMasterScreen() {
                                     col.isCheckbox ? null : (
                                     <StyledTableHeaderCell
                                       key={col.key}
-                                      $deletionFlag={col.isCheckbox === true}
+                                      $deletionFlag={!!col.isCheckbox}
                                       $isFrozen={freezeIndices.includes(
                                         colIndex + 1,
                                       )}
@@ -1764,6 +1780,7 @@ function LocalItemConversionMasterScreen() {
                               {pagedRowIndices.map((displayIndex, i) => {
                                 const originalRowIndex = displayIndex;
                                 const row = displayData.rows[originalRowIndex];
+                                const locked = isRowLocked(row);
                                 return (
                                   <StyledTableBodyRow
                                     key={originalRowIndex}
@@ -1788,6 +1805,7 @@ function LocalItemConversionMasterScreen() {
                                     {LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS.map(
                                       (col, colIndex) => {
                                         const cell = row[colIndex] ?? "";
+                                        const isProcessingStatus = col.key === "processing_status";
                                         const editable = col.editable !== false;
                                         const searchOptions = searchableColumnOptions[col.key];
                                         const isSearchable = editable && !!searchOptions;
@@ -1813,10 +1831,22 @@ function LocalItemConversionMasterScreen() {
                                               colIndex + 1,
                                             )}
                                           >
-                                            {isCheckbox ? (
+                                            {isProcessingStatus ? (
+                                              <Box
+                                                sx={{
+                                                  py: 0.5,
+                                                  px: 0.5,
+                                                  fontSize: "inherit",
+                                                  fontWeight: cell === PROCESSING_STATUS_TO_BE_PROCESS ? "bold" : "normal",
+                                                }}
+                                              >
+                                                {cell}
+                                              </Box>
+                                            ) : isCheckbox ? (
                                               <StyledCheckbox
                                                 size="small"
                                                 checked={cell === "1"}
+                                                disabled={locked}
                                                 onChange={(e) =>
                                                   handleCellEdit(
                                                     originalRowIndex,
@@ -1825,6 +1855,16 @@ function LocalItemConversionMasterScreen() {
                                                   )
                                                 }
                                               />
+                                            ) : locked ? (
+                                              <Box
+                                                sx={{
+                                                  py: 0.5,
+                                                  px: 0.5,
+                                                  fontSize: "inherit",
+                                                }}
+                                              >
+                                                {cell}
+                                              </Box>
                                             ) : isGlobalItemType ? (
                                               <Select
                                                 value={cell}

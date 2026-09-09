@@ -189,3 +189,18 @@ export async function downloadDqErrorFileForFiles(
   const name = fileName.endsWith(".txt") ? fileName : `${fileName}.txt`;
   return downloadCsvWithPicker(blob, name);
 }
+
+// ---------------------------------------------------------------------------
+// Processing status — shared across all master screens
+// ---------------------------------------------------------------------------
+
+/** Index of the processing_status column in all master screen csvData.rows arrays. */
+export const COL_PROCESSING_STATUS = 0;
+
+export const PROCESSING_STATUS_TO_BE_PROCESS = "To Be Process";
+export const PROCESSING_STATUS_PROCESSED = "Processed";
+
+/** Returns true when the row's processing_status is "To Be Process", meaning all cells must be read-only. */
+export function isRowLocked(row: string[]): boolean {
+  return row[COL_PROCESSING_STATUS] === PROCESSING_STATUS_TO_BE_PROCESS;
+}

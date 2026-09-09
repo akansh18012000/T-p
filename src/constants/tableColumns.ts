@@ -403,6 +403,7 @@ export const ADJUSTMENT_DATA_FILE_DELETION_RESULT_COLUMNS: I18nColumnConfig[] =
 // ---------------------------------------------------------------------------
 
 export const YEAR_MONTH_MASTER_HEADERS: string[] = [
+  "Processing Status",
   "Processing Classification",
   "Processing Name",
   "Processing Year",
@@ -413,6 +414,7 @@ export const YEAR_MONTH_MASTER_HEADERS: string[] = [
 
 /** i18n column config for Year Month Master table */
 export const YEAR_MONTH_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processing_status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "processingClassification", labelKey: "yearMonthMaster.processingClassification", editable: true },
   { key: "processingName", labelKey: "yearMonthMaster.processingName", editable: true },
   { key: "processingYear", labelKey: "yearMonthMaster.processingYear", editable: true },
@@ -441,6 +443,7 @@ export interface GlobalDadMasterColumnConfig {
 }
 
 export const GLOBAL_DAD_MASTER_COLUMNS: GlobalDadMasterColumnConfig[] = [
+  { key: "processing_status", label: "Processing Status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "systemId", label: "System ID", labelKey: "globalDadMaster.systemId", editable: false },
   { key: "salesLocationCode", label: "Sales Location Code", labelKey: "globalDadMaster.salesLocationCode", editable: false },
   { key: "localCustomerCode", label: "Local Customer Code", labelKey: "globalDadMaster.localCustomerCode", editable: false },
@@ -458,6 +461,7 @@ export const GLOBAL_DAD_MASTER_HEADERS: string[] = GLOBAL_DAD_MASTER_COLUMNS.map
 
 /** Japanese CSV column headers; order must match GLOBAL_DAD_MASTER_HEADERS */
 export const GLOBAL_DAD_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "システムID",
   "販売拠点コード",
   "ローカル顧客コード",
@@ -473,17 +477,18 @@ export const GLOBAL_DAD_MASTER_HEADERS_JA: string[] = [
 
 export const GLOBAL_DAD_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "globalDadMaster.systemId" },
-  { index: 2, labelKey: "globalDadMaster.salesLocationCode" },
-  { index: 3, labelKey: "globalDadMaster.localCustomerCode" },
-  { index: 4, labelKey: "globalDadMaster.localCustomerName" },
-  { index: 5, labelKey: "globalDadMaster.productClassification" },
-  { index: 6, labelKey: "globalDadMaster.productClassificationName" },
-  { index: 7, labelKey: "globalDadMaster.transferDestBU3" },
-  { index: 8, labelKey: "globalDadMaster.effectiveStartDate" },
-  { index: 9, labelKey: "globalDadMaster.expirationDate" },
-  { index: 10, labelKey: "globalDadMaster.patternId" },
-  { index: 11, labelKey: "globalDadMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "globalDadMaster.systemId" },
+  { index: 3, labelKey: "globalDadMaster.salesLocationCode" },
+  { index: 4, labelKey: "globalDadMaster.localCustomerCode" },
+  { index: 5, labelKey: "globalDadMaster.localCustomerName" },
+  { index: 6, labelKey: "globalDadMaster.productClassification" },
+  { index: 7, labelKey: "globalDadMaster.productClassificationName" },
+  { index: 8, labelKey: "globalDadMaster.transferDestBU3" },
+  { index: 9, labelKey: "globalDadMaster.effectiveStartDate" },
+  { index: 10, labelKey: "globalDadMaster.expirationDate" },
+  { index: 11, labelKey: "globalDadMaster.patternId" },
+  { index: 12, labelKey: "globalDadMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -508,6 +513,7 @@ export interface StandardCostMasterColumnConfig {
 }
 
 export const STANDARD_COST_MASTER_COLUMNS: StandardCostMasterColumnConfig[] = [
+  { key: "processing_status", label: "Processing Status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "mfrPartNumber", label: "Mfr Part Number", labelKey: "standardCostMaster.mfrPartNumber", editable: true, searchable: true },
   { key: "manufacturer", label: "Manufacturer", labelKey: "standardCostMaster.manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
   { key: "manufacturerName", label: "Manufacturer Name", labelKey: "standardCostMaster.manufacturerName", editable: false },
@@ -527,6 +533,7 @@ export const STANDARD_COST_MASTER_HEADERS: string[] = STANDARD_COST_MASTER_COLUM
 
 /** Japanese CSV column headers; order must match STANDARD_COST_MASTER_HEADERS */
 export const STANDARD_COST_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "メーカー品番",
   "メーカー",
   "メーカー名",
@@ -543,18 +550,19 @@ export const STANDARD_COST_MASTER_HEADERS_JA: string[] = [
 
 export const STANDARD_COST_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "standardCostMaster.mfrPartNumber" },
-  { index: 2, labelKey: "standardCostMaster.manufacturer" },
-  { index: 3, labelKey: "standardCostMaster.manufacturerName" },
-  { index: 4, labelKey: "standardCostMaster.locationCode" },
-  { index: 5, labelKey: "standardCostMaster.locationName" },
-  { index: 6, labelKey: "standardCostMaster.corporateCode" },
-  { index: 7, labelKey: "standardCostMaster.corporateName" },
-  { index: 8, labelKey: "standardCostMaster.effectiveStartDate" },
-  { index: 9, labelKey: "standardCostMaster.currency" },
-  { index: 10, labelKey: "standardCostMaster.standardCost" },
-  { index: 11, labelKey: "standardCostMaster.overwritePreventionFlag" },
-  { index: 12, labelKey: "standardCostMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "standardCostMaster.mfrPartNumber" },
+  { index: 3, labelKey: "standardCostMaster.manufacturer" },
+  { index: 4, labelKey: "standardCostMaster.manufacturerName" },
+  { index: 5, labelKey: "standardCostMaster.locationCode" },
+  { index: 6, labelKey: "standardCostMaster.locationName" },
+  { index: 7, labelKey: "standardCostMaster.corporateCode" },
+  { index: 8, labelKey: "standardCostMaster.corporateName" },
+  { index: 9, labelKey: "standardCostMaster.effectiveStartDate" },
+  { index: 10, labelKey: "standardCostMaster.currency" },
+  { index: 11, labelKey: "standardCostMaster.standardCost" },
+  { index: 12, labelKey: "standardCostMaster.overwritePreventionFlag" },
+  { index: 13, labelKey: "standardCostMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -575,6 +583,7 @@ export interface KitItemClassificationMasterColumnConfig {
 }
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_COLUMNS: KitItemClassificationMasterColumnConfig[] = [
+  { key: "processing_status", label: "Processing Status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "kitMfrPartNumber", label: "Kit Mfr Part Number", labelKey: "kitItemClassification.kitMfrPartNumber", editable: false },
   { key: "kitManufacturer", label: "Kit Manufacturer", labelKey: "kitItemClassification.kitManufacturer", editable: false },
   { key: "componentMfrPartNumber", label: "Component Mfr Part Number", labelKey: "kitItemClassification.componentMfrPartNumber", editable: false },
@@ -589,6 +598,7 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS: string[] = KIT_ITEM_CLASSIF
 
 /** Japanese CSV column headers; order must match KIT_ITEM_CLASSIFICATION_MASTER_HEADERS */
 export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "キットメーカー品番",
   "キットメーカー",
   "構成品メーカー品番",
@@ -600,13 +610,14 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_HEADERS_JA: string[] = [
 
 export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "kitItemClassification.kitMfrPartNumber" },
-  { index: 2, labelKey: "kitItemClassification.kitManufacturer" },
-  { index: 3, labelKey: "kitItemClassification.componentMfrPartNumber" },
-  { index: 4, labelKey: "kitItemClassification.componentsManufacturer" },
-  { index: 5, labelKey: "kitItemClassification.componentLocationCode" },
-  { index: 6, labelKey: "kitItemClassification.quantity" },
-  { index: 7, labelKey: "kitItemClassification.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "kitItemClassification.kitMfrPartNumber" },
+  { index: 3, labelKey: "kitItemClassification.kitManufacturer" },
+  { index: 4, labelKey: "kitItemClassification.componentMfrPartNumber" },
+  { index: 5, labelKey: "kitItemClassification.componentsManufacturer" },
+  { index: 6, labelKey: "kitItemClassification.componentLocationCode" },
+  { index: 7, labelKey: "kitItemClassification.quantity" },
+  { index: 8, labelKey: "kitItemClassification.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -614,6 +625,7 @@ export const KIT_ITEM_CLASSIFICATION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = 
 // ---------------------------------------------------------------------------
 
 export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
+  "Processing Status",
   "Processing Date",
   "From Currency",
   "To Currency",
@@ -625,6 +637,7 @@ export const FX_RATE_ENTRY_MASTER_HEADERS: string[] = [
 
 /** Japanese CSV column headers; order must match FX_RATE_ENTRY_MASTER_HEADERS */
 export const FX_RATE_ENTRY_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "処理日",
   "変換元通貨",
   "変換先通貨",
@@ -636,6 +649,7 @@ export const FX_RATE_ENTRY_MASTER_HEADERS_JA: string[] = [
 
 /** i18n column config for Fx Rate Entry Master table */
 export const FX_RATE_ENTRY_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processing_status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "processingDate", labelKey: "fxRateEntryMaster.processingDate", editable: true },
   { key: "fromCurrency", labelKey: "fxRateEntryMaster.fromCurrency", editable: true },
   { key: "toCurrency", labelKey: "fxRateEntryMaster.toCurrency", editable: true },
@@ -653,6 +667,7 @@ export const FX_RATE_ENTRY_MASTER_COLUMNS: I18nColumnConfig[] = [
 /** Search result table: order matches CSV headers; labelKey used with t() in screen */
 export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfig[] =
   [
+    { key: "processing_status", labelKey: "tableCommon.processingStatus", editable: false },
     { key: "systemId", labelKey: "localItemConversion.systemId", editable: true },
     {
       key: "localItemCode",
@@ -723,6 +738,7 @@ export const LOCAL_ITEM_CONVERSION_MASTER_SEARCH_RESULT_COLUMNS: I18nColumnConfi
 
 /** English CSV column headers; order must match SEARCH_RESULT_COLUMNS */
 export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
+  "Processing Status",
   "System ID",
   "Local Item Code",
   "Manufacturer",
@@ -743,6 +759,7 @@ export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS: string[] = [
 
 /** Japanese CSV column headers; order must match LOCAL_ITEM_CONVERSION_MASTER_HEADERS */
 export const LOCAL_ITEM_CONVERSION_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "システムID",
   "ローカル品目コード",
   "メーカー",
@@ -794,6 +811,7 @@ export interface GpcMasterColumnConfig {
 }
 
 export const GPC_MASTER_COLUMNS: GpcMasterColumnConfig[] = [
+  { key: "processing_status", label: "Processing Status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "manufacturer", label: "Manufacturer", labelKey: "gpcMaster.manufacturer", editable: true, searchable: true, associatedColumn: "manufacturerName" },
   { key: "manufacturerName", label: "Manufacturer Name", labelKey: "gpcMaster.manufacturerName", editable: false },
   { key: "mfrPartNumber", label: "Mfr Part Number", labelKey: "gpcMaster.mfrPartNumber", editable: true, searchable: true },
@@ -811,6 +829,7 @@ export const GPC_MASTER_HEADERS: string[] = GPC_MASTER_COLUMNS.map((col) => col.
 
 /** Japanese CSV column headers; order must match GPC_MASTER_HEADERS */
 export const GPC_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "メーカー",
   "メーカー名",
   "メーカー品番",
@@ -825,16 +844,17 @@ export const GPC_MASTER_HEADERS_JA: string[] = [
 
 export const GPC_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "gpcMaster.manufacturer" },
-  { index: 2, labelKey: "gpcMaster.manufacturerName" },
-  { index: 3, labelKey: "gpcMaster.mfrPartNumber" },
-  { index: 4, labelKey: "gpcMaster.gpcCode" },
-  { index: 5, labelKey: "gpcMaster.gpcName" },
-  { index: 6, labelKey: "gpcMaster.validYear" },
-  { index: 7, labelKey: "gpcMaster.bu3Code" },
-  { index: 8, labelKey: "gpcMaster.bu3Name" },
-  { index: 9, labelKey: "gpcMaster.overwritePreventionFlag" },
-  { index: 10, labelKey: "gpcMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "gpcMaster.manufacturer" },
+  { index: 3, labelKey: "gpcMaster.manufacturerName" },
+  { index: 4, labelKey: "gpcMaster.mfrPartNumber" },
+  { index: 5, labelKey: "gpcMaster.gpcCode" },
+  { index: 6, labelKey: "gpcMaster.gpcName" },
+  { index: 7, labelKey: "gpcMaster.validYear" },
+  { index: 8, labelKey: "gpcMaster.bu3Code" },
+  { index: 9, labelKey: "gpcMaster.bu3Name" },
+  { index: 10, labelKey: "gpcMaster.overwritePreventionFlag" },
+  { index: 11, labelKey: "gpcMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -842,6 +862,7 @@ export const GPC_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 // ---------------------------------------------------------------------------
 
 export const COMMON_CONVERSION_MASTER_HEADERS: string[] = [
+  "Processing Status",
   "Item ID",
   "Item Name",
   "System ID",
@@ -862,6 +883,7 @@ export const COMMON_CONVERSION_MASTER_HEADERS: string[] = [
 
 /** Japanese CSV column headers; order must match COMMON_CONVERSION_MASTER_HEADERS */
 export const COMMON_CONVERSION_MASTER_HEADERS_JA: string[] = [
+  "処理ステータス",
   "アイテムID",
   "アイテム名",
   "システムID",
@@ -882,6 +904,7 @@ export const COMMON_CONVERSION_MASTER_HEADERS_JA: string[] = [
 
 /** i18n column config for Common Conversion Master table */
 export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processing_status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "itemId", labelKey: "commonConversionMaster.itemId", editable: true },
   { key: "itemName", labelKey: "commonConversionMaster.itemName", editable: false },
   { key: "systemId", labelKey: "commonConversionMaster.systemId", editable: true },
@@ -902,22 +925,23 @@ export const COMMON_CONVERSION_MASTER_COLUMNS: I18nColumnConfig[] = [
 
 export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "commonConversionMaster.itemId" },
-  { index: 2, labelKey: "commonConversionMaster.itemName" },
-  { index: 3, labelKey: "commonConversionMaster.systemId" },
-  { index: 4, labelKey: "commonConversionMaster.preConversionCode1" },
-  { index: 5, labelKey: "commonConversionMaster.preConversionName1" },
-  { index: 6, labelKey: "commonConversionMaster.preConversionCode2" },
-  { index: 7, labelKey: "commonConversionMaster.preConversionName2" },
-  { index: 8, labelKey: "commonConversionMaster.convertedCode" },
-  { index: 9, labelKey: "commonConversionMaster.convertedName" },
-  { index: 10, labelKey: "commonConversionMaster.abstract" },
-  { index: 11, labelKey: "commonConversionMaster.reserve1" },
-  { index: 12, labelKey: "commonConversionMaster.reserve2" },
-  { index: 13, labelKey: "commonConversionMaster.reserve3" },
-  { index: 14, labelKey: "commonConversionMaster.reserve4" },
-  { index: 15, labelKey: "commonConversionMaster.reserve5" },
-  { index: 16, labelKey: "commonConversionMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "commonConversionMaster.itemId" },
+  { index: 3, labelKey: "commonConversionMaster.itemName" },
+  { index: 4, labelKey: "commonConversionMaster.systemId" },
+  { index: 5, labelKey: "commonConversionMaster.preConversionCode1" },
+  { index: 6, labelKey: "commonConversionMaster.preConversionName1" },
+  { index: 7, labelKey: "commonConversionMaster.preConversionCode2" },
+  { index: 8, labelKey: "commonConversionMaster.preConversionName2" },
+  { index: 9, labelKey: "commonConversionMaster.convertedCode" },
+  { index: 10, labelKey: "commonConversionMaster.convertedName" },
+  { index: 11, labelKey: "commonConversionMaster.abstract" },
+  { index: 12, labelKey: "commonConversionMaster.reserve1" },
+  { index: 13, labelKey: "commonConversionMaster.reserve2" },
+  { index: 14, labelKey: "commonConversionMaster.reserve3" },
+  { index: 15, labelKey: "commonConversionMaster.reserve4" },
+  { index: 16, labelKey: "commonConversionMaster.reserve5" },
+  { index: 17, labelKey: "commonConversionMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -925,6 +949,7 @@ export const COMMON_CONVERSION_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
 // ---------------------------------------------------------------------------
 
 export const COMMON_MASTER_HEADERS: string[] = [
+  "Processing Status",
   "Column Id",
   "Group Id",
   "Group Name",
@@ -943,6 +968,7 @@ export const COMMON_MASTER_HEADERS: string[] = [
 
 /** i18n column config for Common Master table */
 export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
+  { key: "processing_status", labelKey: "tableCommon.processingStatus", editable: false },
   { key: "columnId", labelKey: "commonMaster.columnId", editable: false },
   { key: "groupId", labelKey: "commonMaster.groupId", editable: true },
   { key: "groupName", labelKey: "commonMaster.groupName", editable: false },
@@ -961,18 +987,19 @@ export const COMMON_MASTER_COLUMNS: I18nColumnConfig[] = [
 
 export const COMMON_MASTER_FREEZE_CONFIG: FreezeColumnItem[] = [
   { index: 0, labelKey: "tableCommon.rowNumber", width: 48 },
-  { index: 1, labelKey: "commonMaster.columnId" },
-  { index: 2, labelKey: "commonMaster.groupId" },
-  { index: 3, labelKey: "commonMaster.groupName" },
-  { index: 4, labelKey: "commonMaster.code" },
-  { index: 5, labelKey: "commonMaster.nameEnglish" },
-  { index: 6, labelKey: "commonMaster.nameJapanese" },
-  { index: 7, labelKey: "commonMaster.abstract" },
-  { index: 8, labelKey: "commonMaster.displayOrder" },
-  { index: 9, labelKey: "commonMaster.reserve1" },
-  { index: 10, labelKey: "commonMaster.reserve2" },
-  { index: 11, labelKey: "commonMaster.reserve3" },
-  { index: 12, labelKey: "commonMaster.reserve4" },
-  { index: 13, labelKey: "commonMaster.reserve5" },
-  { index: 14, labelKey: "commonMaster.deletionFlag", width: 80, isDeletionFlag: true },
+  { index: 1, labelKey: "tableCommon.processingStatus" },
+  { index: 2, labelKey: "commonMaster.columnId" },
+  { index: 3, labelKey: "commonMaster.groupId" },
+  { index: 4, labelKey: "commonMaster.groupName" },
+  { index: 5, labelKey: "commonMaster.code" },
+  { index: 6, labelKey: "commonMaster.nameEnglish" },
+  { index: 7, labelKey: "commonMaster.nameJapanese" },
+  { index: 8, labelKey: "commonMaster.abstract" },
+  { index: 9, labelKey: "commonMaster.displayOrder" },
+  { index: 10, labelKey: "commonMaster.reserve1" },
+  { index: 11, labelKey: "commonMaster.reserve2" },
+  { index: 12, labelKey: "commonMaster.reserve3" },
+  { index: 13, labelKey: "commonMaster.reserve4" },
+  { index: 14, labelKey: "commonMaster.reserve5" },
+  { index: 15, labelKey: "commonMaster.deletionFlag", width: 80, isDeletionFlag: true },
 ];

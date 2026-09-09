@@ -1009,6 +1009,7 @@
   },
   "tableCommon": {
     "rowNumber": "#",
+    "processingStatus": "Processing Status",
     "deletionFlagInfo": "Check this flag if you want to delete this record.",
     "overwritePreventionFlagInfo": "Check this flag to protect this record from overwrite. Uncheck this flag to allow overwrites for this record."
   },
