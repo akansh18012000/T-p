@@ -517,30 +517,17 @@ export default function StandardCostMasterScreen() {
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
   // Manufacturer code/name + part numbers come from the shared context
-  // (fetched at most once per session, reused across pages). This screen
-  // passes `true` to ensureLoaded so the context also fetches
-  // /std-cost-combined/get_manufacturer_codes and hands back the merged
-  // result directly as stdCostManufacturerNameMap — other screens sharing
-  // this context keep reading the plain manufacturerNameMap unaffected.
+  // (fetched at most once per session, reused across pages). The name map
+  // already merges std-cost overrides — no extra argument needed.
   const {
     manufacturerOptions,
+    manufacturerNameMap,
     manufacturerPartNumberOptions,
     status: manufacturerDataStatus,
-    stdCostManufacturerNameMap: mergedManufacturerNameMap,
-    stdCostManufacturerNamesStatus,
     ensureLoaded: ensureManufacturerData,
   } = useManufacturerData();
-  // Pending (not yet loaded or errored) rather than a strict "loading" check:
-  // if this screen mounts after another screen already loaded the base
-  // manufacturer list (status "loaded") but before this screen's effect has
-  // kicked off the std-cost names fetch (status still "idle"), the field
-  // must still show as loading rather than briefly appearing ready with
-  // names that haven't been overridden yet.
   const manufacturersLoading =
-    (manufacturerDataStatus === "loading" ||
-      manufacturerDataStatus === "idle") ||
-    (stdCostManufacturerNamesStatus === "loading" ||
-      stdCostManufacturerNamesStatus === "idle");
+    manufacturerDataStatus === "loading" || manufacturerDataStatus === "idle";
   const manufacturerPartNumbersLoading = manufacturerDataStatus === "loading";
 
   // Location codes/names come from the shared context as well.
@@ -561,9 +548,6 @@ export default function StandardCostMasterScreen() {
   } = useCorporateData();
   const corporatesLoading = corporateDataStatus === "loading";
 
-  // Kick off all three fetches in parallel; every call is idempotent. `true`
-  // tells the manufacturer context to also fetch the std-cost manufacturer
-  // codes/names and expose the merged result as stdCostManufacturerNameMap.
   useEffect(() => {
     ensureManufacturerData();
     ensureLocationData();
@@ -1112,7 +1096,7 @@ export default function StandardCostMasterScreen() {
       if (assocColIndex !== -1) {
         let assocValue = "";
         if (colConfig.key === "manufacturer") {
-          assocValue = mergedManufacturerNameMap[value] || "";
+          assocValue = manufacturerNameMap[value] || "";
         } else if (colConfig.key === "locationCode") {
           assocValue = locationNameMap[value] || "";
         } else if (colConfig.key === "corporateCode") {
@@ -1464,7 +1448,7 @@ export default function StandardCostMasterScreen() {
                           const v = newValue ?? "";
                           setManufacturer(v);
                           setManufacturerSearchInput(v);
-                          setManufacturerName(mergedManufacturerNameMap[v] || "");
+                          setManufacturerName(manufacturerNameMap[v] || "");
                         }}
                         freeSolo
                         openOnFocus
