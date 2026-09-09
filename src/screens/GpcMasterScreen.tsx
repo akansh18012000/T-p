@@ -892,11 +892,11 @@ export default function GpcMasterScreen() {
     const newRow = base.headers.map((_, i) =>
       GPC_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
     );
-    // Insert at the bottom of the current page
+    const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
     const insertIndex = pagedRowIndices.length > 0
       ? pagedRowIndices.length < rowsPerPage
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -940,10 +940,12 @@ export default function GpcMasterScreen() {
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
       .map((idx) => [...base.rows[idx]]);
+    const N = selectedRows.length;
+    const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices.length < rowsPerPage
+      ? availableSlots >= N
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),

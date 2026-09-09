@@ -676,14 +676,13 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    // Insert at the last visible position on the current page. When the page is
-    // full, insert AT the last index (displacing that row to the next page) so
-    // the new row lands as the final visible row. When the page has spare
-    // capacity, insert after the last row so it simply appends.
+    // Each successive empty row lands below any previously added new rows on
+    // this page; non-new rows are displaced to the next page one at a time.
+    const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
     const insertIndex = pagedRowIndices.length > 0
       ? pagedRowIndices.length < rowsPerPage
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -722,10 +721,12 @@ function LocalItemConversionMasterScreen() {
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
       .map((idx) => [...base.rows[idx]]);
+    const N = selectedRows.length;
+    const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices.length < rowsPerPage
+      ? availableSlots >= N
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),

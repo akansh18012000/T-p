@@ -288,11 +288,11 @@ function YearMonthMasterScreen() {
 
   const handleAddEmptyRow = () => {
     const newRow = createNewRow();
-    // Insert at the bottom of the current page
+    const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
     const insertIndex = pagedRowIndices.length > 0
       ? pagedRowIndices.length < rowsPerPage
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
       : rows.length;
     shiftIndicesForInsertion(insertIndex, 1);
     markRowsAsNew([insertIndex]);
@@ -333,10 +333,12 @@ function YearMonthMasterScreen() {
             : cell,
         ),
       );
+    const N = selectedRows.length;
+    const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices.length < rowsPerPage
+      ? availableSlots >= N
         ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[pagedRowIndices.length - 1]
+        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
       : rows.length;
     shiftIndicesForInsertion(insertIndex, selectedRows.length);
     markRowsAsNew(selectedRows.map((_: string[], i: number) => insertIndex + i));
