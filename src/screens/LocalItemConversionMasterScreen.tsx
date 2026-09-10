@@ -308,23 +308,6 @@ function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
-function computeNewRowBatchInsertion(
-  baseRows: string[][],
-  pagedRowIndices: number[],
-  rowsToAdd: string[][],
-) {
-  const N = rowsToAdd.length;
-  const insertIndex =
-    pagedRowIndices.length > 0
-      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-      : baseRows.length;
-  const rows = [
-    ...baseRows.slice(0, insertIndex),
-    ...rowsToAdd,
-    ...baseRows.slice(insertIndex),
-  ];
-  return { rows, insertIndex, batchSize: N };
-}
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
 function defaultYearMonth(): Date {
@@ -580,7 +563,7 @@ function LocalItemConversionMasterScreen() {
     handleSelectAllChange,
     selectedCount,
   } = useRowSelectionMode();
-  const { isNewRow, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
+  const { isNewRow, markRowsAsNew, shiftIndicesForInsertion, shiftIndicesForDeletion, clearNewRowTracking, newRowCount } = useNewRowTracking();
 
   const handleSearch = async (options?: { silent?: boolean }) => {
     const silent = options?.silent === true;
@@ -699,13 +682,20 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    const { rows, insertIndex, batchSize } =
-      computeNewRowBatchInsertion(base.rows, pagedRowIndices, [newRow]);
-    shiftIndicesForInsertion(insertIndex, batchSize);
+    const insertIndex = pagedRowIndices.length > 0
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+      : base.rows.length;
+    const rows = [
+      ...base.rows.slice(0, insertIndex),
+      newRow,
+      ...base.rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, 1);
+    markRowsAsNew([insertIndex]);
     setCsvData({ headers: base.headers, rows });
     setRowMetadata((prev) => [
       ...prev.slice(0, insertIndex),
-      ...Array<LocalItemRowMeta>(batchSize).fill(null),
+      null,
       ...prev.slice(insertIndex),
     ]);
     showSnackbar(t("localItemConversion.rowAdded"), "success");
@@ -733,13 +723,20 @@ function LocalItemConversionMasterScreen() {
         copied[0] = ""; // clear processing_status — server computes it after save
         return copied;
       });
-    const { rows, insertIndex, batchSize } =
-      computeNewRowBatchInsertion(base.rows, pagedRowIndices, selectedRows);
-    shiftIndicesForInsertion(insertIndex, batchSize);
+    const insertIndex = pagedRowIndices.length > 0
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+      : base.rows.length;
+    const rows = [
+      ...base.rows.slice(0, insertIndex),
+      ...selectedRows,
+      ...base.rows.slice(insertIndex),
+    ];
+    shiftIndicesForInsertion(insertIndex, selectedRows.length);
+    markRowsAsNew(selectedRows.map((_, i) => insertIndex + i));
     setCsvData({ headers: base.headers, rows });
     setRowMetadata((prev) => [
       ...prev.slice(0, insertIndex),
-      ...Array<LocalItemRowMeta>(batchSize).fill(null),
+      ...selectedRows.map((): LocalItemRowMeta => null),
       ...prev.slice(insertIndex),
     ]);
     exitSelectionMode();
