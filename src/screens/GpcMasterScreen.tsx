@@ -895,11 +895,8 @@ export default function GpcMasterScreen() {
     const newRow = base.headers.map((_, i) =>
       GPC_MASTER_COLUMNS[i]?.isCheckbox ? "0" : "",
     );
-    const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
     const insertIndex = pagedRowIndices.length > 0
-      ? pagedRowIndices.length < rowsPerPage
-        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -947,12 +944,8 @@ export default function GpcMasterScreen() {
         row[0] = ""; // clear processing_status — server will compute it after save
         return row;
       });
-    const N = selectedRows.length;
-    const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
-      ? availableSlots >= N
-        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -1535,12 +1528,16 @@ export default function GpcMasterScreen() {
     setPage,
     rowsPerPage,
     pageOffset,
-    pagedItems: pagedRowIndices,
+    pagedItems: pagedRowIndicesFromHook,
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
     resetDeps: [csvSearchTerm, searchGeneration],
   });
+  const overflowNewRows = filteredRowIndices
+    .slice(pageOffset + rowsPerPage)
+    .filter((idx) => isNewRow(idx));
+  const pagedRowIndices = [...pagedRowIndicesFromHook, ...overflowNewRows];
   const hasRows = displayData.rows.length > 0;
 
   const paginatedListboxSlotProps = {

@@ -379,11 +379,8 @@ function FxRateEntryMasterScreen() {
     );
     
     if (insertAtPagePosition && base.rows.length > 0) {
-      const newRowsOnPage = pagedRowIndices.filter((idx) => isNewRow(idx)).length;
       const insertIndex = pagedRowIndices.length > 0
-        ? pagedRowIndices.length < rowsPerPage
-          ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-          : pagedRowIndices[Math.max(0, pagedRowIndices.length - 1 - newRowsOnPage)]
+        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
         : base.rows.length;
       const newRows = [
         ...base.rows.slice(0, insertIndex),
@@ -425,12 +422,8 @@ function FxRateEntryMasterScreen() {
     const selectedRows = Array.from(selectedRowIndices)
       .sort((a, b) => a - b)
       .map((idx) => { const r = [...base.rows[idx]]; r[0] = ""; return r; });
-    const N = selectedRows.length;
-    const availableSlots = rowsPerPage - pagedRowIndices.length;
     const insertIndex = pagedRowIndices.length > 0
-      ? availableSlots >= N
-        ? pagedRowIndices[pagedRowIndices.length - 1] + 1
-        : pagedRowIndices[Math.max(0, pagedRowIndices.length - (N - availableSlots))]
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
       : base.rows.length;
     const newRows = [
       ...base.rows.slice(0, insertIndex),
@@ -838,12 +831,16 @@ function FxRateEntryMasterScreen() {
     setPage,
     rowsPerPage,
     pageOffset,
-    pagedItems: pagedRowIndices,
+    pagedItems: pagedRowIndicesFromHook,
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
     resetDeps: [csvSearchTerm, searchGeneration],
   });
+  const overflowNewRows = filteredRowIndices
+    .slice(pageOffset + rowsPerPage)
+    .filter((idx) => isNewRow(idx));
+  const pagedRowIndices = [...pagedRowIndicesFromHook, ...overflowNewRows];
   const hasRows = displayData.rows.length > 0;
 
   return (

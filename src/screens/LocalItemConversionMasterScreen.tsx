@@ -308,45 +308,22 @@ function getEmptyCsvData(): CsvData {
   return { headers: [...DEFAULT_CSV_HEADERS], rows: [] };
 }
 
-// Computes where a batch of new rows should land so repeated "add row"
-// actions stack together at the bottom of the current page instead of
-// pushing each other onto the next page. Any rows already marked "new" on
-// the current page are pulled out and re-inserted together with the
-// incoming batch, evicting enough trailing original rows to keep the whole
-// batch visible on this page (mirrors a single insert when there's no
-// pre-existing new-row block, i.e. N=1 with no existingNewIndices).
 function computeNewRowBatchInsertion(
   baseRows: string[][],
   pagedRowIndices: number[],
-  isNewRow: (index: number) => boolean,
-  rowsPerPage: number,
   rowsToAdd: string[][],
 ) {
-  const existingNewIndices = pagedRowIndices.filter((idx) => isNewRow(idx));
-  const existingNewRows = existingNewIndices.map((idx) => baseRows[idx]);
-  const rowsWithoutExistingNew = baseRows.filter(
-    (_, idx) => !existingNewIndices.includes(idx),
-  );
-  const remainingPagedIndices = pagedRowIndices.filter(
-    (idx) => !existingNewIndices.includes(idx),
-  );
-  const batch = [...existingNewRows, ...rowsToAdd];
-  const N = batch.length;
-  const availableSlots = rowsPerPage - remainingPagedIndices.length;
+  const N = rowsToAdd.length;
   const insertIndex =
-    remainingPagedIndices.length > 0
-      ? availableSlots >= N
-        ? remainingPagedIndices[remainingPagedIndices.length - 1] + 1
-        : remainingPagedIndices[
-            Math.max(0, remainingPagedIndices.length - (N - availableSlots))
-          ]
-      : rowsWithoutExistingNew.length;
+    pagedRowIndices.length > 0
+      ? pagedRowIndices[pagedRowIndices.length - 1] + 1
+      : baseRows.length;
   const rows = [
-    ...rowsWithoutExistingNew.slice(0, insertIndex),
-    ...batch,
-    ...rowsWithoutExistingNew.slice(insertIndex),
+    ...baseRows.slice(0, insertIndex),
+    ...rowsToAdd,
+    ...baseRows.slice(insertIndex),
   ];
-  return { rows, insertIndex, batchSize: N, existingNewIndices };
+  return { rows, insertIndex, batchSize: N };
 }
 
 /** Returns April 1st of the current Japanese fiscal year (starts in April). */
@@ -722,29 +699,15 @@ function LocalItemConversionMasterScreen() {
         ? "0"
         : "",
     );
-    const { rows, insertIndex, batchSize, existingNewIndices } =
-      computeNewRowBatchInsertion(
-        base.rows,
-        pagedRowIndices,
-        isNewRow,
-        rowsPerPage,
-        [newRow],
-      );
-    [...existingNewIndices]
-      .sort((a, b) => b - a)
-      .forEach((idx) => shiftIndicesForDeletion(idx));
+    const { rows, insertIndex, batchSize } =
+      computeNewRowBatchInsertion(base.rows, pagedRowIndices, [newRow]);
     shiftIndicesForInsertion(insertIndex, batchSize);
     setCsvData({ headers: base.headers, rows });
-    setRowMetadata((prev) => {
-      const withoutExistingNew = prev.filter(
-        (_, idx) => !existingNewIndices.includes(idx),
-      );
-      return [
-        ...withoutExistingNew.slice(0, insertIndex),
-        ...Array<LocalItemRowMeta>(batchSize).fill(null),
-        ...withoutExistingNew.slice(insertIndex),
-      ];
-    });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...Array<LocalItemRowMeta>(batchSize).fill(null),
+      ...prev.slice(insertIndex),
+    ]);
     showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
 
@@ -770,29 +733,15 @@ function LocalItemConversionMasterScreen() {
         copied[0] = ""; // clear processing_status — server computes it after save
         return copied;
       });
-    const { rows, insertIndex, batchSize, existingNewIndices } =
-      computeNewRowBatchInsertion(
-        base.rows,
-        pagedRowIndices,
-        isNewRow,
-        rowsPerPage,
-        selectedRows,
-      );
-    [...existingNewIndices]
-      .sort((a, b) => b - a)
-      .forEach((idx) => shiftIndicesForDeletion(idx));
+    const { rows, insertIndex, batchSize } =
+      computeNewRowBatchInsertion(base.rows, pagedRowIndices, selectedRows);
     shiftIndicesForInsertion(insertIndex, batchSize);
     setCsvData({ headers: base.headers, rows });
-    setRowMetadata((prev) => {
-      const withoutExistingNew = prev.filter(
-        (_, idx) => !existingNewIndices.includes(idx),
-      );
-      return [
-        ...withoutExistingNew.slice(0, insertIndex),
-        ...Array<LocalItemRowMeta>(batchSize).fill(null),
-        ...withoutExistingNew.slice(insertIndex),
-      ];
-    });
+    setRowMetadata((prev) => [
+      ...prev.slice(0, insertIndex),
+      ...Array<LocalItemRowMeta>(batchSize).fill(null),
+      ...prev.slice(insertIndex),
+    ]);
     exitSelectionMode();
     showSnackbar(t("localItemConversion.rowAdded"), "success");
   };
@@ -1253,12 +1202,16 @@ function LocalItemConversionMasterScreen() {
     setPage,
     rowsPerPage,
     pageOffset,
-    pagedItems: pagedRowIndices,
+    pagedItems: pagedRowIndicesFromHook,
     onRowsPerPageChange,
     count: resultPaginationCount,
   } = useTablePagination(filteredRowIndices, {
     resetDeps: [csvSearchTerm, searchGeneration],
   });
+  const overflowNewRows = filteredRowIndices
+    .slice(pageOffset + rowsPerPage)
+    .filter((idx) => isNewRow(idx));
+  const pagedRowIndices = [...pagedRowIndicesFromHook, ...overflowNewRows];
   const hasRows = displayData.rows.length > 0;
 
   const paginatedListboxSlotProps = {
