@@ -169,6 +169,9 @@ const COL_VALID_YEAR = GPC_MASTER_COLUMNS.findIndex(
 const COL_BU3_CODE = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "bu3Code");
 const COL_BU3_NAME = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "bu3Name");
 
+// All columns except processing_status at index 0.
+const DUP_CHECK_COLS = Array.from({ length: GPC_MASTER_COLUMNS.length - 1 }, (_, i) => i + 1);
+
 const PROFIT_CENTER_TRIGGER_COLS = new Set<number>([
   COL_MANUFACTURER,
   COL_MFR_PART_NUMBER,
@@ -1142,13 +1145,15 @@ export default function GpcMasterScreen() {
     // - Edited rows: must not collapse onto another row in the current table
     //   (excluding their own original snapshot entry so reverting an edit
     //   isn't self-flagged).
+    const dupMatch = (a: string[], b: string[]) =>
+      DUP_CHECK_COLS.every((i) => cellsMatch(a[i], b[i]));
     const duplicateRows = new Set<number>();
     const claimedSnapshotIndices = new Set<number>();
     editedRowIndices.forEach((idx) => {
       const meta = rowMetadata[idx];
       if (!meta) return;
       const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
-        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+        dupMatch(snap, meta.original)
       );
       if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
     });
@@ -1158,7 +1163,7 @@ export default function GpcMasterScreen() {
       if (
         searchSnapshotRef.current.some((snap, snapIdx) =>
           !claimedSnapshotIndices.has(snapIdx) &&
-          row.every((cell, i) => cellsMatch(cell, snap[i])),
+          dupMatch(row, snap),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -1166,7 +1171,7 @@ export default function GpcMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === rowsForValidation[otherIdx][i]);
+        return dupMatch(row, rowsForValidation[otherIdx]);
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -1175,7 +1180,7 @@ export default function GpcMasterScreen() {
       if (!row) return;
       const collides = rowsForValidation.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, other[i]));
+        return dupMatch(row, other);
       });
       if (collides) duplicateRows.add(idx + 1);
     });

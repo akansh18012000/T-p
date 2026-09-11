@@ -207,6 +207,14 @@ const COL_CURRENCY = colIndexOf("currency");
 const COL_VALID_FROM_DATE = colIndexOf("validFromDate");
 const COL_DELETION_FLAG = colIndexOf("deletionFlag");
 
+// All columns except processing_status at index 0.
+const DUP_CHECK_COLS = [
+  COL_SYSTEM_ID, COL_LOCAL_ITEM_CODE, COL_MANUFACTURER, COL_MANUFACTURER_NAME,
+  COL_MFR_PART_NUMBER, COL_GLOBAL_ITEM_TYPE, COL_GPC_CODE, COL_GPC_NAME,
+  COL_LOCATION_CODE, COL_LOCATION_NAME, COL_CORPORATE_CODE, COL_CORPORATE_NAME,
+  COL_STANDARD_COST, COL_CURRENCY, COL_VALID_FROM_DATE, COL_DELETION_FLAG,
+];
+
 const COL_MAX_LENGTHS: Record<number, number> = {
   [COL_SYSTEM_ID]:       5,
   [COL_LOCAL_ITEM_CODE]: 40,
@@ -815,13 +823,15 @@ function LocalItemConversionMasterScreen() {
     // 3. Duplicate detection.
     // - New rows: must not match any row in the last search snapshot.
     // - Edited rows: must not collapse onto another row in the current table.
+    const dupMatch = (a: string[], b: string[]) =>
+      DUP_CHECK_COLS.every((i) => cellsMatch(a[i], b[i]));
     const duplicateRows = new Set<number>();
     const claimedSnapshotIndices = new Set<number>();
     editedRowIndices.forEach((idx) => {
       const meta = rowMetadata[idx];
       if (!meta) return;
       const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
-        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+        dupMatch(snap, meta.original)
       );
       if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
     });
@@ -831,7 +841,7 @@ function LocalItemConversionMasterScreen() {
       if (
         searchSnapshotRef.current.some((snap, snapIdx) =>
           !claimedSnapshotIndices.has(snapIdx) &&
-          row.every((cell, i) => cellsMatch(cell, snap[i])),
+          dupMatch(row, snap),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -839,7 +849,7 @@ function LocalItemConversionMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, csvData.rows[otherIdx][i]));
+        return dupMatch(row, csvData.rows[otherIdx]);
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -848,7 +858,7 @@ function LocalItemConversionMasterScreen() {
       if (!row) return;
       const collides = csvData.rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, other[i]));
+        return dupMatch(row, other);
       });
       if (collides) duplicateRows.add(idx + 1);
     });

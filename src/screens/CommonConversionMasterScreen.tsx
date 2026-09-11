@@ -266,6 +266,9 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
   ],
 };
 
+// Business-key columns for duplicate detection (excludes processing_status at index 0).
+const DUP_CHECK_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
 const DEFAULT_CSV_HEADERS = COMMON_CONVERSION_MASTER_HEADERS;
 
 function getEmptyCsvData(): CsvData {
@@ -769,13 +772,15 @@ export default function CommonConversionMasterScreen() {
     // 3. Duplicate detection.
     // - New rows: must not match any row in the last search snapshot.
     // - Edited rows: must not collapse onto another row in the current table.
+    const dupMatch = (a: string[], b: string[]) =>
+      DUP_CHECK_COLS.every((i) => cellsMatch(a[i], b[i]));
     const duplicateRows = new Set<number>();
     const claimedSnapshotIndices = new Set<number>();
     editedRowIndices.forEach((idx) => {
       const meta = rowMetadata[idx];
       if (!meta) return;
       const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
-        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+        dupMatch(snap, meta.original)
       );
       if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
     });
@@ -785,7 +790,7 @@ export default function CommonConversionMasterScreen() {
       if (
         searchSnapshotRef.current.some((snap, snapIdx) =>
           !claimedSnapshotIndices.has(snapIdx) &&
-          row.every((cell, i) => cellsMatch(cell, snap[i])),
+          dupMatch(row, snap),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -793,7 +798,7 @@ export default function CommonConversionMasterScreen() {
       }
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cell === rows[otherIdx][i]);
+        return dupMatch(row, rows[otherIdx]);
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -802,7 +807,7 @@ export default function CommonConversionMasterScreen() {
       if (!row) return;
       const collides = rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, other[i]));
+        return dupMatch(row, other);
       });
       if (collides) duplicateRows.add(idx + 1);
     });

@@ -202,6 +202,9 @@ const DQ_SCREEN_CONFIG: DqScreenConfig = {
 };
 // AI Generated Code by Deloitte + Cursor (END)
 
+// Business-key columns for duplicate detection (excludes processing_status at index 0).
+const DUP_CHECK_COLS = [1, 2, 3, 4, 5, 6, 7];
+
 const DEFAULT_CSV_HEADERS = KIT_ITEM_CLASSIFICATION_MASTER_HEADERS;
 
 // Cap how many options are handed to MUI's Autocomplete. It eagerly builds one
@@ -620,13 +623,15 @@ export default function KitItemClassificationMasterScreen() {
     // - New rows: must not match any row in the last search snapshot.
     // - Edited rows: must not collapse onto another row in the current table
     //   (excluding their own index so reverting an edit isn't self-flagged).
+    const dupMatch = (a: string[], b: string[]) =>
+      DUP_CHECK_COLS.every((i) => cellsMatch(a[i], b[i]));
     const duplicateRows = new Set<number>();
     const claimedSnapshotIndices = new Set<number>();
     editedRowIndices.forEach((idx) => {
       const meta = rowMetadata[idx];
       if (!meta) return;
       const snapIdx = searchSnapshotRef.current.findIndex((snap) =>
-        snap.every((c, i) => cellsMatch(c, meta.original[i]))
+        dupMatch(snap, meta.original)
       );
       if (snapIdx >= 0) claimedSnapshotIndices.add(snapIdx);
     });
@@ -635,7 +640,7 @@ export default function KitItemClassificationMasterScreen() {
       if (
         searchSnapshotRef.current.some((snap, snapIdx) =>
           !claimedSnapshotIndices.has(snapIdx) &&
-          row.every((cell, i) => cellsMatch(cell, snap[i])),
+          dupMatch(row, snap),
         )
       ) {
         duplicateRows.add(idx + 1);
@@ -645,7 +650,7 @@ export default function KitItemClassificationMasterScreen() {
       // are caught even when neither exists in the snapshot yet.
       const collidesWithOther = targetIndices.some((otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, csvData.rows[otherIdx][i]));
+        return dupMatch(row, csvData.rows[otherIdx]);
       });
       if (collidesWithOther) duplicateRows.add(idx + 1);
     });
@@ -653,7 +658,7 @@ export default function KitItemClassificationMasterScreen() {
       const row = csvData.rows[idx];
       const collides = csvData.rows.some((other, otherIdx) => {
         if (otherIdx === idx) return false;
-        return row.every((cell, i) => cellsMatch(cell, other[i]));
+        return dupMatch(row, other);
       });
       if (collides) duplicateRows.add(idx + 1);
     });
