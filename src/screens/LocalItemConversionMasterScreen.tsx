@@ -154,7 +154,7 @@ import {
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
 // Global Item Type dropdown options. The code (value) is stored in the cell and
 // sent in the create/update API call; the dropdown shows "code : value".
@@ -900,7 +900,7 @@ function LocalItemConversionMasterScreen() {
       const res = await fetch(LOCAL_ITEM_CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(trimStringValues(payload)),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

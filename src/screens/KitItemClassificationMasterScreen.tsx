@@ -127,7 +127,7 @@ import {
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 const KIT_ITEM_COMBINED_SEARCH_API_URL =
@@ -702,7 +702,7 @@ export default function KitItemClassificationMasterScreen() {
       const res = await fetch(KIT_ITEM_COMBINED_CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(trimStringValues(payload)),
       });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);

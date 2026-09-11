@@ -96,7 +96,7 @@ import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
 type GroupWithName = { id: string; name: string; key: string };
 type CodeWithName = { code: string; name: string };
@@ -784,7 +784,7 @@ export default function CommonMasterScreen() {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(trimStringValues(payload)),
       });
       if (!response.ok) {
         // A 409 means the backend rejected a duplicate natural-key

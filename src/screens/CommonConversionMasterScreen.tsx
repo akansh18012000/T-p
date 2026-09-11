@@ -128,7 +128,7 @@ import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { usePermissions } from "../hooks/usePermissions.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
 type ItemWithDetails = { id: string; name: string; abstract: string };
 
@@ -851,7 +851,7 @@ export default function CommonConversionMasterScreen() {
       const res = await fetch(COMMON_CONVERSION_CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(trimStringValues(payload)),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

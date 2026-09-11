@@ -27,7 +27,7 @@ import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import { formatDateTimeForDisplay, cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 import { downloadCsvWithPicker } from "../utils/csvUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -500,7 +500,7 @@ function YearMonthMasterScreen() {
       const response = await fetch(CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(trimStringValues(payload)),
       });
       if (!response.ok) {
         throw new Error(`Create API responded ${response.status}`);

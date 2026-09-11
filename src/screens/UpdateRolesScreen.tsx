@@ -26,6 +26,7 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
 } from "../components/shared/StyledComponents.js";
+import { trimStringValues } from "../utils/commonUtils.js";
 
 const ROLES_API_URL = "/api/v1/roles";
 const USERS_ALL_API_URL = "/api/v1/users/all";
@@ -191,11 +192,11 @@ export default function UpdateRolesScreen() {
       const res = await fetch(UPDATE_ROLE_API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(trimStringValues({
           email: selectedEmail,
           role_name: selectedRole,
           updated_by: user?.user_id ?? "",
-        }),
+        })),
       });
       if (!res.ok) {
         const text = await res.text();

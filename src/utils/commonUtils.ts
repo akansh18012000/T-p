@@ -204,3 +204,15 @@ export const PROCESSING_STATUS_PROCESSED = "Processed";
 export function isRowLocked(row: string[]): boolean {
   return row[COL_PROCESSING_STATUS] === PROCESSING_STATUS_TO_BE_PROCESS;
 }
+
+/** Recursively trims leading/trailing whitespace from all string values in an object, array, or scalar. */
+export function trimStringValues<T>(obj: T): T {
+  if (typeof obj === "string") return obj.trim() as unknown as T;
+  if (Array.isArray(obj)) return obj.map(trimStringValues) as unknown as T;
+  if (obj !== null && typeof obj === "object") {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [k, trimStringValues(v)])
+    ) as T;
+  }
+  return obj;
+}

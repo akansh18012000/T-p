@@ -15,6 +15,7 @@ import { useUser } from "../context/UserContext.js";
 import { USER_ROLES } from "../constants/roles.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import { StyledSnackbarAlert } from "../components/shared/StyledComponents.js";
+import { trimStringValues } from "../utils/commonUtils.js";
 
 const CREATE_USER_API_URL = "/api/v1/user/create";
 
@@ -139,13 +140,13 @@ export default function CreateUserScreen() {
       const res = await fetch(CREATE_USER_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(trimStringValues({
           email: email.trim(),
           username: username.trim(),
           role_name: roleName,
           status: "ACTIVE",
           created_by: user?.user_id ?? "",
-        }),
+        })),
       });
       if (!res.ok) {
         const text = await res.text();

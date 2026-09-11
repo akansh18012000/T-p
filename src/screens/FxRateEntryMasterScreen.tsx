@@ -127,7 +127,7 @@ import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenCon
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
 /** Currency type options keyed by backend code (11–14) with i18n labels */
 const CURRENCY_TYPE_OPTIONS = [
@@ -569,13 +569,13 @@ function FxRateEntryMasterScreen() {
       const res = await fetch(FX_RATE_CREATE_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(trimStringValues({
           rows: payloadRows,
           user_id: "9363e503-3d7c-4200-9702-e2445866c4c2",
           session_id: "d2e58f5d-8422-4611-8640-89db58ebe2e1",
           screen_id: SCREEN_IDS.CURRENCY_RATE.id,
           ip_address: "192.168.1.101",
-        }),
+        })),
       });
       if (!res.ok) {
         const text = await res.text();
