@@ -27,6 +27,7 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
   Delete as DeleteIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
@@ -51,7 +52,8 @@ import { useLocalCustomerData } from "../context/LocalCustomerDataContext.js";
 import { useProductClassificationData } from "../context/ProductClassificationDataContext.js";
 import { useBu3CodeData } from "../context/Bu3CodeDataContext.js";
 import { stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
-import { cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { cellsMatch, DQ_INLINE_LIMIT, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
+import { SCREEN_IDS } from "../constants/screenIds.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import {
@@ -78,6 +80,7 @@ import {
   StyledToolbarButtonsBox,
   StyledSecondaryButton,
   StyledPrimaryContainedButton,
+  StyledSaveButton,
   StyledSelectionCheckboxCell,
   StyledSelectionHeaderCheckbox,
   StyledSelectionRowCheckbox,
@@ -485,6 +488,7 @@ export default function GlobalDadMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
   // Parallel to csvData.rows. null at index i => row was added locally (new).
   // Non-null => row came from search; `original` is used to detect edits.
@@ -779,7 +783,7 @@ export default function GlobalDadMasterScreen() {
       type: "conjunction",
     }).format(rowNumbers.map(String));
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
     const rows = csvData.rows;
 
@@ -924,6 +928,22 @@ export default function GlobalDadMasterScreen() {
       showSnackbar(t("globalDadMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.GLOBAL_DD.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1473,12 +1493,21 @@ export default function GlobalDadMasterScreen() {
                         >
                           {t("globalDadMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering || !canEdit}
+                          disabled={!hasRows || isRegistering || isSyncing || !canEdit}
                         >
                           {t("globalDadMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1768,6 +1797,13 @@ export default function GlobalDadMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("globalDadMaster.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
     </>

@@ -23,6 +23,7 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
   Delete as DeleteIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -88,9 +89,10 @@ import {
   StyledEmptyStateSubtitle,
   StyledSearchIcon,
   StyledTablePagination,
+  StyledSaveButton,
 } from "../components/shared/StyledComponents.js";
 import { stringifyCsv, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
-import { cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
+import { cellsMatch, DQ_INLINE_LIMIT, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
@@ -438,6 +440,7 @@ export default function CommonMasterScreen() {
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [isRegistering, setIsRegistering] = useState(false);
   // AI Generated Code by Deloitte + Cursor (END)
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const executeSearch = async (
     payload: CommonMasterSearchPayload,
@@ -644,7 +647,7 @@ export default function CommonMasterScreen() {
   };
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     const newRowIndices: number[] = [];
@@ -831,6 +834,22 @@ export default function CommonMasterScreen() {
       showSnackbar(t("commonMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.COMMON.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
   // AI Generated Code by Deloitte + Cursor (END)
@@ -1209,12 +1228,21 @@ export default function CommonMasterScreen() {
                         >
                           {t("commonMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || !canEdit}
+                          disabled={!hasRows || isSyncing || !canEdit}
                         >
                           {t("commonMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1555,6 +1583,12 @@ export default function CommonMasterScreen() {
         />
       )}
       {/* AI Generated Code by Deloitte + Cursor (END) */}
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
+        />
+      )}
     </>
   );
 }

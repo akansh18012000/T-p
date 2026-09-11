@@ -85,6 +85,7 @@ import {
   StyledUploadSectionContent,
   StyledSnackbarAlert,
   StyledTablePagination,
+  StyledSaveButton,
 } from "../components/shared/StyledComponents.js";
 import {
   Search as SearchIcon,
@@ -95,6 +96,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
@@ -127,7 +129,7 @@ import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenCon
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { CURRENCY_CODES } from "../constants/currencyCodes.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
 
 /** Currency type options keyed by backend code (11–14) with i18n labels */
 const CURRENCY_TYPE_OPTIONS = [
@@ -250,6 +252,7 @@ function FxRateEntryMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const originalRowsRef = useRef<string[][]>([]);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -454,7 +457,7 @@ function FxRateEntryMasterScreen() {
     handleSearch();
   };
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     const createdRows: string[][] = [];
@@ -607,6 +610,22 @@ function FxRateEntryMasterScreen() {
       showSnackbar(t("fxRateEntryMaster.registrationFailed"), "error");
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.CURRENCY_RATE.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1074,12 +1093,21 @@ function FxRateEntryMasterScreen() {
                         >
                           {t("fxRateEntryMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || registering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || !canEdit}
+                          disabled={!hasRows || isSyncing || !canEdit}
                         >
                           {t("fxRateEntryMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1474,6 +1502,13 @@ function FxRateEntryMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("fxRateEntryMaster.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

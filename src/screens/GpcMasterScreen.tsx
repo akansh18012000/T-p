@@ -41,6 +41,7 @@ import {
   StyledToolbarButtonsBox,
   StyledSecondaryButton,
   StyledPrimaryContainedButton,
+  StyledSaveButton,
   StyledSelectionCheckboxCell,
   StyledSelectionHeaderCheckbox,
   StyledSelectionRowCheckbox,
@@ -94,6 +95,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
@@ -118,7 +120,7 @@ import { useGpcData } from "../context/GpcDataContext.js";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch.js";
 import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAutocompleteListbox.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
   findDuplicateUploadFile,
@@ -486,6 +488,7 @@ export default function GpcMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
   // Parallel to csvData.rows. null at index i => row was added locally (new).
   // Non-null => row came from search; `original` is used to detect edits.
@@ -1074,7 +1077,7 @@ export default function GpcMasterScreen() {
       type: "conjunction",
     }).format(rows.map(String));
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     // 1. Identify rows to submit.
@@ -1240,6 +1243,22 @@ export default function GpcMasterScreen() {
       showSnackbar(t("gpcMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.ITEM_MASTER.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1866,12 +1885,21 @@ export default function GpcMasterScreen() {
                         >
                           {t("gpcMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering || !canEdit}
+                          disabled={!hasRows || isRegistering || isSyncing || !canEdit}
                         >
                           {t("gpcMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -2315,6 +2343,13 @@ export default function GpcMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("gpcMaster.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

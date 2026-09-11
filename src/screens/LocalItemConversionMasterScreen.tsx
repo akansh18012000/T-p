@@ -90,6 +90,7 @@ import {
   StyledFormHelperText,
   StyledSearchFieldLabel,
   StyledTablePagination,
+  StyledSaveButton,
 } from "../components/shared/StyledComponents.js";
 
 import {
@@ -101,6 +102,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -151,6 +153,7 @@ import {
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
   cellsMatch,
+  triggerDatabricksSyncJob,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -529,6 +532,7 @@ function LocalItemConversionMasterScreen() {
   // Frozen snapshot of the last search results; used for duplicate detection.
   const searchSnapshotRef = useRef<string[][]>([]);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [searchExecuted, setSearchExecuted] = useState(false);
   // Increments on every executed search; drives the pagination reset so a new
   // search returns to page 1 while local row add/delete does not.
@@ -763,7 +767,7 @@ function LocalItemConversionMasterScreen() {
       type: "conjunction",
     }).format(rows.map(String));
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     // 1. Identify rows to submit: new rows (metadata === null) and edited rows
@@ -919,6 +923,22 @@ function LocalItemConversionMasterScreen() {
       showSnackbar(t("localItemConversion.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.LOCAL_ITEM.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1580,12 +1600,21 @@ function LocalItemConversionMasterScreen() {
                         >
                           {t("localItemConversion.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering || !canEdit}
+                          disabled={!hasRows || isRegistering || isSyncing || !canEdit}
                         >
                           {t("localItemConversion.registration")}
                         </StyledPrimaryContainedButton>
@@ -2093,6 +2122,12 @@ function LocalItemConversionMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("localItemConversion.registrationInProgress")}
+        />
+      )}
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

@@ -414,6 +414,7 @@ export const StyledPrimaryContainedButton = styled(Button)(({ theme }) => ({
 export const StyledRefreshButton = StyledSecondaryButton;
 export const StyledDownloadButton = StyledSecondaryButton;
 export const StyledRegisterButton = StyledPrimaryContainedButton;
+export const StyledSaveButton = StyledPrimaryContainedButton;
 
 export const StyledRemoveButton = styled(Button)(({ theme }) => ({
   backgroundColor: theme.palette.error.red500!,

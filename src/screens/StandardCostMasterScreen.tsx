@@ -35,6 +35,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -70,6 +71,7 @@ import {
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
   cellsMatch,
+  triggerDatabricksSyncJob,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, decimalOnlyKeyDown, decimalOnlyPaste, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -103,6 +105,7 @@ import {
   StyledDeleteActionCell,
   StyledNewRowDeleteButton,
   StyledPrimaryContainedButton,
+  StyledSaveButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
   StyledSearchTextField,
@@ -653,6 +656,7 @@ export default function StandardCostMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   // Last search payload, reused by Refresh so it re-runs the same query.
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
   // Parallel to csvData.rows: null = locally-added new row, { original } = a
@@ -892,7 +896,7 @@ export default function StandardCostMasterScreen() {
       type: "conjunction",
     }).format(rows.map(String));
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     // 1. Identify rows to submit (new rows, and existing rows that changed).
@@ -1043,6 +1047,22 @@ export default function StandardCostMasterScreen() {
       showSnackbar(t("standardCostMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.STD_COST.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1713,12 +1733,21 @@ export default function StandardCostMasterScreen() {
                         >
                           {t("standardCostMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || !canEdit}
+                          disabled={!hasRows || isSyncing || !canEdit}
                         >
                           {t("standardCostMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -2117,6 +2146,13 @@ export default function StandardCostMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("standardCostMaster.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

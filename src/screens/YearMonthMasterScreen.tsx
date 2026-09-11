@@ -21,13 +21,14 @@ import {
   AppRegistration as AppRegistrationIcon,
   Clear as ClearIcon,
   Delete as DeleteIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { YEAR_MONTH_MASTER_HEADERS, YEAR_MONTH_MASTER_COLUMNS } from "../constants/tableColumns.js";
 import { formatDateTimeForDisplay, cellsMatch, DQ_INLINE_LIMIT } from "../utils/commonUtils.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
 import { downloadCsvWithPicker } from "../utils/csvUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -74,6 +75,7 @@ import {
   StyledToolbarTitle,
   StyledContentBox,
   StyledTablePagination,
+  StyledSaveButton,
 } from "../components/shared/StyledComponents.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
 import { usePermissions } from "../hooks/usePermissions.js";
@@ -214,6 +216,7 @@ function YearMonthMasterScreen() {
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   // Parallel to `rows`: null = locally-added new row, { original } = a
   // fetched row (compared against to detect edits during registration).
   const [rowMetadata, setRowMetadata] = useState<YearMonthRowMeta[]>([]);
@@ -377,7 +380,7 @@ function YearMonthMasterScreen() {
   };
 
   // AI Generated Code by Deloitte + Cursor (BEGIN)
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     const newRowIndices: number[] = [];
     const editedRowIndices: number[] = [];
     rowMetadata.forEach((meta, idx) => {
@@ -523,6 +526,22 @@ function YearMonthMasterScreen() {
       setIsRegistering(false);
     }
   };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.PROCESS_MONTH.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   // AI Generated Code by Deloitte + Cursor (END)
 
   const handleCellEdit = (
@@ -603,12 +622,21 @@ function YearMonthMasterScreen() {
                 >
                   {t("yearMonthMaster.refresh")}
                 </StyledSecondaryButton>
+                <StyledSaveButton
+                  variant="contained"
+                  size="small"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSave}
+                  disabled={!hasRows || isRegistering || !canEdit}
+                >
+                  {t("common.save")}
+                </StyledSaveButton>
                 <StyledPrimaryContainedButton
                   variant="contained"
                   size="small"
                   startIcon={<AppRegistrationIcon />}
                   onClick={handleRegistration}
-                  disabled={!hasRows || !canEdit}
+                  disabled={!hasRows || isSyncing || !canEdit}
                 >
                   {t("yearMonthMaster.registration")}
                 </StyledPrimaryContainedButton>
@@ -796,6 +824,13 @@ function YearMonthMasterScreen() {
         />
       )}
       {/* AI Generated Code by Deloitte + Cursor (END) */}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
+        />
+      )}
     </>
   );
 }

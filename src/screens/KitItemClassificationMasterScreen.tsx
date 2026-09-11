@@ -81,6 +81,7 @@ import {
   StyledSnackbarAlert,
   StyledSearchFieldLabel,
   StyledTablePagination,
+  StyledSaveButton,
 } from "../components/shared/StyledComponents.js";
 
 import {
@@ -92,6 +93,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { AddRowMenuButton } from "../components/shared/AddRowMenuButton.js";
 import { SelectionModeToolbar } from "../components/shared/SelectionModeToolbar.js";
@@ -127,7 +129,7 @@ import {
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
-import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
+import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues, triggerDatabricksSyncJob } from "../utils/commonUtils.js";
 
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 const KIT_ITEM_COMBINED_SEARCH_API_URL =
@@ -346,6 +348,7 @@ export default function KitItemClassificationMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [csvSearchTerm, setCsvSearchTerm] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState<React.ReactNode>("");
@@ -568,7 +571,7 @@ export default function KitItemClassificationMasterScreen() {
     handleSearch();
   };
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
 
     const newRowIndices: number[] = [];
@@ -723,6 +726,22 @@ export default function KitItemClassificationMasterScreen() {
       showSnackbar(t("kitItemClassification.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.KIT_ITEM.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -941,7 +960,7 @@ export default function KitItemClassificationMasterScreen() {
     freezeIndices,
     dialogOpen,
     setDialogOpen,
-    handleSave,
+    handleSave: handleFreezeColumnsSave,
     getLeftOffset,
     initialSelected,
     isLastFrozenColumn,
@@ -1169,12 +1188,21 @@ export default function KitItemClassificationMasterScreen() {
                         >
                           {t("kitItemClassification.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || !canEdit}
+                          disabled={!hasRows || isSyncing || !canEdit}
                         >
                           {t("kitItemClassification.registration")}
                         </StyledPrimaryContainedButton>
@@ -1246,7 +1274,7 @@ export default function KitItemClassificationMasterScreen() {
                             label: c.label,
                           }))}
                           initialSelected={initialSelected}
-                          onSave={handleSave}
+                          onSave={handleFreezeColumnsSave}
                         />
 
                         <StyledResultTableContainer>
@@ -1572,6 +1600,13 @@ export default function KitItemClassificationMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("kitItemClassification.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

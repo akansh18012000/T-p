@@ -205,6 +205,20 @@ export function isRowLocked(row: string[]): boolean {
   return row[COL_PROCESSING_STATUS] === PROCESSING_STATUS_TO_BE_PROCESS;
 }
 
+/**
+ * Triggers a Databricks sync job for the given screen id.
+ * Returns true on success, false when the server returns an error status.
+ * Throws on network failure.
+ */
+export async function triggerDatabricksSyncJob(screenId: string): Promise<boolean> {
+  const res = await fetch("/api/v1/databricks-job/trigger-by-screen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ screen_id: screenId }),
+  });
+  return res.ok;
+}
+
 /** Recursively trims leading/trailing whitespace from all string values in an object, array, or scalar. */
 export function trimStringValues<T>(obj: T): T {
   if (typeof obj === "string") return obj.trim() as unknown as T;

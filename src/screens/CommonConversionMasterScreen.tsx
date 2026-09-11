@@ -46,6 +46,7 @@ import {
   StyledDeleteActionCell,
   StyledNewRowDeleteButton,
   StyledPrimaryContainedButton,
+  StyledSaveButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
   StyledSearchIcon,
@@ -93,6 +94,7 @@ import {
   CloudUploadOutlined as CloudUploadOutlinedIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Save as SaveIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -122,6 +124,7 @@ import {
   DQ_INLINE_LIMIT,
   type UploadApiResponse,
   cellsMatch,
+  triggerDatabricksSyncJob,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
 import { runDqValidation, type DqScreenConfig } from "../utils/dqValidation.js";
@@ -427,6 +430,7 @@ export default function CommonConversionMasterScreen() {
   const [searchGeneration, setSearchGeneration] = useState(0);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const lastSearchPayloadRef = useRef<SearchPayload | null>(null);
   // Parallel to csvData.rows. null at index i => row was added locally (new).
   // Non-null => row came from search; `original` is used to detect edits.
@@ -717,7 +721,7 @@ export default function CommonConversionMasterScreen() {
       type: "conjunction",
     }).format(rowNumbers.map(String));
 
-  const handleRegistration = async () => {
+  const handleSave = async () => {
     if (!csvData) return;
     const rows = csvData.rows;
 
@@ -870,6 +874,22 @@ export default function CommonConversionMasterScreen() {
       showSnackbar(t("commonConversionMaster.registrationFailed"), "error");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleRegistration = async () => {
+    setIsSyncing(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.COMMON_CONVERSION.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch {
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1492,12 +1512,21 @@ export default function CommonConversionMasterScreen() {
                         >
                           {t("commonConversionMaster.download")}
                         </StyledSecondaryButton>
+                        <StyledSaveButton
+                          variant="contained"
+                          size="small"
+                          startIcon={<SaveIcon />}
+                          onClick={handleSave}
+                          disabled={!hasRows || isRegistering || !canEdit}
+                        >
+                          {t("common.save")}
+                        </StyledSaveButton>
                         <StyledPrimaryContainedButton
                           variant="contained"
                           size="small"
                           startIcon={<AppRegistrationIcon />}
                           onClick={handleRegistration}
-                          disabled={!hasRows || isRegistering || !canEdit}
+                          disabled={!hasRows || isRegistering || isSyncing || !canEdit}
                         >
                           {t("commonConversionMaster.registration")}
                         </StyledPrimaryContainedButton>
@@ -1920,6 +1949,13 @@ export default function CommonConversionMasterScreen() {
         <ResultsLoader
           fullScreen
           label={t("commonConversionMaster.registrationInProgress")}
+        />
+      )}
+
+      {isSyncing && (
+        <ResultsLoader
+          fullScreen
+          label={t("common.syncJobInProgress")}
         />
       )}
 

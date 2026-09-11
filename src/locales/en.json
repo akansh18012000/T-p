@@ -1035,7 +1035,11 @@
       "previous": "Previous",
       "next": "Next",
       "pageInfo": "Page {{current}} of {{total}} ({{count}} items)"
-    }
+    },
+    "save": "Save",
+    "syncJobStarted": "Sync Job started successfully.",
+    "syncJobFailed": "Sync Job failed to start. Please try again later.",
+    "syncJobInProgress": "Sync job in progress..."
   },
   "dq": {
     "nullViolation": "Row {{row}}: {{field}} is required",

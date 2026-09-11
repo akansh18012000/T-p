@@ -1035,7 +1035,11 @@
       "previous": "前へ",
       "next": "次へ",
       "pageInfo": "{{count}}件中 {{current}} / {{total}} ページ"
-    }
+    },
+    "save": "保存",
+    "syncJobStarted": "同期ジョブが正常に開始されました。",
+    "syncJobFailed": "同期ジョブの開始に失敗しました。後でもう一度お試しください。",
+    "syncJobInProgress": "同期ジョブ実行中..."
   },
   "dq": {
     "nullViolation": "行{{row}}: {{field}}は必須です",
