@@ -365,7 +365,15 @@ function FxRateEntryMasterScreen() {
       showSnackbar(t("fxRateEntryMaster.noDataToDownload"), "info");
       return;
     }
-    const blob = new Blob([stringifyCsv(csvData)], { type: "text/csv;charset=utf-8;" });
+    const currencyTypeMap: Record<string, string> = Object.fromEntries(
+      CURRENCY_TYPE_OPTIONS.map((opt) => [opt.value, t(opt.labelKey)]),
+    );
+    const exportRows = csvData.rows.map((row) =>
+      row.map((cell, idx) =>
+        idx === currencyTypeColIndex ? (currencyTypeMap[cell] ?? cell) : cell,
+      ),
+    );
+    const blob = new Blob([stringifyCsv({ ...csvData, rows: exportRows })], { type: "text/csv;charset=utf-8;" });
     const dateStr = processingDate
       ? `${processingDate.getFullYear()}-${String(processingDate.getMonth() + 1).padStart(2, "0")}`
       : "export";
