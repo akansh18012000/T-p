@@ -20,6 +20,7 @@ import {
   Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
+import { usePermissions } from "../hooks/usePermissions.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
   StyledSnackbarAlert,
@@ -279,6 +280,8 @@ type ApprovalAction = "Approve" | "Rollback";
 export default function PlDataApprovalScreen() {
   const { t } = useTranslation();
   const { setBreadcrumbItems } = useBreadcrumbItems();
+  const permissions = usePermissions();
+  const isViewOnly = !permissions.canEdit;
 
   useEffect(() => {
     setBreadcrumbItems([
@@ -460,7 +463,7 @@ export default function PlDataApprovalScreen() {
           variant="contained"
           startIcon={<CheckCircleOutlineIcon />}
           onClick={() => handleAction("Approve")}
-          disabled={isActionInProgress || !buttonStates.approveEnabled}
+          disabled={isViewOnly || isActionInProgress || !buttonStates.approveEnabled}
         >
           {t("plDataApproval.approve")}
         </StyledPrimaryContainedButton>
@@ -468,7 +471,7 @@ export default function PlDataApprovalScreen() {
           variant="outlined"
           startIcon={<UndoIcon />}
           onClick={() => handleAction("Rollback")}
-          disabled={isActionInProgress || !buttonStates.rollbackEnabled}
+          disabled={isViewOnly || isActionInProgress || !buttonStates.rollbackEnabled}
         >
           {t("plDataApproval.rollback")}
         </StyledRollbackButton>

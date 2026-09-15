@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { styled, alpha } from "@mui/material/styles";
@@ -15,13 +15,11 @@ import {
   TableRow,
   Toolbar,
 } from "@mui/material";
-import {
-  ArrowBack as ArrowBackIcon,
-  GetApp as GetAppIcon,
-} from "@mui/icons-material";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
+import { StyledTablePagination } from "../components/shared/StyledComponents.js";
 import type { CsvData } from "../utils/csvUtils.js";
 
 /* Local styled components */
@@ -75,17 +73,6 @@ const StyledHeaderTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.grey![800],
   flex: 1,
-}));
-
-const StyledDownloadButton = styled(Button)(({ theme }) => ({
-  borderColor: theme.palette.primary.main,
-  color: theme.palette.primary.main,
-  textTransform: "none",
-  fontWeight: 600,
-  "&:hover": {
-    borderColor: theme.palette.primary.dark,
-    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-  },
 }));
 
 const StyledContentBox = styled(Box)(({ theme }) => ({
@@ -237,6 +224,13 @@ export default function UploadedCsvPreviewScreen() {
   const returnState = state?.returnState;
   const goBack = () => navigate(returnPath, { state: returnState });
 
+  useEffect(() => {
+    if (!state || !csvData) {
+      navigate("/", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // AI Generated Code by Deloitte + Cursor (BEGIN)
   useEffect(() => {
     if (!state || !csvData) {
@@ -265,24 +259,8 @@ export default function UploadedCsvPreviewScreen() {
   ]);
   // AI Generated Code by Deloitte + Cursor (END)
 
-  const handleDownload = () => {
-    if (!csvData) return;
-    const escapeCell = (cell: string) =>
-      /[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
-    const csvContent = [csvData.headers, ...csvData.rows]
-      .map((row) => row.map(escapeCell).join(","))
-      .join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName.endsWith(".csv") ? fileName : `${fileName}.csv`;
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
 
   if (!state || !csvData) {
     return (
@@ -303,6 +281,12 @@ export default function UploadedCsvPreviewScreen() {
   const displayData = csvData;
   const hasRows = displayData.rows.length > 0;
   const hasHeaders = displayData.headers.length > 0;
+
+  const pagedRows =
+    rowsPerPage === -1
+      ? displayData.rows
+      : displayData.rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const pageOffset = rowsPerPage === -1 ? 0 : page * rowsPerPage;
 
   return (
     <>
@@ -348,10 +332,10 @@ export default function UploadedCsvPreviewScreen() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {displayData.rows.map((row, rowIndex) => (
-                      <StyledTableBodyRow key={rowIndex} $index={rowIndex}>
+                    {pagedRows.map((row, rowIndex) => (
+                      <StyledTableBodyRow key={pageOffset + rowIndex} $index={rowIndex}>
                         <StyledTableIndexCell>
-                          {rowIndex + 1}
+                          {pageOffset + rowIndex + 1}
                         </StyledTableIndexCell>
                         {displayData.headers.map((_, colIndex) => (
                           <StyledTableDataCell key={colIndex}>
@@ -363,6 +347,26 @@ export default function UploadedCsvPreviewScreen() {
                   </TableBody>
                 </StyledTable>
               </StyledTableContainer>
+            )}
+            {hasRows && (
+              <StyledTablePagination
+                count={displayData.rows.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[
+                  100,
+                  500,
+                  1000,
+                  5000,
+                  10000,
+                  { value: -1, label: "All" },
+                ]}
+              />
             )}
           </StyledInnerPaper>
         </StyledContentBox>
