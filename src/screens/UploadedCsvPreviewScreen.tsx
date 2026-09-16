@@ -227,7 +227,11 @@ export default function UploadedCsvPreviewScreen() {
   useEffect(() => {
     if (!state || !csvData) {
       navigate("/", { replace: true });
+      return;
     }
+    // Strip the CSV data from the history entry so a page refresh redirects
+    // home instead of re-hydrating stale data from the browser's session history.
+    window.history.replaceState(null, document.title, window.location.href);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
