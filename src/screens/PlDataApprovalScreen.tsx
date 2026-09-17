@@ -601,48 +601,61 @@ export default function PlDataApprovalScreen() {
         <StyledTableTitle variant="subtitle1">
           {t("plDataApproval.historyTableTitle")}
         </StyledTableTitle>
-        {isHistoryPolling ? (
-          <ResultsLoader />
-        ) : (
-          <StyledTableContainer>
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow>
-                  <StyledTableHeaderCell>
-                    {t("plDataApproval.approver")}
-                  </StyledTableHeaderCell>
-                  <StyledTableHeaderCell>
-                    {t("plDataApproval.action")}
-                  </StyledTableHeaderCell>
-                  <StyledTableHeaderCell>
-                    {t("plDataApproval.status")}
-                  </StyledTableHeaderCell>
-                  <StyledTableHeaderCell>
-                    {t("plDataApproval.approvalDateTime")}
-                  </StyledTableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {approvalHistory.length === 0 ? (
+        {/* Fixed-height wrapper so the page doesn't shift when toggling
+            between the inline loader and the populated table (~10 rows). */}
+        <Box sx={{ minHeight: 360 }}>
+          {isHistoryPolling ? (
+            <Box
+              sx={{
+                height: 360,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ResultsLoader />
+            </Box>
+          ) : (
+            <StyledTableContainer>
+              <Table stickyHeader size="small">
+                <TableHead>
                   <TableRow>
-                    <StyledEmptyCell colSpan={4}>
-                      {t("plDataApproval.noHistory")}
-                    </StyledEmptyCell>
+                    <StyledTableHeaderCell>
+                      {t("plDataApproval.approver")}
+                    </StyledTableHeaderCell>
+                    <StyledTableHeaderCell>
+                      {t("plDataApproval.action")}
+                    </StyledTableHeaderCell>
+                    <StyledTableHeaderCell>
+                      {t("plDataApproval.status")}
+                    </StyledTableHeaderCell>
+                    <StyledTableHeaderCell>
+                      {t("plDataApproval.approvalDateTime")}
+                    </StyledTableHeaderCell>
                   </TableRow>
-                ) : (
-                  approvalHistory.map((row, index) => (
-                    <StyledTableBodyRow key={index} $index={index}>
-                      <StyledDataCell>{row.approver}</StyledDataCell>
-                      <StyledDataCell>{formatActionLabel(row.action)}</StyledDataCell>
-                      <StyledDataCell>{row.status}</StyledDataCell>
-                      <StyledDataCell>{row.approvalDateTime}</StyledDataCell>
-                    </StyledTableBodyRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </StyledTableContainer>
-        )}
+                </TableHead>
+                <TableBody>
+                  {approvalHistory.length === 0 ? (
+                    <TableRow>
+                      <StyledEmptyCell colSpan={4}>
+                        {t("plDataApproval.noHistory")}
+                      </StyledEmptyCell>
+                    </TableRow>
+                  ) : (
+                    approvalHistory.map((row, index) => (
+                      <StyledTableBodyRow key={index} $index={index}>
+                        <StyledDataCell>{row.approver}</StyledDataCell>
+                        <StyledDataCell>{formatActionLabel(row.action)}</StyledDataCell>
+                        <StyledDataCell>{row.status}</StyledDataCell>
+                        <StyledDataCell>{row.approvalDateTime}</StyledDataCell>
+                      </StyledTableBodyRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </StyledTableContainer>
+          )}
+        </Box>
       </StyledTableSectionBox>
 
       {/* Snackbar */}
