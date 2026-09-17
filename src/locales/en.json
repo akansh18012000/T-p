@@ -546,6 +546,7 @@
     "status": "JOB STATUS",
     "approvalDateTime": "APPROVAL DATE/TIME",
     "noHistory": "No approval history yet.",
+    "historyInfoMessage": "Once the job completes successfully, please allow approximately 30 minutes for the Power BI (PBI) dataset/report refresh. Screen will show the updated state after the refresh is complete.",
     "checkConsolidatedReport": "Check P&L Actual Consolidated Report",
     "uploadFile": "Upload File",
     "dragDropFile": "Drag & drop your file here",

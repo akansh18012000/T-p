@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { styled } from "@mui/material/styles";
 import {
+  Alert,
   Box,
   Typography,
   Paper,
@@ -179,6 +180,10 @@ interface ApprovalHistoryRow {
   approvalDateTime: string;
 }
 
+// Returns true when the most-recent history row is still processing.
+const isLatestRowPending = (rawRows: PnlApprovalLogApiRow[]): boolean =>
+  rawRows.length > 0 && (rawRows[0].status ?? "").toUpperCase() === "PENDING";
+
 // Shape of a single entry returned by GET /api/v1/pnl-approval-log.
 interface PnlApprovalLogApiRow {
   action_id: string;
@@ -304,6 +309,9 @@ export default function PlDataApprovalScreen() {
   // Which action's POST is in flight (drives the full-page loader message).
   const [actionInProgress, setActionInProgress] =
     useState<ApprovalAction | null>(null);
+  // True while polling for a pending job every 30 s; drives the inline history loader.
+  const [isHistoryPolling, setIsHistoryPolling] = useState(false);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
@@ -316,10 +324,28 @@ export default function PlDataApprovalScreen() {
     setSnackbarOpen(true);
   };
 
+  const stopPolling = () => {
+    if (pollingIntervalRef.current !== null) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsHistoryPolling(false);
+  };
+
+  // Cleans up any running interval when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current !== null) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
   // GET the approval history; returns rows sorted descending (latest first)
   // plus the derived button states for the current month.
   const fetchHistory = async (): Promise<{
     rows: ApprovalHistoryRow[];
+    rawSorted: PnlApprovalLogApiRow[];
     buttonStates: ButtonStates;
   }> => {
     const res = await fetch(PNL_APPROVAL_LOG_API_URL, {
@@ -342,8 +368,28 @@ export default function PlDataApprovalScreen() {
         status: row.status,
         approvalDateTime: formatApiTimestamp(row.requested_at),
       })),
+      rawSorted: sorted,
       buttonStates: computeButtonStates(sorted),
     };
+  };
+
+  // Starts polling the history API every 30 s. Shows the inline loader for the
+  // history section until the latest job leaves the PENDING state.
+  const startPolling = () => {
+    if (pollingIntervalRef.current !== null) return;
+    setIsHistoryPolling(true);
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const { rows, rawSorted, buttonStates: newStates } = await fetchHistory();
+        setApprovalHistory(rows);
+        setButtonStates(newStates);
+        if (!isLatestRowPending(rawSorted)) {
+          stopPolling();
+        }
+      } catch {
+        // Keep polling on transient errors.
+      }
+    }, 30_000);
   };
 
   // GET the Power BI dashboard URL and return it.
@@ -377,6 +423,9 @@ export default function PlDataApprovalScreen() {
       if (historyResult.status === "fulfilled") {
         setApprovalHistory(historyResult.value.rows);
         setButtonStates(historyResult.value.buttonStates);
+        if (isLatestRowPending(historyResult.value.rawSorted)) {
+          startPolling();
+        }
       }
       setDashboardUrl(
         urlResult.status === "fulfilled" ? urlResult.value : "",
@@ -406,9 +455,14 @@ export default function PlDataApprovalScreen() {
       }
       // Refresh the results while the loader is still visible.
       try {
-        const { rows, buttonStates: newStates } = await fetchHistory();
+        const { rows, rawSorted, buttonStates: newStates } = await fetchHistory();
         setApprovalHistory(rows);
         setButtonStates(newStates);
+        if (isLatestRowPending(rawSorted)) {
+          startPolling();
+        } else {
+          stopPolling();
+        }
       } catch {
         // Keep the existing table if the refresh fails; the action succeeded.
       }
@@ -539,49 +593,56 @@ export default function PlDataApprovalScreen() {
         </StyledTableContainer>
       </StyledTableSectionBox>
 
-      {/* Approval History table (empty for now) */}
+      {/* Approval History table */}
       <StyledTableSectionBox>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t("plDataApproval.historyInfoMessage")}
+        </Alert>
         <StyledTableTitle variant="subtitle1">
           {t("plDataApproval.historyTableTitle")}
         </StyledTableTitle>
-        <StyledTableContainer>
-          <Table stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                <StyledTableHeaderCell>
-                  {t("plDataApproval.approver")}
-                </StyledTableHeaderCell>
-                <StyledTableHeaderCell>
-                  {t("plDataApproval.action")}
-                </StyledTableHeaderCell>
-                <StyledTableHeaderCell>
-                  {t("plDataApproval.status")}
-                </StyledTableHeaderCell>
-                <StyledTableHeaderCell>
-                  {t("plDataApproval.approvalDateTime")}
-                </StyledTableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {approvalHistory.length === 0 ? (
+        {isHistoryPolling ? (
+          <ResultsLoader />
+        ) : (
+          <StyledTableContainer>
+            <Table stickyHeader size="small">
+              <TableHead>
                 <TableRow>
-                  <StyledEmptyCell colSpan={4}>
-                    {t("plDataApproval.noHistory")}
-                  </StyledEmptyCell>
+                  <StyledTableHeaderCell>
+                    {t("plDataApproval.approver")}
+                  </StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    {t("plDataApproval.action")}
+                  </StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    {t("plDataApproval.status")}
+                  </StyledTableHeaderCell>
+                  <StyledTableHeaderCell>
+                    {t("plDataApproval.approvalDateTime")}
+                  </StyledTableHeaderCell>
                 </TableRow>
-              ) : (
-                approvalHistory.map((row, index) => (
-                  <StyledTableBodyRow key={index} $index={index}>
-                    <StyledDataCell>{row.approver}</StyledDataCell>
-                    <StyledDataCell>{formatActionLabel(row.action)}</StyledDataCell>
-                    <StyledDataCell>{row.status}</StyledDataCell>
-                    <StyledDataCell>{row.approvalDateTime}</StyledDataCell>
-                  </StyledTableBodyRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </StyledTableContainer>
+              </TableHead>
+              <TableBody>
+                {approvalHistory.length === 0 ? (
+                  <TableRow>
+                    <StyledEmptyCell colSpan={4}>
+                      {t("plDataApproval.noHistory")}
+                    </StyledEmptyCell>
+                  </TableRow>
+                ) : (
+                  approvalHistory.map((row, index) => (
+                    <StyledTableBodyRow key={index} $index={index}>
+                      <StyledDataCell>{row.approver}</StyledDataCell>
+                      <StyledDataCell>{formatActionLabel(row.action)}</StyledDataCell>
+                      <StyledDataCell>{row.status}</StyledDataCell>
+                      <StyledDataCell>{row.approvalDateTime}</StyledDataCell>
+                    </StyledTableBodyRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </StyledTableContainer>
+        )}
       </StyledTableSectionBox>
 
       {/* Snackbar */}

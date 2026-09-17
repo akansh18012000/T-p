@@ -546,6 +546,7 @@
     "status": "ジョブステータス",
     "approvalDateTime": "承認日時",
     "noHistory": "承認履歴はまだありません。",
+    "historyInfoMessage": "ジョブが正常に完了したら、Power BI（PBI）のデータセット／レポートの更新に約30分お待ちください。更新完了後、画面に最新の状態が表示されます。",
     "checkConsolidatedReport": "P&L 実績連結レポートを確認",
     "uploadFile": "ファイルアップロード",
     "dragDropFile": "ファイルをここにドラッグ＆ドロップ",
