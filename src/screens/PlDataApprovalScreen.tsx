@@ -309,8 +309,8 @@ export default function PlDataApprovalScreen() {
   // Which action's POST is in flight (drives the full-page loader message).
   const [actionInProgress, setActionInProgress] =
     useState<ApprovalAction | null>(null);
-  // True while polling for a pending job every 30 s; drives the inline history loader.
-  const [isHistoryPolling, setIsHistoryPolling] = useState(false);
+  // True only while a poll fetch is in flight; drives the inline history loader.
+  const [isHistoryRefreshing, setIsHistoryRefreshing] = useState(false);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -329,7 +329,7 @@ export default function PlDataApprovalScreen() {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
-    setIsHistoryPolling(false);
+    setIsHistoryRefreshing(false);
   };
 
   // Cleans up any running interval when the component unmounts.
@@ -373,12 +373,13 @@ export default function PlDataApprovalScreen() {
     };
   };
 
-  // Starts polling the history API every 30 s. Shows the inline loader for the
-  // history section until the latest job leaves the PENDING state.
+  // Starts polling the history API every 30 s. Each tick briefly shows the
+  // inline loader while the fetch is in flight; the table is visible between
+  // ticks. Stops automatically when the latest job leaves PENDING.
   const startPolling = () => {
     if (pollingIntervalRef.current !== null) return;
-    setIsHistoryPolling(true);
     pollingIntervalRef.current = setInterval(async () => {
+      setIsHistoryRefreshing(true);
       try {
         const { rows, rawSorted, buttonStates: newStates } = await fetchHistory();
         setApprovalHistory(rows);
@@ -388,6 +389,8 @@ export default function PlDataApprovalScreen() {
         }
       } catch {
         // Keep polling on transient errors.
+      } finally {
+        setIsHistoryRefreshing(false);
       }
     }, 30_000);
   };
@@ -604,7 +607,7 @@ export default function PlDataApprovalScreen() {
         {/* Fixed-height wrapper so the page doesn't shift when toggling
             between the inline loader and the populated table (~10 rows). */}
         <Box sx={{ minHeight: 360 }}>
-          {isHistoryPolling ? (
+          {isHistoryRefreshing ? (
             <Box
               sx={{
                 height: 360,
