@@ -520,7 +520,20 @@
     "invalidFileNameDetected": "ファイル名が正しくありません。ファイル名を {{suggestedName}} に更新してください。",
     "invalidFileNameFormat": "ファイル名が正しくありません。ファイル名を次の形式にしてください: {{suggestedName}}",
     "invalidFileTypeInfo": "このファイル名は有効なCOAファイル種別で終わっていません。アップロードする前に、FA_BS、FA_INC、FA_MEMO、FA_PL、MA_PL_STRVS、MA_PL_PROFORMA、MA_MEMO、MA_BS のいずれかで終わるように名前を変更してください（例: PBI_STRAVIS_ACCOUNT_FA_BS.csv）。",
-    "duplicateFileType": "種別 {{type}} のファイルは既に追加されています: {{file}}。各COAファイル種別は一度だけアップロードできます。"
+    "duplicateFileType": "種別 {{type}} のファイルは既に追加されています: {{file}}。各COAファイル種別は一度だけアップロードできます。",
+    "coaLv1MasterTitle": "COAレベル1マスター",
+    "accountLv1Code": "ACCOUNT_LV1_CODE",
+    "accountLv1En": "ACCOUNT_LV1_EN",
+    "deletionFlag": "削除フラグ",
+    "lv1SearchPlaceholder": "検索...",
+    "lv1ShowingRows": "{{total}}件中{{filtered}}件を表示",
+    "lv1NoRows": "データなし",
+    "lv1NoRowsHint": "COAレベル1レコードが存在しません。",
+    "lv1RowAdded": "新しい行を追加しました。",
+    "lv1SaveSuccess": "保存しました。",
+    "lv1NoChangesToSave": "保存する変更がありません。",
+    "lv1Refresh": "更新",
+    "lv1Save": "保存"
   },
   "plDataApproval": {
     "title": "P&L データ承認",

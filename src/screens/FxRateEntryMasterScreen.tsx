@@ -1265,7 +1265,13 @@ function FxRateEntryMasterScreen() {
                                             disabled={locked}
                                           />
                                         ) : locked ? (
-                                          <Box>{cell}</Box>
+                                          <Box>
+                                            {colIndex === currencyTypeColIndex
+                                              ? CURRENCY_TYPE_OPTIONS.find((o) => o.value === cell) != null
+                                                ? t(CURRENCY_TYPE_OPTIONS.find((o) => o.value === cell)!.labelKey)
+                                                : cell
+                                              : cell}
+                                          </Box>
                                         ) : colIndex === fromCurrencyColIndex || colIndex === toCurrencyColIndex ? (
                                           <Select
                                             value={cell}

@@ -10,6 +10,11 @@ import {
   Snackbar,
   Alert,
   Divider,
+  TableBody,
+  TableHead,
+  TableRow,
+  IconButton,
+  InputAdornment,
   type AlertColor,
 } from "@mui/material";
 import {
@@ -18,6 +23,11 @@ import {
   Visibility as VisibilityIcon,
   GetApp as GetAppIcon,
   Close as CloseIcon,
+  Refresh as RefreshIcon,
+  Save as SaveIcon,
+  Clear as ClearIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -73,7 +83,44 @@ import {
   StyledCancelUploadButton,
   StyledSelectedFileBox,
   StyledSnackbarAlert,
+  StyledResultBorderBox,
+  StyledResultPaper,
+  StyledToolbar,
+  StyledToolbarTitleBox,
+  StyledToolbarButtonsBox,
+  StyledSecondaryButton,
+  StyledSaveButton,
+  StyledAddRowButton,
+  StyledSearchBarBox,
+  StyledSearchInputWrapper,
+  StyledSearchIcon,
+  StyledSearchTextField,
+  StyledSpacer,
+  StyledSearchResultText,
+  StyledEmptyStateBox,
+  StyledEmptyStateTitle,
+  StyledEmptyStateSubtitle,
+  StyledResultTableContainer,
+  StyledResultTable,
+  StyledTableHeaderCell,
+  StyledTableHeaderText,
+  StyledTableBodyRow,
+  StyledTableIndexCell,
+  StyledTableDataCell,
+  StyledCheckbox,
+  StyledTablePagination,
+  StyledPanelTitle,
+  StyledNewRowDeleteButton,
+  StyledDeleteActionHeaderCell,
+  StyledDeleteActionCell,
 } from "../components/shared/StyledComponents.js";
+import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
+import { SearchableCell } from "../components/shared/SearchableCell.js";
+import {
+  useTablePagination,
+  TABLE_PAGINATION_ROWS_OPTIONS,
+} from "../hooks/useTablePagination.js";
+import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 
 const MAX_UPLOAD_FILES = 8;
 const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
@@ -193,6 +240,24 @@ function getFileNameIssue(fileName: string): FileNameIssue {
   };
 }
 
+// COA Level 1 master table — 3 data columns (+ row #).
+const COL_LV1_CODE = 0;
+const COL_LV1_EN = 1;
+const COL_LV1_DEL = 2;
+
+const MOCK_COA_LV1_ROWS: string[][] = [
+  ["A001", "Net Revenue", "0"],
+  ["A002", "Cost of Goods Sold", "0"],
+  ["A003", "Gross Profit", "0"],
+  ["A004", "Selling Expenses", "0"],
+  ["A005", "Administrative Expenses", "0"],
+  ["A006", "Operating Income", "0"],
+  ["A007", "Other Income", "0"],
+  ["A008", "Other Expenses", "1"],
+  ["A009", "Net Income Before Tax", "0"],
+  ["A010", "Income Tax Expense", "0"],
+];
+
 const StyledMainPaper = styled(Paper)(({ theme }) => ({
   borderRadius: "16px",
   overflow: "hidden",
@@ -248,6 +313,59 @@ export default function StravisCoaHierarchyUploadScreen() {
   // Persistent snackbars stay open until the user clicks ✕ (used for
   // user-action validation errors); all others auto-close after 4s.
   const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+
+  // COA Level 1 master table state
+  const [lv1Rows, setLv1Rows] = useState<string[][]>(() =>
+    MOCK_COA_LV1_ROWS.map((r) => [...r]),
+  );
+  const [lv1SearchTerm, setLv1SearchTerm] = useState("");
+  const [lv1SearchGeneration, setLv1SearchGeneration] = useState(0);
+  const {
+    isNewRow: isLv1NewRow,
+    markRowsAsNew: markLv1RowsAsNew,
+    shiftIndicesForInsertion: shiftLv1ForInsertion,
+    shiftIndicesForDeletion: shiftLv1ForDeletion,
+    clearNewRowTracking: clearLv1NewRowTracking,
+    newRowCount: lv1NewRowCount,
+  } = useNewRowTracking();
+
+  // COA Level 1 table handlers
+  const handleAddLv1Row = () => {
+    const newRow = ["", "", "0"];
+    const insertIndex = lv1Rows.length;
+    setLv1Rows((prev) => [...prev, newRow]);
+    shiftLv1ForInsertion(insertIndex, 1);
+    markLv1RowsAsNew([insertIndex]);
+    showSnackbar(t("stravisCoaHierarchyUpload.lv1RowAdded"), "success");
+  };
+
+  const handleRefreshLv1 = () => {
+    setLv1Rows(MOCK_COA_LV1_ROWS.map((r) => [...r]));
+    setLv1SearchTerm("");
+    setLv1SearchGeneration((n) => n + 1);
+    clearLv1NewRowTracking();
+    showSnackbar(t("stravisCoaHierarchyUpload.lv1Refresh"), "info");
+  };
+
+  const handleSaveLv1 = () => {
+    showSnackbar(t("stravisCoaHierarchyUpload.lv1SaveSuccess"), "success");
+  };
+
+  const handleLv1CellEdit = (rowIndex: number, colIndex: number, value: string) => {
+    setLv1Rows((prev) =>
+      prev.map((row, rIdx) =>
+        rIdx === rowIndex
+          ? row.map((cell, cIdx) => (cIdx === colIndex ? value : cell))
+          : row,
+      ),
+    );
+  };
+
+  const handleDeleteLv1NewRow = (rowIndex: number) => {
+    if (!isLv1NewRow(rowIndex)) return;
+    setLv1Rows((prev) => prev.filter((_, idx) => idx !== rowIndex));
+    shiftLv1ForDeletion(rowIndex);
+  };
 
   const showSnackbar = (
     message: ReactNode,
@@ -627,6 +745,34 @@ export default function StravisCoaHierarchyUploadScreen() {
     }
   };
 
+  // Lv1 table — filtered row indices + pagination
+  const filteredLv1RowIndices = lv1SearchTerm.trim()
+    ? lv1Rows
+        .map((_, idx) => idx)
+        .filter((idx) =>
+          lv1Rows[idx].some((cell) =>
+            cell.toLowerCase().includes(lv1SearchTerm.toLowerCase()),
+          ),
+        )
+    : lv1Rows.map((_, i) => i);
+
+  const {
+    page: lv1Page,
+    setPage: setLv1Page,
+    rowsPerPage: lv1RowsPerPage,
+    pageOffset: lv1PageOffset,
+    pagedItems: pagedLv1RowIndicesFromHook,
+    onRowsPerPageChange: onLv1RowsPerPageChange,
+    count: lv1PaginationCount,
+  } = useTablePagination(filteredLv1RowIndices, {
+    resetDeps: [lv1SearchTerm, lv1SearchGeneration],
+  });
+
+  const overflowLv1NewRows = filteredLv1RowIndices
+    .slice(lv1PageOffset + lv1RowsPerPage)
+    .filter((idx) => isLv1NewRow(idx));
+  const pagedLv1RowIndices = [...pagedLv1RowIndicesFromHook, ...overflowLv1NewRows];
+
   const theme = useTheme();
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
@@ -674,6 +820,193 @@ export default function StravisCoaHierarchyUploadScreen() {
         </StyledHeaderBox>
 
         <StyledContentBox>
+          <StyledResultBorderBox sx={{ mb: 3 }}>
+            <StyledResultPaper elevation={0}>
+              <StyledToolbar>
+                <StyledToolbarTitleBox>
+                  <StyledPanelTitle variant="h6">
+                    {t("stravisCoaHierarchyUpload.coaLv1MasterTitle")}
+                  </StyledPanelTitle>
+                </StyledToolbarTitleBox>
+                <StyledToolbarButtonsBox>
+                  <StyledAddRowButton
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddLv1Row}
+                  >
+                    {t("common.addRow")}
+                  </StyledAddRowButton>
+                  <StyledSecondaryButton
+                    variant="outlined"
+                    size="small"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleRefreshLv1}
+                  >
+                    {t("stravisCoaHierarchyUpload.lv1Refresh")}
+                  </StyledSecondaryButton>
+                  <StyledSaveButton
+                    variant="contained"
+                    size="small"
+                    startIcon={<SaveIcon />}
+                    onClick={handleSaveLv1}
+                  >
+                    {t("stravisCoaHierarchyUpload.lv1Save")}
+                  </StyledSaveButton>
+                </StyledToolbarButtonsBox>
+              </StyledToolbar>
+
+              <StyledSearchBarBox>
+                <StyledSearchInputWrapper>
+                  <StyledSearchTextField
+                    size="small"
+                    placeholder={t("stravisCoaHierarchyUpload.lv1SearchPlaceholder")}
+                    value={lv1SearchTerm}
+                    onChange={(e) => setLv1SearchTerm(e.target.value)}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <StyledSearchIcon />
+                          </InputAdornment>
+                        ),
+                        endAdornment: lv1SearchTerm && (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={() => setLv1SearchTerm("")}
+                            >
+                              <ClearIcon />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                  <StyledSpacer />
+                  {lv1SearchTerm && (
+                    <StyledSearchResultText variant="body2">
+                      {t("stravisCoaHierarchyUpload.lv1ShowingRows", {
+                        filtered: filteredLv1RowIndices.length,
+                        total: lv1Rows.length,
+                      })}
+                    </StyledSearchResultText>
+                  )}
+                </StyledSearchInputWrapper>
+              </StyledSearchBarBox>
+
+              {lv1Rows.length === 0 ? (
+                <StyledEmptyStateBox>
+                  <StyledEmptyStateTitle variant="h6">
+                    {t("stravisCoaHierarchyUpload.lv1NoRows")}
+                  </StyledEmptyStateTitle>
+                  <StyledEmptyStateSubtitle variant="body2">
+                    {t("stravisCoaHierarchyUpload.lv1NoRowsHint")}
+                  </StyledEmptyStateSubtitle>
+                </StyledEmptyStateBox>
+              ) : (
+                <>
+                  <StyledResultTableContainer>
+                    <StyledResultTable stickyHeader size="small">
+                      <TableHead>
+                        <TableRow>
+                          <StyledTableHeaderCell $indexCell>#</StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            <StyledTableHeaderText variant="body2">
+                              {t("stravisCoaHierarchyUpload.accountLv1Code")}
+                            </StyledTableHeaderText>
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell>
+                            <StyledTableHeaderText variant="body2">
+                              {t("stravisCoaHierarchyUpload.accountLv1En")}
+                            </StyledTableHeaderText>
+                          </StyledTableHeaderCell>
+                          <StyledTableHeaderCell $deletionFlag>
+                            <StyledTableHeaderText
+                              variant="body2"
+                              sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                            >
+                              {t("stravisCoaHierarchyUpload.deletionFlag")}
+                              <FlagInfoButton
+                                text={t("tableCommon.deletionFlagInfo")}
+                                ariaLabel={t("stravisCoaHierarchyUpload.deletionFlag")}
+                              />
+                            </StyledTableHeaderText>
+                          </StyledTableHeaderCell>
+                          {lv1NewRowCount > 0 && <StyledDeleteActionHeaderCell />}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {pagedLv1RowIndices.map((rowIdx, i) => {
+                          const row = lv1Rows[rowIdx];
+                          return (
+                            <StyledTableBodyRow key={rowIdx} $index={i}>
+                              <StyledTableIndexCell $rowIndex={i}>
+                                {lv1PageOffset + i + 1}
+                              </StyledTableIndexCell>
+                              <StyledTableDataCell $rowIndex={i}>
+                                <SearchableCell
+                                  value={row[COL_LV1_CODE]}
+                                  onChange={(value) =>
+                                    handleLv1CellEdit(rowIdx, COL_LV1_CODE, value)
+                                  }
+                                  editable
+                                />
+                              </StyledTableDataCell>
+                              <StyledTableDataCell $rowIndex={i}>
+                                <SearchableCell
+                                  value={row[COL_LV1_EN]}
+                                  onChange={(value) =>
+                                    handleLv1CellEdit(rowIdx, COL_LV1_EN, value)
+                                  }
+                                  editable
+                                />
+                              </StyledTableDataCell>
+                              <StyledTableDataCell $deletionFlag $rowIndex={i}>
+                                <StyledCheckbox
+                                  size="small"
+                                  checked={row[COL_LV1_DEL] === "1"}
+                                  onChange={(e) =>
+                                    handleLv1CellEdit(
+                                      rowIdx,
+                                      COL_LV1_DEL,
+                                      e.target.checked ? "1" : "0",
+                                    )
+                                  }
+                                />
+                              </StyledTableDataCell>
+                              {lv1NewRowCount > 0 && (
+                                <StyledDeleteActionCell>
+                                  {isLv1NewRow(rowIdx) && (
+                                    <StyledNewRowDeleteButton
+                                      size="small"
+                                      onClick={() => handleDeleteLv1NewRow(rowIdx)}
+                                      title={t("common.deleteRow")}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </StyledNewRowDeleteButton>
+                                  )}
+                                </StyledDeleteActionCell>
+                              )}
+                            </StyledTableBodyRow>
+                          );
+                        })}
+                      </TableBody>
+                    </StyledResultTable>
+                  </StyledResultTableContainer>
+                  <StyledTablePagination
+                    count={lv1PaginationCount}
+                    page={lv1Page}
+                    onPageChange={(_, newPage) => setLv1Page(newPage)}
+                    rowsPerPage={lv1RowsPerPage}
+                    onRowsPerPageChange={onLv1RowsPerPageChange}
+                    rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
+                  />
+                </>
+              )}
+            </StyledResultPaper>
+          </StyledResultBorderBox>
+
           <StyledUploadSectionBox>
             <StyledUploadFlexBox>
               <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
