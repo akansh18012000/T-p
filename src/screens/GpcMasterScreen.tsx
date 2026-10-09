@@ -1248,6 +1248,12 @@ export default function GpcMasterScreen() {
       const gpc = (r[COL_GPC_CODE] || "").trim();
       if (gpc) {
         ensureProfitCentersLoaded(gpc);
+        // Cache hit with no BU3 code: the async path won't run again, so flag
+        // this row immediately so the snackbar reflects the current error state.
+        const cached = profitCenterCacheRef.current[buildProfitCenterKey(gpc)];
+        if (cached && !cached.some((row) => (row.profit_center_code ?? "").trim() !== "")) {
+          addBu3ErrorRowIndices([rowIndex]);
+        }
       }
       // computeBu3ForRow returns null on cache miss; in that case we leave the
       // row's existing BU3 alone and let the in-flight fetch update it.
