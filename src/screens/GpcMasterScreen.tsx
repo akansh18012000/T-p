@@ -149,8 +149,6 @@ const SEARCH_IP_ADDRESS = "192.168.1.101";
 
 
 interface ProfitCenterApiRow {
-  item_code: string;
-  fiscal_year: string;
   profit_center_code: string;
   profit_center_name: string;
   LANGUAGE_CODE: string;
@@ -173,44 +171,13 @@ const COL_BU3_NAME = GPC_MASTER_COLUMNS.findIndex((c) => c.key === "bu3Name");
 const DUP_CHECK_COLS = Array.from({ length: GPC_MASTER_COLUMNS.length - 1 }, (_, i) => i + 1);
 
 const PROFIT_CENTER_TRIGGER_COLS = new Set<number>([
-  COL_MANUFACTURER,
-  COL_MFR_PART_NUMBER,
   COL_GPC_CODE,
-  COL_VALID_YEAR,
 ]);
 
-function buildProfitCenterKey(
-  gpc: string,
-  manu: string,
-  mpn: string,
-): string {
-  return `${gpc}|${manu}|${mpn}`;
+function buildProfitCenterKey(gpc: string): string {
+  return gpc;
 }
 
-// Pick the row whose fiscal_year exactly matches targetYear, else the row with
-// the numerically closest fiscal_year. Returns null only for an empty input.
-function pickProfitCenterForYear(
-  rows: ProfitCenterApiRow[],
-  targetYear: string,
-): ProfitCenterApiRow | null {
-  if (rows.length === 0) return null;
-  const exact = rows.find((r) => r.fiscal_year === targetYear);
-  if (exact) return exact;
-  const target = parseInt(targetYear, 10);
-  if (Number.isNaN(target)) return rows[0];
-  let closest = rows[0];
-  let closestDist = Math.abs(parseInt(closest.fiscal_year, 10) - target);
-  for (const r of rows) {
-    const y = parseInt(r.fiscal_year, 10);
-    if (Number.isNaN(y)) continue;
-    const d = Math.abs(y - target);
-    if (d < closestDist) {
-      closest = r;
-      closestDist = d;
-    }
-  }
-  return closest;
-}
 
 interface SearchPayload {
   manufacturer: string;
@@ -656,27 +623,17 @@ export default function GpcMasterScreen() {
 
   // Compute BU3 cell values for a row given the current cache. Returns null
   // on cache miss (caller should preserve existing values until the in-flight
-  // fetch resolves). Returns empty strings when any trigger field is missing.
+  // fetch resolves). Returns empty strings when the GPC code is missing.
   const computeBu3ForRow = (
     row: string[],
   ): { bu3Code: string; bu3Name: string } | null => {
-    const manu = (row[COL_MANUFACTURER] || "").trim();
-    const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
     const gpc = (row[COL_GPC_CODE] || "").trim();
-    const yr = (row[COL_VALID_YEAR] || "").trim();
-    if (!manu || !mpn || !gpc || !yr) return { bu3Code: "", bu3Name: "" };
-    const cached =
-      profitCenterCacheRef.current[buildProfitCenterKey(gpc, manu, mpn)];
+    if (!gpc) return { bu3Code: "", bu3Name: "" };
+    const cached = profitCenterCacheRef.current[buildProfitCenterKey(gpc)];
     if (!cached) return null;
-    // The API returns one row per (fiscal_year, language). Filter to the
-    // current site language so the name reflects the user's locale. Fall
-    // back to all rows if no entry exists for the current language.
-    const langCode = i18n.language?.toLowerCase().startsWith("ja")
-      ? "JA"
-      : "EN";
+    const langCode = i18n.language?.toLowerCase().startsWith("ja") ? "JA" : "EN";
     const localized = cached.filter((r) => r.LANGUAGE_CODE === langCode);
-    const candidates = localized.length > 0 ? localized : cached;
-    const match = pickProfitCenterForYear(candidates, yr);
+    const match = localized.length > 0 ? localized[0] : cached[0] ?? null;
     return {
       bu3Code: match?.profit_center_code ?? "",
       bu3Name: match?.profit_center_name ?? "",
@@ -720,15 +677,11 @@ export default function GpcMasterScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language]);
 
-  // Fetch profit centers for the given (gpc, manu, mpn) key. Dedups concurrent
-  // requests; caches the response; triggers applyBu3FromCache when done so all
-  // touched rows sharing the key pick up the result.
-  const ensureProfitCentersLoaded = (
-    gpc: string,
-    manu: string,
-    mpn: string,
-  ) => {
-    const key = buildProfitCenterKey(gpc, manu, mpn);
+  // Fetch profit centers for the given gpc code. Dedups concurrent requests;
+  // caches the response; triggers applyBu3FromCache when done so all touched
+  // rows sharing the key pick up the result.
+  const ensureProfitCentersLoaded = (gpc: string) => {
+    const key = buildProfitCenterKey(gpc);
     if (key in profitCenterCacheRef.current) return;
     if (key in inFlightProfitCenterRef.current) return;
     // Show the in-cell loader on the BU3 cells of every row sharing this key.
@@ -744,11 +697,7 @@ export default function GpcMasterScreen() {
         const res = await fetch(PROFIT_CENTERS_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gpc_code: gpc,
-            manufacturer_code: manu,
-            manufacture_part_number: mpn,
-          }),
+          body: JSON.stringify({ gpc_code: gpc }),
         });
         if (!res.ok) {
           throw new Error(`Profit centers HTTP ${res.status}`);
@@ -773,17 +722,14 @@ export default function GpcMasterScreen() {
         });
         applyBu3FromCache();
       }
-      // The API returned no BU3 code for this combination. BU3 code/name are
-      // required to create/update a record, so flag every row currently
-      // carrying this combination and surface a persistent error listing them.
+      // The API returned no BU3 code for this GPC code. Flag every row
+      // currently carrying this GPC code and surface a persistent error.
       if (!hasBu3Code) {
         const rows = csvDataRef.current?.rows ?? [];
         const affected: number[] = [];
         rows.forEach((r, idx) => {
-          const m = (r[COL_MANUFACTURER] || "").trim();
-          const p = (r[COL_MFR_PART_NUMBER] || "").trim();
           const g = (r[COL_GPC_CODE] || "").trim();
-          if (m && p && g && buildProfitCenterKey(g, m, p) === key) {
+          if (g && buildProfitCenterKey(g) === key) {
             affected.push(idx);
           }
         });
@@ -977,15 +923,12 @@ export default function GpcMasterScreen() {
       ...selectedRows.map(() => null),
       ...prev.slice(insertIndex),
     ]);
-    // For each copied row whose trigger fields are all populated, kick off
-    // the profit-centers fetch so BU3 gets refreshed from the source of truth.
+    // For each copied row with a GPC code, kick off the profit-centers fetch
+    // so BU3 gets refreshed from the source of truth.
     selectedRows.forEach((row) => {
-      const manu = (row[COL_MANUFACTURER] || "").trim();
-      const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
       const gpc = (row[COL_GPC_CODE] || "").trim();
-      const yr = (row[COL_VALID_YEAR] || "").trim();
-      if (manu && mpn && gpc && yr) {
-        ensureProfitCentersLoaded(gpc, manu, mpn);
+      if (gpc) {
+        ensureProfitCentersLoaded(gpc);
       }
     });
     // Apply any cached values immediately for keys we already had.
@@ -1034,13 +977,10 @@ export default function GpcMasterScreen() {
       const bu3Code = (row[COL_BU3_CODE] || "").trim();
       const bu3Name = (row[COL_BU3_NAME] || "").trim();
       if (bu3Code && bu3Name) return;
-      const manu = (row[COL_MANUFACTURER] || "").trim();
-      const mpn = (row[COL_MFR_PART_NUMBER] || "").trim();
       const gpc = (row[COL_GPC_CODE] || "").trim();
-      const yr = (row[COL_VALID_YEAR] || "").trim();
-      if (!manu || !mpn || !gpc || !yr) return;
-      keysToFetch.add(buildProfitCenterKey(gpc, manu, mpn));
-      ensureProfitCentersLoaded(gpc, manu, mpn);
+      if (!gpc) return;
+      keysToFetch.add(buildProfitCenterKey(gpc));
+      ensureProfitCentersLoaded(gpc);
     });
     if (keysToFetch.size > 0) {
       await Promise.all(
@@ -1300,19 +1240,14 @@ export default function GpcMasterScreen() {
       }
     }
 
-    // BU3 lookup: edits to manufacturer / mfrPartNumber / gpcCode / validYear
-    // mark this row as touched and (when all four are populated) fetch the
-    // profit-centers API. The row's BU3 cells are set from the cached response
-    // matched on fiscal_year (closest year wins if no exact match).
+    // BU3 lookup: edits to gpcCode fetch the profit-centers API and update
+    // BU3 cells from the response (keyed by GPC code only).
     if (PROFIT_CENTER_TRIGGER_COLS.has(colIndex)) {
       markRowTouched(rowIndex);
       const r = newRows[rowIndex];
-      const manu = (r[COL_MANUFACTURER] || "").trim();
-      const mpn = (r[COL_MFR_PART_NUMBER] || "").trim();
       const gpc = (r[COL_GPC_CODE] || "").trim();
-      const yr = (r[COL_VALID_YEAR] || "").trim();
-      if (manu && mpn && gpc && yr) {
-        ensureProfitCentersLoaded(gpc, manu, mpn);
+      if (gpc) {
+        ensureProfitCentersLoaded(gpc);
       }
       // computeBu3ForRow returns null on cache miss; in that case we leave the
       // row's existing BU3 alone and let the in-flight fetch update it.
@@ -2079,26 +2014,14 @@ export default function GpcMasterScreen() {
                                       const isBu3Col =
                                         colIndex === COL_BU3_CODE ||
                                         colIndex === COL_BU3_NAME;
-                                      const bu3Manu = (
-                                        row[COL_MANUFACTURER] || ""
-                                      ).trim();
-                                      const bu3Mpn = (
-                                        row[COL_MFR_PART_NUMBER] || ""
-                                      ).trim();
                                       const bu3Gpc = (
                                         row[COL_GPC_CODE] || ""
                                       ).trim();
                                       const isBu3Loading =
                                         isBu3Col &&
-                                        bu3Manu !== "" &&
-                                        bu3Mpn !== "" &&
                                         bu3Gpc !== "" &&
                                         loadingProfitCenterKeys.has(
-                                          buildProfitCenterKey(
-                                            bu3Gpc,
-                                            bu3Manu,
-                                            bu3Mpn,
-                                          ),
+                                          buildProfitCenterKey(bu3Gpc),
                                         );
                                       const searchOptions =
                                         colConfig?.key === "manufacturer"

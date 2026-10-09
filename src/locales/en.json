@@ -521,9 +521,11 @@
     "invalidFileNameFormat": "File name is incorrect. Please update the filename to have this format {{suggestedName}}.",
     "invalidFileTypeInfo": "This file name does not end with a valid COA file type. Please rename it to end with one of FA_BS, FA_INC, FA_MEMO, FA_PL, MA_PL_STRVS, MA_PL_PROFORMA, MA_MEMO, MA_BS (e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv) before uploading.",
     "duplicateFileType": "A file for type {{type}} is already added: {{file}}. Each COA file type can only be uploaded once.",
-    "coaLv1MasterTitle": "COA Level 1 Master",
+    "coaLv1MasterTitle": "Registered Anchor Accounts",
+  "loadingAnchorAccounts": "Loading anchor accounts...",
     "accountLv1Code": "ACCOUNT_LV1_CODE",
     "accountLv1En": "ACCOUNT_LV1_EN",
+    "accountLv1SortOrder": "ACCOUNT_LV1_SORT_ORDER",
     "deletionFlag": "Deletion Flag",
     "lv1SearchPlaceholder": "Search...",
     "lv1ShowingRows": "Showing {{filtered}} of {{total}} rows",
@@ -532,6 +534,12 @@
     "lv1RowAdded": "New row added.",
     "lv1SaveSuccess": "Saved successfully.",
     "lv1NoChangesToSave": "No changes to save.",
+    "lv1SaveDeletedSuccess": "Existing anchor accounts deleted successfully.",
+    "lv1SaveAddedSuccess": "New anchor accounts added successfully.",
+    "lv1SaveBothSuccess": "Anchor accounts added and deleted successfully.",
+    "lv1SavingDeleted": "Deleting anchor accounts...",
+    "lv1SavingAdded": "Adding anchor accounts...",
+    "lv1SavingBoth": "Saving anchor accounts...",
     "lv1Refresh": "Refresh",
     "lv1Save": "Save"
   },
@@ -632,7 +640,7 @@
     "bu3Name": "BU3 Name",
     "overwritePreventionFlag": "Overwrite Prevention Flag",
     "deletionFlag": "Deletion Flag",
-    "bu3NotFound": "Please enter the correct combination of manufacturer code, manufacturer part number and GPC code for row(s) {{rows}} to get a valid BU3 code and BU3 name."
+    "bu3NotFound": "Please enter a valid GPC code for row(s) {{rows}} to get a valid BU3 code and BU3 name."
   },
   "cellSearch": {
     "title": "Search",

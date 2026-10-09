@@ -521,9 +521,11 @@
     "invalidFileNameFormat": "ファイル名が正しくありません。ファイル名を次の形式にしてください: {{suggestedName}}",
     "invalidFileTypeInfo": "このファイル名は有効なCOAファイル種別で終わっていません。アップロードする前に、FA_BS、FA_INC、FA_MEMO、FA_PL、MA_PL_STRVS、MA_PL_PROFORMA、MA_MEMO、MA_BS のいずれかで終わるように名前を変更してください（例: PBI_STRAVIS_ACCOUNT_FA_BS.csv）。",
     "duplicateFileType": "種別 {{type}} のファイルは既に追加されています: {{file}}。各COAファイル種別は一度だけアップロードできます。",
-    "coaLv1MasterTitle": "COAレベル1マスター",
+    "coaLv1MasterTitle": "登録済みアンカーアカウント",
+  "loadingAnchorAccounts": "アンカーアカウントを読み込み中...",
     "accountLv1Code": "ACCOUNT_LV1_CODE",
     "accountLv1En": "ACCOUNT_LV1_EN",
+    "accountLv1SortOrder": "ACCOUNT_LV1_SORT_ORDER",
     "deletionFlag": "削除フラグ",
     "lv1SearchPlaceholder": "検索...",
     "lv1ShowingRows": "{{total}}件中{{filtered}}件を表示",
@@ -532,6 +534,12 @@
     "lv1RowAdded": "新しい行を追加しました。",
     "lv1SaveSuccess": "保存しました。",
     "lv1NoChangesToSave": "保存する変更がありません。",
+    "lv1SaveDeletedSuccess": "既存のアンカーアカウントが削除されました。",
+    "lv1SaveAddedSuccess": "新しいアンカーアカウントが追加されました。",
+    "lv1SaveBothSuccess": "アンカーアカウントが追加および削除されました。",
+    "lv1SavingDeleted": "アンカーアカウントを削除中...",
+    "lv1SavingAdded": "アンカーアカウントを追加中...",
+    "lv1SavingBoth": "アンカーアカウントを保存中...",
     "lv1Refresh": "更新",
     "lv1Save": "保存"
   },
@@ -632,7 +640,7 @@
     "bu3Name": "BU3名",
     "overwritePreventionFlag": "上書き防止フラグ",
     "deletionFlag": "削除フラグ",
-    "bu3NotFound": "{{rows}}行目の有効なBU3コードとBU3名を取得するには、メーカーコード、メーカー品番、GPCコードの正しい組み合わせを入力してください。"
+    "bu3NotFound": "{{rows}}行目の有効なBU3コードとBU3名を取得するには、正しいGPCコードを入力してください。"
   },
   "cellSearch": {
     "title": "検索",
