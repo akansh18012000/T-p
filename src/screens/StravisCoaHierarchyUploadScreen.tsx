@@ -978,39 +978,29 @@ export default function StravisCoaHierarchyUploadScreen() {
 
               <StyledResultTableContainer>
                 <StyledResultTable stickyHeader size="small">
-                  {lv1NewRowCount > 0 ? (
-                    <colgroup>
-                      <col style={{ width: 48 }} />
-                      <col style={{ width: 60 }} />
-                      <col />
-                      <col />
-                      <col />
-                      <col style={{ width: 110 }} />
-                    </colgroup>
-                  ) : (
-                    <colgroup>
-                      <col style={{ width: 48 }} />
-                      <col />
-                      <col />
-                      <col />
-                      <col style={{ width: 110 }} />
-                    </colgroup>
-                  )}
+                  <colgroup>
+                    <col style={{ width: "48px" }} />
+                    {lv1NewRowCount > 0 && <col style={{ width: "60px" }} />}
+                    <col style={{ width: "28%" }} />
+                    <col style={{ width: "34%" }} />
+                    <col />
+                    <col style={{ width: "110px" }} />
+                  </colgroup>
                   <TableHead>
                     <TableRow>
                       <StyledTableHeaderCell $indexCell>#</StyledTableHeaderCell>
                       {lv1NewRowCount > 0 && <StyledDeleteActionHeaderCell />}
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1Code")}
                         </StyledTableHeaderText>
                       </StyledTableHeaderCell>
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1En")}
                         </StyledTableHeaderText>
                       </StyledTableHeaderCell>
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1SortOrder")}
                         </StyledTableHeaderText>
