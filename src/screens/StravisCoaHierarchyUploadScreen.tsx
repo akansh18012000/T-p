@@ -319,6 +319,7 @@ export default function StravisCoaHierarchyUploadScreen() {
   // COA Level 1 master table state
   const [lv1Rows, setLv1Rows] = useState<string[][]>([]);
   const [lv1Loading, setLv1Loading] = useState(false);
+  const lv1FetchInProgress = useRef(false);
   const [lv1Saving, setLv1Saving] = useState(false);
   const [lv1SaveLoaderMessage, setLv1SaveLoaderMessage] = useState("");
   const [lv1SearchTerm, setLv1SearchTerm] = useState("");
@@ -333,6 +334,8 @@ export default function StravisCoaHierarchyUploadScreen() {
   } = useNewRowTracking();
 
   const fetchLv1Data = async () => {
+    if (lv1FetchInProgress.current) return;
+    lv1FetchInProgress.current = true;
     setLv1Loading(true);
     try {
       const res = await fetch(COA_LV1_FETCH_API_URL);
@@ -351,6 +354,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       showSnackbar(t("upload.downloadFileError"), "error");
     } finally {
       setLv1Loading(false);
+      lv1FetchInProgress.current = false;
     }
   };
 
