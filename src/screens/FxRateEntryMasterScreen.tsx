@@ -626,7 +626,14 @@ function FxRateEntryMasterScreen() {
       const totalCreated = createJson?.total_created ?? 0;
 
       if (apiErrors.length > 0) {
-        setCreateApiErrorMessages(apiErrors.map((e) => e.error));
+        const currencyTypeMap: Record<string, string> = Object.fromEntries(
+          CURRENCY_TYPE_OPTIONS.map((opt) => [opt.value, t(opt.labelKey)]),
+        );
+        const messages = apiErrors.map((e) => {
+          const label = currencyTypeMap[e.currency_type] ?? e.currency_type;
+          return e.error.replace(`currency_type='${e.currency_type}'`, `currency_type='${label}'`);
+        });
+        setCreateApiErrorMessages(messages);
         setCreateApiErrorOpen(true);
       }
 
