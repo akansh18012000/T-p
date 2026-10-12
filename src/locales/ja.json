@@ -1027,7 +1027,8 @@
     "parseCsvFailed": "CSVの解析に失敗しました。",
     "missingColumnsError": "アップロードに失敗しました。必要な列が不足しています：{{columns}}",
     "uploadError": "ファイルのアップロードに失敗しました。もう一度お試しください。",
-    "uploadCancelled": "アップロードをキャンセルしました。"
+    "uploadCancelled": "アップロードをキャンセルしました。",
+    "createApiErrors": "保存中に以下のエラーが発生しました："
   },
   "tableCommon": {
     "rowNumber": "#",

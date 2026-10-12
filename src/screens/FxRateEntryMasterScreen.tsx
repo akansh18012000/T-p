@@ -9,11 +9,11 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
+  Collapse,
   Grid,
   TableBody,
   TableHead,
   TableRow,
-  Snackbar,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -161,6 +161,20 @@ interface FxRateSearchRow {
   delete_flg: string;
 }
 
+interface FxRateCreateResponse {
+  total_created: number;
+  total_failed: number;
+  data: unknown[];
+  errors: Array<{
+    row_index: number;
+    from_currency: string;
+    to_currency: string;
+    currency_type: string;
+    proc_period: string;
+    error: string;
+  }>;
+}
+
 const DEFAULT_CSV_HEADERS = FX_RATE_ENTRY_MASTER_HEADERS;
 
 function getEmptyCsvData(): CsvData {
@@ -261,6 +275,14 @@ function FxRateEntryMasterScreen() {
     "success" | "error" | "info"
   >("success");
   const [snackbarPersistent, setSnackbarPersistent] = useState(false);
+  const [createApiErrorOpen, setCreateApiErrorOpen] = useState(false);
+  const [createApiErrorMessages, setCreateApiErrorMessages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!snackbarOpen || snackbarPersistent) return;
+    const timer = setTimeout(() => setSnackbarOpen(false), 4000);
+    return () => clearTimeout(timer);
+  }, [snackbarOpen, snackbarPersistent]);
 
   const showSnackbar = (
     message: React.ReactNode,
@@ -588,28 +610,46 @@ function FxRateEntryMasterScreen() {
           ip_address: "192.168.1.101",
         })),
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
+
+      let createJson: FxRateCreateResponse | null = null;
+      try {
+        createJson = (await res.json()) as FxRateCreateResponse;
+      } catch {
+        createJson = null;
       }
-      if (createdRows.length > 0 && updatedRows.length > 0) {
-        showSnackbar(
-          t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
-            created: createdRows.length,
-            updated: updatedRows.length,
-          }),
-          "success",
-        );
-      } else if (createdRows.length > 0) {
-        showSnackbar(
-          t("fxRateEntryMaster.createdRowsSuccess", { count: createdRows.length }),
-          "success",
-        );
-      } else {
-        showSnackbar(
-          t("fxRateEntryMaster.updatedRowsSuccess", { count: updatedRows.length }),
-          "success",
-        );
+
+      if (!res.ok && !createJson) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const apiErrors = createJson?.errors ?? [];
+      const totalCreated = createJson?.total_created ?? 0;
+
+      if (apiErrors.length > 0) {
+        setCreateApiErrorMessages(apiErrors.map((e) => e.error));
+        setCreateApiErrorOpen(true);
+      }
+
+      if (totalCreated > 0 || apiErrors.length === 0) {
+        if (createdRows.length > 0 && updatedRows.length > 0) {
+          showSnackbar(
+            t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
+              created: createdRows.length,
+              updated: updatedRows.length,
+            }),
+            "success",
+          );
+        } else if (createdRows.length > 0) {
+          showSnackbar(
+            t("fxRateEntryMaster.createdRowsSuccess", { count: createdRows.length }),
+            "success",
+          );
+        } else {
+          showSnackbar(
+            t("fxRateEntryMaster.updatedRowsSuccess", { count: updatedRows.length }),
+            "success",
+          );
+        }
       }
 
       await handleSearch({ silent: true });
@@ -1495,22 +1535,41 @@ function FxRateEntryMasterScreen() {
         </StyledSectionWrapper>
       </StyledMainPaper>
 
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={snackbarPersistent ? null : 4000}
-        onClose={(_event, reason) => {
-          if (reason === "clickaway") return;
-          setSnackbarOpen(false);
+      <Box
+        sx={{
+          position: "fixed",
+          top: 24,
+          right: 24,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          zIndex: (theme) => theme.zIndex.snackbar,
+          maxWidth: 600,
+          minWidth: 300,
         }}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <StyledSnackbarAlert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarSeverity}
-        >
-          {snackbarMessage}
-        </StyledSnackbarAlert>
-      </Snackbar>
+        <Collapse in={snackbarOpen} unmountOnExit>
+          <StyledSnackbarAlert
+            onClose={() => setSnackbarOpen(false)}
+            severity={snackbarSeverity}
+          >
+            {snackbarMessage}
+          </StyledSnackbarAlert>
+        </Collapse>
+        <Collapse in={createApiErrorOpen} unmountOnExit>
+          <StyledSnackbarAlert
+            onClose={() => setCreateApiErrorOpen(false)}
+            severity="error"
+          >
+            <Box component="span" sx={{ display: "block", fontWeight: 600, mb: 0.5 }}>
+              {t("fxRateEntryMaster.createApiErrors")}
+            </Box>
+            {createApiErrorMessages.map((msg, i) => (
+              <Box key={i} component="span" sx={{ display: "block" }}>{msg}</Box>
+            ))}
+          </StyledSnackbarAlert>
+        </Collapse>
+      </Box>
 
       {registering && (
         <ResultsLoader
