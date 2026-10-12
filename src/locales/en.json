@@ -1028,6 +1028,7 @@
     "missingColumnsError": "Upload failed. The following required columns are missing: {{columns}}",
     "uploadError": "File upload failed. Please try again.",
     "uploadCancelled": "Upload cancelled.",
+    "savedRowsSuccess": "Successfully saved {{count}} row(s).",
     "createApiErrors": "The following error(s) occurred during save:"
   },
   "tableCommon": {

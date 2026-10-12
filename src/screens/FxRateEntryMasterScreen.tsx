@@ -639,12 +639,14 @@ function FxRateEntryMasterScreen() {
 
       if (totalCreated > 0 || apiErrors.length === 0) {
         const hasPartialFailure = apiErrors.length > 0;
-        if (createdRows.length > 0 && updatedRows.length > 0 && !hasPartialFailure) {
+        if (createdRows.length > 0 && updatedRows.length > 0) {
           showSnackbar(
-            t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
-              created: createdRows.length,
-              updated: updatedRows.length,
-            }),
+            hasPartialFailure
+              ? t("fxRateEntryMaster.savedRowsSuccess", { count: totalCreated })
+              : t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
+                  created: createdRows.length,
+                  updated: updatedRows.length,
+                }),
             "success",
           );
         } else if (createdRows.length > 0) {
