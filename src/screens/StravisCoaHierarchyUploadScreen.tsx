@@ -976,7 +976,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                 </StyledSearchInputWrapper>
               </StyledSearchBarBox>
 
-              <StyledResultTableContainer>
+              <StyledResultTableContainer sx={{ "& table": { minWidth: "max-content" } }}>
                 <StyledResultTable stickyHeader size="small">
                   <TableHead>
                     <TableRow>
