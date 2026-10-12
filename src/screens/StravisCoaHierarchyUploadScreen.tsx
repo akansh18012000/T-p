@@ -976,23 +976,23 @@ export default function StravisCoaHierarchyUploadScreen() {
                 </StyledSearchInputWrapper>
               </StyledSearchBarBox>
 
-              <StyledResultTableContainer sx={{ "& table": { minWidth: "max-content" } }}>
+              <StyledResultTableContainer>
                 <StyledResultTable stickyHeader size="small">
                   <TableHead>
                     <TableRow>
                       <StyledTableHeaderCell $indexCell>#</StyledTableHeaderCell>
                       {lv1NewRowCount > 0 && <StyledDeleteActionHeaderCell />}
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1Code")}
                         </StyledTableHeaderText>
                       </StyledTableHeaderCell>
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1En")}
                         </StyledTableHeaderText>
                       </StyledTableHeaderCell>
-                      <StyledTableHeaderCell>
+                      <StyledTableHeaderCell sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                         <StyledTableHeaderText variant="body2">
                           {t("stravisCoaHierarchyUpload.accountLv1SortOrder")}
                         </StyledTableHeaderText>
@@ -1047,7 +1047,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                                 )}
                               </StyledDeleteActionCell>
                             )}
-                            <StyledTableDataCell $rowIndex={i}>
+                            <StyledTableDataCell $rowIndex={i} sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                               <SearchableCell
                                 value={row[COL_LV1_CODE]}
                                 onChange={(value) =>
@@ -1056,7 +1056,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                                 editable={isLv1NewRow(rowIdx)}
                               />
                             </StyledTableDataCell>
-                            <StyledTableDataCell $rowIndex={i}>
+                            <StyledTableDataCell $rowIndex={i} sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                               <SearchableCell
                                 value={row[COL_LV1_EN]}
                                 onChange={(value) =>
@@ -1065,7 +1065,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                                 editable={isLv1NewRow(rowIdx)}
                               />
                             </StyledTableDataCell>
-                            <StyledTableDataCell $rowIndex={i}>
+                            <StyledTableDataCell $rowIndex={i} sx={{ width: "auto", minWidth: 0, maxWidth: "none" }}>
                               <SearchableCell
                                 value={row[COL_LV1_SORT_ORDER]}
                                 onChange={(value) =>
