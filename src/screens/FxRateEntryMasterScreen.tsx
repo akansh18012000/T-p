@@ -638,7 +638,8 @@ function FxRateEntryMasterScreen() {
       }
 
       if (totalCreated > 0 || apiErrors.length === 0) {
-        if (createdRows.length > 0 && updatedRows.length > 0) {
+        const hasPartialFailure = apiErrors.length > 0;
+        if (createdRows.length > 0 && updatedRows.length > 0 && !hasPartialFailure) {
           showSnackbar(
             t("fxRateEntryMaster.createdAndUpdatedRowsSuccess", {
               created: createdRows.length,
@@ -648,12 +649,16 @@ function FxRateEntryMasterScreen() {
           );
         } else if (createdRows.length > 0) {
           showSnackbar(
-            t("fxRateEntryMaster.createdRowsSuccess", { count: createdRows.length }),
+            t("fxRateEntryMaster.createdRowsSuccess", {
+              count: hasPartialFailure ? totalCreated : createdRows.length,
+            }),
             "success",
           );
         } else {
           showSnackbar(
-            t("fxRateEntryMaster.updatedRowsSuccess", { count: updatedRows.length }),
+            t("fxRateEntryMaster.updatedRowsSuccess", {
+              count: hasPartialFailure ? totalCreated : updatedRows.length,
+            }),
             "success",
           );
         }
