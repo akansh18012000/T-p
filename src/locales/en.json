@@ -540,8 +540,19 @@
     "lv1SavingDeleted": "Deleting anchor accounts...",
     "lv1SavingAdded": "Adding anchor accounts...",
     "lv1SavingBoth": "Saving anchor accounts...",
+    "lv1FetchError": "Failed to load anchor accounts. Please try again.",
     "lv1Refresh": "Refresh",
-    "lv1Save": "Save"
+    "lv1Save": "Save",
+    "newTemplateInfo": "Download the template files below and fill in your data. Both Chart_of_Account_System.csv and Accounts_Definition.csv must be uploaded together.",
+    "downloadTemplateFiles": "Download Template Files",
+    "uploadRequirements": "Both files must be uploaded at the same time. File names must match exactly: Chart_of_Account_System.csv and Accounts_Definition.csv.",
+    "dragDropHint": "Accepted: Chart_of_Account_System.csv and Accounts_Definition.csv",
+    "invalidUploadFileName": "File name is incorrect. Expected Chart_of_Account_System.csv or Accounts_Definition.csv. Upload will be blocked until the correct file names are used.",
+    "maxTwoFiles": "Only 2 files can be uploaded at a time (Chart_of_Account_System.csv and Accounts_Definition.csv).",
+    "duplicateFile": "A file named {{file}} is already added.",
+    "missingRequiredFiles": "Both Chart_of_Account_System.csv and Accounts_Definition.csv must be added before uploading.",
+    "lv1RequiredFieldsError": "Cannot save. The following rows have empty required fields (ACCOUNT_LV1_CODE, ACCOUNT_LV1_EN, ACCOUNT_LV1_SORT_ORDER): Row {{rows}}.",
+    "uploadFilesTitle": "Upload Files"
   },
   "plDataApproval": {
     "title": "P&L Data Approval",

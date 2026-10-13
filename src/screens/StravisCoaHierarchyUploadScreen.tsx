@@ -124,122 +124,154 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 
-const MAX_UPLOAD_FILES = 8;
-const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
-const COA_HIERARCHY_DOWNLOAD_FILE_NAME = "Stravis_COA_Hierarchy_Data.csv";
+// const MAX_UPLOAD_FILES = 8;
+// const COA_HIERARCHY_DOWNLOAD_API_URL = "/api/v1/coa-hierarchy/download";
+// const COA_HIERARCHY_DOWNLOAD_FILE_NAME = "Stravis_COA_Hierarchy_Data.csv";
 
 // Column validation used to be driven by a downloaded template file instead
 // of the hardcoded COA_HIERARCHY_TEMPLATE_COLUMNS list below — DISABLED
 // (commented out, kept for reference):
 // const STRAVIS_COA_TEMPLATE_FILE = "PBI_STRAVIS_ACCOUNT_Template.csv";
 
-// Expected columns for every uploaded COA file, checked in handleUploadClick.
-const COA_HIERARCHY_TEMPLATE_COLUMNS = [
-  "ACCOUNT_LV1_CODE",
-  "ACCOUNT_LV1_NAME_JP",
-  "ACCOUNT_LV1_NAME_EN",
-  "ACCOUNT_LV1_SHORT_NAME_JP",
-  "ACCOUNT_LV1_SHORT_NAME_EN",
-  "ACCOUNT_LV1_SORT_ORDER",
-  "ACCOUNT_LV2_CODE",
-  "ACCOUNT_LV2_NAME_JP",
-  "ACCOUNT_LV2_NAME_EN",
-  "ACCOUNT_LV2_SHORT_NAME_JP",
-  "ACCOUNT_LV2_SHORT_NAME_EN",
-  "ACCOUNT_LV2_SORT_ORDER",
-  "ACCOUNT_LV3_CODE",
-  "ACCOUNT_LV3_NAME_JP",
-  "ACCOUNT_LV3_NAME_EN",
-  "ACCOUNT_LV3_SHORT_NAME_JP",
-  "ACCOUNT_LV3_SHORT_NAME_EN",
-  "ACCOUNT_LV3_SORT_ORDER",
-  "ACCOUNT_LV4_CODE",
-  "ACCOUNT_LV4_NAME_JP",
-  "ACCOUNT_LV4_NAME_EN",
-  "ACCOUNT_LV4_SHORT_NAME_JP",
-  "ACCOUNT_LV4_SHORT_NAME_EN",
-  "ACCOUNT_LV4_SORT_ORDER",
-  "ACCOUNT_LV5_CODE",
-  "ACCOUNT_LV5_NAME_JP",
-  "ACCOUNT_LV5_NAME_EN",
-  "ACCOUNT_LV5_SHORT_NAME_JP",
-  "ACCOUNT_LV5_SHORT_NAME_EN",
-  "ACCOUNT_LV6_CODE",
-  "ACCOUNT_LV6_NAME_JP",
-  "ACCOUNT_LV6_NAME_EN",
-  "ACCOUNT_LV6_SHORT_NAME_JP",
-  "ACCOUNT_LV6_SHORT_NAME_EN",
-  "ACCOUNT_LV7_CODE",
-  "ACCOUNT_LV7_NAME_JP",
-  "ACCOUNT_LV7_NAME_EN",
-  "ACCOUNT_LV7_SHORT_NAME_JP",
-  "ACCOUNT_LV7_SHORT_NAME_EN",
-  "ACCOUNT_LV8_CODE",
-  "ACCOUNT_LV8_NAME_JP",
-  "ACCOUNT_LV8_NAME_EN",
-  "ACCOUNT_LV8_SHORT_NAME_JP",
-  "ACCOUNT_LV8_SHORT_NAME_EN",
-  "FILE_TYPE",
-  "FISCAL_YEAR",
-];
+// Expected columns for every uploaded COA file, checked in handleUploadClick — DISABLED.
+// const COA_HIERARCHY_TEMPLATE_COLUMNS = [
+//   "ACCOUNT_LV1_CODE",
+//   "ACCOUNT_LV1_NAME_JP",
+//   "ACCOUNT_LV1_NAME_EN",
+//   "ACCOUNT_LV1_SHORT_NAME_JP",
+//   "ACCOUNT_LV1_SHORT_NAME_EN",
+//   "ACCOUNT_LV1_SORT_ORDER",
+//   "ACCOUNT_LV2_CODE",
+//   "ACCOUNT_LV2_NAME_JP",
+//   "ACCOUNT_LV2_NAME_EN",
+//   "ACCOUNT_LV2_SHORT_NAME_JP",
+//   "ACCOUNT_LV2_SHORT_NAME_EN",
+//   "ACCOUNT_LV2_SORT_ORDER",
+//   "ACCOUNT_LV3_CODE",
+//   "ACCOUNT_LV3_NAME_JP",
+//   "ACCOUNT_LV3_NAME_EN",
+//   "ACCOUNT_LV3_SHORT_NAME_JP",
+//   "ACCOUNT_LV3_SHORT_NAME_EN",
+//   "ACCOUNT_LV3_SORT_ORDER",
+//   "ACCOUNT_LV4_CODE",
+//   "ACCOUNT_LV4_NAME_JP",
+//   "ACCOUNT_LV4_NAME_EN",
+//   "ACCOUNT_LV4_SHORT_NAME_JP",
+//   "ACCOUNT_LV4_SHORT_NAME_EN",
+//   "ACCOUNT_LV4_SORT_ORDER",
+//   "ACCOUNT_LV5_CODE",
+//   "ACCOUNT_LV5_NAME_JP",
+//   "ACCOUNT_LV5_NAME_EN",
+//   "ACCOUNT_LV5_SHORT_NAME_JP",
+//   "ACCOUNT_LV5_SHORT_NAME_EN",
+//   "ACCOUNT_LV6_CODE",
+//   "ACCOUNT_LV6_NAME_JP",
+//   "ACCOUNT_LV6_NAME_EN",
+//   "ACCOUNT_LV6_SHORT_NAME_JP",
+//   "ACCOUNT_LV6_SHORT_NAME_EN",
+//   "ACCOUNT_LV7_CODE",
+//   "ACCOUNT_LV7_NAME_JP",
+//   "ACCOUNT_LV7_NAME_EN",
+//   "ACCOUNT_LV7_SHORT_NAME_JP",
+//   "ACCOUNT_LV7_SHORT_NAME_EN",
+//   "ACCOUNT_LV8_CODE",
+//   "ACCOUNT_LV8_NAME_JP",
+//   "ACCOUNT_LV8_NAME_EN",
+//   "ACCOUNT_LV8_SHORT_NAME_JP",
+//   "ACCOUNT_LV8_SHORT_NAME_EN",
+//   "FILE_TYPE",
+//   "FISCAL_YEAR",
+// ];
 
-// A file name (before its extension) must end with one of these COA file
-// types, e.g. PBI_STRAVIS_ACCOUNT_FA_BS.csv.
-const COA_FILE_TYPES = [
-  "FA_BS",
-  "FA_INC",
-  "FA_MEMO",
-  "FA_PL",
-  "MA_PL_STRVS",
-  "MA_PL_PROFORMA",
-  "MA_MEMO",
-  "MA_BS",
-] as const;
-type CoaFileType = (typeof COA_FILE_TYPES)[number];
+// Old COA file type constants — DISABLED.
+// const COA_FILE_TYPES = [
+//   "FA_BS", "FA_INC", "FA_MEMO", "FA_PL",
+//   "MA_PL_STRVS", "MA_PL_PROFORMA", "MA_MEMO", "MA_BS",
+// ] as const;
+// type CoaFileType = (typeof COA_FILE_TYPES)[number];
+// function getCoaFileType(fileName: string): CoaFileType | null {
+//   const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+//   return COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`) ?? null;
+// }
+// type FileNameIssue =
+//   | { issue: 'wrong-prefix'; suggestedName: string; typeDetected: boolean }
+//   | { issue: 'wrong-type' }
+//   | { issue: null };
+// function getFileNameIssue(fileName: string): FileNameIssue {
+//   const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
+//   const ext = fileName.includes(".")
+//     ? fileName.slice(fileName.lastIndexOf(".")).toLowerCase()
+//     : ".csv";
+//   if (COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`)) return { issue: null };
+//   if (base.startsWith("PBI_STRAVIS_ACCOUNT_")) return { issue: "wrong-type" };
+//   const detectedType = COA_FILE_TYPES.find((ft) => base.endsWith(ft));
+//   return {
+//     issue: "wrong-prefix",
+//     typeDetected: detectedType !== undefined,
+//     suggestedName: `PBI_STRAVIS_ACCOUNT_${detectedType ?? "FA_BS"}${ext}`,
+//   };
+// }
 
-// File name validation: strips the extension, uppercases the remainder, and
-// checks whether it exactly matches "PBI_STRAVIS_ACCOUNT_<TYPE>" for one of
-// the 8 recognized COA types (e.g. "PBI_STRAVIS_ACCOUNT_FA_BS.csv" -> "FA_BS").
-// Returns null when the file name doesn't match, which the UI treats as invalid.
-function getCoaFileType(fileName: string): CoaFileType | null {
-  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
-  return COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`) ?? null;
+// New upload constants — two required files with exact name matching.
+const COA_CHART_TEMPLATE_FILE = "Chart_of_Account_System_Template.csv";
+const COA_ACCOUNTS_TEMPLATE_FILE = "Accounts_Definition_Template.csv";
+const COA_CHART_UPLOAD_NAME = "Chart_of_Account_System.csv";
+const COA_ACCOUNTS_UPLOAD_NAME = "Accounts_Definition.csv";
+const COA_TEMPLATE_ZIP_NAME = "Stravis COA Template Files.zip";
+const COA_TEMPLATE_FOLDER_NAME = "Stravis COA Template Files";
+
+function isValidUploadFileName(fileName: string): boolean {
+  return fileName === COA_CHART_UPLOAD_NAME || fileName === COA_ACCOUNTS_UPLOAD_NAME;
 }
 
-// Distinguishes two kinds of invalid file names so the UI can show the right
-// error message:
-//   'wrong-prefix' — the "PBI_STRAVIS_ACCOUNT_" prefix is missing or wrong.
-//                    suggestedName holds the corrected file name to show in
-//                    brackets (derived from the suffix when detectable,
-//                    otherwise an illustrative example).
-//   'wrong-type'   — prefix is correct but the type suffix is unrecognized;
-//                    the existing invalidFileTypeInfo message is shown instead.
-//   null           — file name is valid.
-type FileNameIssue =
-  | { issue: 'wrong-prefix'; suggestedName: string; typeDetected: boolean }
-  | { issue: 'wrong-type' }
-  | { issue: null };
-
-function getFileNameIssue(fileName: string): FileNameIssue {
-  const base = fileName.replace(/\.[^.]*$/, "").toUpperCase();
-  const ext = fileName.includes(".")
-    ? fileName.slice(fileName.lastIndexOf(".")).toLowerCase()
-    : ".csv";
-
-  if (COA_FILE_TYPES.find((ft) => base === `PBI_STRAVIS_ACCOUNT_${ft}`)) {
-    return { issue: null };
+// Minimal store-mode (no deflate) ZIP builder — avoids external dependencies.
+function _zipConcat(arrays: Uint8Array[]): Uint8Array {
+  const total = arrays.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const a of arrays) { out.set(a, pos); pos += a.length; }
+  return out;
+}
+function _zipCrc32(data: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of data) {
+    crc ^= byte;
+    for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
   }
-
-  if (base.startsWith("PBI_STRAVIS_ACCOUNT_")) {
-    return { issue: "wrong-type" };
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function buildStoreZip(files: Array<{ name: string; data: Uint8Array }>): Uint8Array {
+  const enc = new TextEncoder();
+  const locals: Uint8Array[] = [];
+  const centrals: Uint8Array[] = [];
+  let offset = 0;
+  for (const { name, data } of files) {
+    const nameBytes = enc.encode(name);
+    const crc = _zipCrc32(data);
+    const size = data.length;
+    const local = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true);
+    lv.setUint32(14, crc, true); lv.setUint32(18, size, true); lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    local.set(nameBytes, 30);
+    const central = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true); cv.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    locals.push(local, data);
+    centrals.push(central);
+    offset += local.length + data.length;
   }
-
-  const detectedType = COA_FILE_TYPES.find((ft) => base.endsWith(ft));
-  return {
-    issue: "wrong-prefix",
-    typeDetected: detectedType !== undefined,
-    suggestedName: `PBI_STRAVIS_ACCOUNT_${detectedType ?? "FA_BS"}${ext}`,
-  };
+  const centralBytes = _zipConcat(centrals);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralBytes.length, true); ev.setUint32(16, offset, true);
+  return _zipConcat([...locals, centralBytes, eocd]);
 }
 
 const COA_LV1_FETCH_API_URL = "/api/v1/stravis-coa-anchor-accounts/fetch";
@@ -354,7 +386,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       );
     } catch (error) {
       console.error("Failed to fetch COA Lv1 data:", error);
-      showSnackbar(t("upload.downloadFileError"), "error");
+      showSnackbar(t("stravisCoaHierarchyUpload.lv1FetchError"), "error");
     } finally {
       setLv1Loading(false);
       lv1FetchInProgress.current = false;
@@ -384,6 +416,28 @@ export default function StravisCoaHierarchyUploadScreen() {
   };
 
   const handleSaveLv1 = async () => {
+    // Validate that every row has CODE, EN and SORT_ORDER filled before saving.
+    const invalidRowNumbers: number[] = [];
+    lv1Rows.forEach((row, idx) => {
+      if (
+        row[COL_LV1_CODE].trim() === "" ||
+        row[COL_LV1_EN].trim() === "" ||
+        row[COL_LV1_SORT_ORDER].trim() === ""
+      ) {
+        invalidRowNumbers.push(idx + 1);
+      }
+    });
+    if (invalidRowNumbers.length > 0) {
+      showSnackbar(
+        t("stravisCoaHierarchyUpload.lv1RequiredFieldsError", {
+          rows: invalidRowNumbers.join(", "),
+        }),
+        "error",
+        true,
+      );
+      return;
+    }
+
     const hasDeletedExisting = lv1Rows.some(
       (row, idx) => !isLv1NewRow(idx) && row[COL_LV1_DEL] === "1",
     );
@@ -413,7 +467,7 @@ export default function StravisCoaHierarchyUploadScreen() {
           account_lv1_code: row[COL_LV1_CODE],
           account_lv1_name_en: row[COL_LV1_EN],
           account_lv1_short_order: row[COL_LV1_SORT_ORDER],
-          delete_flag: row[COL_LV1_DEL],
+          delete_flag: row[COL_LV1_DEL] || "0",
         })),
         screen_id: SCREEN_IDS.STRAVIS_COA_UPLOAD.id,
       };
@@ -479,21 +533,23 @@ export default function StravisCoaHierarchyUploadScreen() {
     setSnackbarOpen(true);
   };
 
-  // File name validation gate: true if ANY queued file's name fails the COA
-  // suffix check (getCoaFileType returns null for it). While true, the
-  // Upload button stays disabled and each offending row renders a rename
-  // info box (see the "invalidType" Alert further down).
-  const hasInvalidFileType = fileUploads.some(
-    (entry) => getCoaFileType(entry.file.name) === null,
-  );
+  // Old file-type derived state — DISABLED.
+  // const hasInvalidFileType = fileUploads.some(
+  //   (entry) => getCoaFileType(entry.file.name) === null,
+  // );
+  // const uploadedTypes = new Set(
+  //   fileUploads
+  //     .map((e) => getCoaFileType(e.file.name))
+  //     .filter((ft): ft is CoaFileType => ft !== null),
+  // );
+  // const missingTypes = COA_FILE_TYPES.filter((ft) => !uploadedTypes.has(ft));
+  // const hasAllRequiredTypes = missingTypes.length === 0 && !hasInvalidFileType;
 
-  const uploadedTypes = new Set(
-    fileUploads
-      .map((e) => getCoaFileType(e.file.name))
-      .filter((ft): ft is CoaFileType => ft !== null),
-  );
-  const missingTypes = COA_FILE_TYPES.filter((ft) => !uploadedTypes.has(ft));
-  const hasAllRequiredTypes = missingTypes.length === 0 && !hasInvalidFileType;
+  // Both required files (exact names) must be queued for Upload to be enabled.
+  const hasBothRequiredFiles =
+    fileUploads.length === 2 &&
+    fileUploads.some((e) => e.file.name === COA_CHART_UPLOAD_NAME) &&
+    fileUploads.some((e) => e.file.name === COA_ACCOUNTS_UPLOAD_NAME);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -513,51 +569,53 @@ export default function StravisCoaHierarchyUploadScreen() {
     addFiles(files);
   };
 
+  // Old addFiles with COA-type duplicate checking — DISABLED.
+  // const addFiles_OLD = (files: File[]) => {
+  //   const csvFiles = filterCsvFiles(files);
+  //   if (csvFiles.length === 0) {
+  //     if (files.length > 0) showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
+  //     return;
+  //   }
+  //   if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
+  //     showSnackbar(t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }), "error", true);
+  //     return;
+  //   }
+  //   const takenTypeToName = new Map<CoaFileType, string>();
+  //   for (const entry of fileUploads) {
+  //     const ft = getCoaFileType(entry.file.name);
+  //     if (ft) takenTypeToName.set(ft, entry.file.name);
+  //   }
+  //   const accepted: UploadEntry[] = [];
+  //   for (const file of csvFiles) {
+  //     const ft = getCoaFileType(file.name);
+  //     if (ft) {
+  //       const existingName = takenTypeToName.get(ft);
+  //       if (existingName) {
+  //         showSnackbar(t("stravisCoaHierarchyUpload.duplicateFileType", { type: ft, file: existingName }), "error", true);
+  //         continue;
+  //       }
+  //       takenTypeToName.set(ft, file.name);
+  //     }
+  //     accepted.push({ id: `${Date.now()}-${Math.random()}`, file, uploadedAt: new Date(), uploadStatus: "pending" as const });
+  //   }
+  //   if (accepted.length > 0) addEntries(screenKey, accepted);
+  // };
+
   const addFiles = (files: File[]) => {
-    // CSV-only filter + snackbar (mirrors Sales Data Upload).
     const csvFiles = filterCsvFiles(files);
     if (csvFiles.length === 0) {
-      if (files.length > 0) {
-        showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
-      }
+      if (files.length > 0) showSnackbar(t("common.invalidFileTypeCsvOnly"), "error", true);
       return;
     }
-
-    if (fileUploads.length + csvFiles.length > MAX_UPLOAD_FILES) {
-      showSnackbar(
-        t("upload.maxFilesError", { max: MAX_UPLOAD_FILES }),
-        "error",
-        true,
-      );
+    if (fileUploads.length + csvFiles.length > 2) {
+      showSnackbar(t("stravisCoaHierarchyUpload.maxTwoFiles"), "error", true);
       return;
     }
-
-    // Build a map of COA type -> file name for files already queued.
-    const takenTypeToName = new Map<CoaFileType, string>();
-    for (const entry of fileUploads) {
-      const ft = getCoaFileType(entry.file.name);
-      if (ft) takenTypeToName.set(ft, entry.file.name);
-    }
-
     const accepted: UploadEntry[] = [];
     for (const file of csvFiles) {
-      // A recognized type that's already taken is rejected; an unrecognized
-      // type is still queued so its row can show the rename info box.
-      const ft = getCoaFileType(file.name);
-      if (ft) {
-        const existingName = takenTypeToName.get(ft);
-        if (existingName) {
-          showSnackbar(
-            t("stravisCoaHierarchyUpload.duplicateFileType", {
-              type: ft,
-              file: existingName,
-            }),
-            "error",
-            true,
-          );
-          continue;
-        }
-        takenTypeToName.set(ft, file.name);
+      if (fileUploads.some((e) => e.file.name === file.name)) {
+        showSnackbar(t("stravisCoaHierarchyUpload.duplicateFile", { file: file.name }), "error", true);
+        continue;
       }
       accepted.push({
         id: `${Date.now()}-${Math.random()}`,
@@ -593,36 +651,58 @@ export default function StravisCoaHierarchyUploadScreen() {
 
     setUploading(true);
 
-    // Loading the template file to derive expected headers — DISABLED
-    // (commented out, kept for reference); replaced by the hardcoded
-    // COA_HIERARCHY_TEMPLATE_COLUMNS list used in the validation loop below.
-    // let templateHeaders: string[];
-    // try {
-    //   const templateResponse = await fetch(
-    //     `/templates/${STRAVIS_COA_TEMPLATE_FILE}`,
-    //   );
-    //   if (!templateResponse.ok) throw new Error("Template fetch failed");
-    //   const templateText = await templateResponse.text();
-    //   const templateParsed = await parseCsv(templateText);
-    //   templateHeaders = templateParsed.headers;
-    // } catch {
-    //   setUploading(false);
-    //   showSnackbar(t("upload.templateLoadError"), "error");
-    //   return;
+    // Old hardcoded-column validation — DISABLED.
+    // // 1. Validate every file's columns against COA_HIERARCHY_TEMPLATE_COLUMNS.
+    // const failures_OLD: string[] = [];
+    // for (const upload of uploads) {
+    //   try {
+    //     const text = await readFileAsText(upload.file);
+    //     const parsed = await parseCsv(text);
+    //     const validation = validateCsvColumns(parsed.headers, COA_HIERARCHY_TEMPLATE_COLUMNS);
+    //     if (!validation.isValid) {
+    //       failures_OLD.push(t("upload.fileMissingColumns", { file: upload.file.name, columns: validation.missingColumns.join(", ") }));
+    //     } else if (validation.extraColumns.length > 0) {
+    //       failures_OLD.push(t("upload.fileExtraColumns", { file: upload.file.name, columns: validation.extraColumns.join(", ") }));
+    //     }
+    //   } catch {
+    //     failures_OLD.push(t("upload.fileParseError", { file: upload.file.name }));
+    //   }
     // }
+    // if (failures_OLD.length > 0) { setUploading(false); showSnackbar(..., "error", true); return; }
 
-    // 1. Validate every file's columns against the expected COA hierarchy
-    //    columns (COA_HIERARCHY_TEMPLATE_COLUMNS) — collect ALL failures so
-    //    the user sees every problem at once.
+    // 1. Fetch both templates from the public folder to derive expected headers.
+    let chartTemplateHeaders: string[];
+    let accountsTemplateHeaders: string[];
+    try {
+      const [chartRes, accountsRes] = await Promise.all([
+        fetch(`/${COA_CHART_TEMPLATE_FILE}`),
+        fetch(`/${COA_ACCOUNTS_TEMPLATE_FILE}`),
+      ]);
+      if (!chartRes.ok) throw new Error(`Template fetch failed: ${COA_CHART_TEMPLATE_FILE}`);
+      if (!accountsRes.ok) throw new Error(`Template fetch failed: ${COA_ACCOUNTS_TEMPLATE_FILE}`);
+      const [chartText, accountsText] = await Promise.all([
+        chartRes.text(),
+        accountsRes.text(),
+      ]);
+      chartTemplateHeaders = (await parseCsv(chartText)).headers;
+      accountsTemplateHeaders = (await parseCsv(accountsText)).headers;
+    } catch (err) {
+      console.error("Template fetch error:", err);
+      setUploading(false);
+      showSnackbar(t("upload.templateLoadError"), "error");
+      return;
+    }
+
+    // 2. Validate each uploaded file against its respective template headers.
+    //    Failures are collected separately per file and shown in individual snackbars.
     const failures: string[] = [];
     for (const upload of uploads) {
+      const isChart = upload.file.name === COA_CHART_UPLOAD_NAME;
+      const templateHeaders = isChart ? chartTemplateHeaders : accountsTemplateHeaders;
       try {
         const text = await readFileAsText(upload.file);
         const parsed = await parseCsv(text);
-        const validation = validateCsvColumns(
-          parsed.headers,
-          COA_HIERARCHY_TEMPLATE_COLUMNS,
-        );
+        const validation = validateCsvColumns(parsed.headers, templateHeaders);
         if (!validation.isValid) {
           failures.push(
             t("upload.fileMissingColumns", {
@@ -643,7 +723,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       }
     }
 
-    // 2. If anything failed, surface every failure and do NOT call the API.
+    // 3. Show a separate snackbar entry per failing file; block the API call.
     if (failures.length > 0) {
       setUploading(false);
       showSnackbar(
@@ -651,10 +731,7 @@ export default function StravisCoaHierarchyUploadScreen() {
           failures[0]
         ) : (
           <Box>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 600, marginBottom: 0.5 }}
-            >
+            <Typography variant="body2" sx={{ fontWeight: 600, marginBottom: 0.5 }}>
               {t("upload.validationFailedHeader")}
             </Typography>
             <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5 }}>
@@ -670,7 +747,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       return;
     }
 
-    // 3. All files passed — POST them in a single multipart request.
+    // 4. All files passed — POST them in a single multipart request.
 
     // Declared outside the try so the catch block can inspect DQ violations
     // even when an unexpected error occurs after the response is parsed.
@@ -815,30 +892,61 @@ export default function StravisCoaHierarchyUploadScreen() {
     fileInputRef.current?.click();
   };
 
-  // Fetches the latest Stravis COA hierarchy data from the backend and
-  // downloads it as a file. The response has no Content-Disposition-safe
-  // filename to rely on (mirrors the "download uploaded file" API), so we
-  // materialize it as a Blob and serve it from a client-created blob: URL
-  // with our own file name.
-  const handleDownloadCoaData = async () => {
+  // Old COA hierarchy data download (API-based) — DISABLED.
+  // const handleDownloadCoaData = async () => {
+  //   setDownloadingCoaData(true);
+  //   let objectUrl: string | null = null;
+  //   try {
+  //     const res = await fetch(COA_HIERARCHY_DOWNLOAD_API_URL);
+  //     if (!res.ok) throw new Error(`Download COA hierarchy data HTTP ${res.status}`);
+  //     const blob = await res.blob();
+  //     objectUrl = URL.createObjectURL(blob);
+  //     const link = document.createElement("a");
+  //     link.href = objectUrl;
+  //     link.download = COA_HIERARCHY_DOWNLOAD_FILE_NAME;
+  //     link.style.visibility = "hidden";
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //   } catch (error) {
+  //     console.error("Failed to download COA hierarchy data:", error);
+  //     showSnackbar(t("upload.downloadFileError"), "error");
+  //   } finally {
+  //     if (objectUrl) URL.revokeObjectURL(objectUrl);
+  //     setDownloadingCoaData(false);
+  //   }
+  // };
+
+  // Downloads both template CSV files from public/ as a single ZIP.
+  const handleDownloadTemplateZip = async () => {
     setDownloadingCoaData(true);
     let objectUrl: string | null = null;
     try {
-      const res = await fetch(COA_HIERARCHY_DOWNLOAD_API_URL);
-      if (!res.ok) {
-        throw new Error(`Download COA hierarchy data HTTP ${res.status}`);
-      }
-      const blob = await res.blob();
+      const [chartRes, accountsRes] = await Promise.all([
+        fetch(`/${COA_CHART_TEMPLATE_FILE}`),
+        fetch(`/${COA_ACCOUNTS_TEMPLATE_FILE}`),
+      ]);
+      if (!chartRes.ok) throw new Error(`Fetch failed: ${COA_CHART_TEMPLATE_FILE}`);
+      if (!accountsRes.ok) throw new Error(`Fetch failed: ${COA_ACCOUNTS_TEMPLATE_FILE}`);
+      const [chartData, accountsData] = await Promise.all([
+        chartRes.arrayBuffer().then((b) => new Uint8Array(b)),
+        accountsRes.arrayBuffer().then((b) => new Uint8Array(b)),
+      ]);
+      const zipBytes = buildStoreZip([
+        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_CHART_TEMPLATE_FILE}`, data: chartData },
+        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_ACCOUNTS_TEMPLATE_FILE}`, data: accountsData },
+      ]);
+      const blob = new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" });
       objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = COA_HIERARCHY_DOWNLOAD_FILE_NAME;
+      link.download = COA_TEMPLATE_ZIP_NAME;
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error("Failed to download COA hierarchy data:", error);
+      console.error("Failed to download COA template files:", error);
       showSnackbar(t("upload.downloadFileError"), "error");
     } finally {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -921,7 +1029,7 @@ export default function StravisCoaHierarchyUploadScreen() {
         </StyledHeaderBox>
 
         <StyledContentBox>
-          <StyledResultBorderBox sx={{ mb: 3 }}>
+          <StyledResultBorderBox sx={{ mb: 3, borderTop: "none" }}>
             <StyledResultPaper elevation={0}>
               <StyledToolbar>
                 <StyledToolbarTitleBox>
@@ -1140,10 +1248,21 @@ export default function StravisCoaHierarchyUploadScreen() {
             </StyledResultPaper>
           </StyledResultBorderBox>
 
+          <Box sx={{ mb: 1.5 }}>
+            <StyledPanelTitle variant="h6">
+              {t("stravisCoaHierarchyUpload.uploadFilesTitle")}
+            </StyledPanelTitle>
+            <StyledSectionDivider sx={{ mt: 1, mb: 0 }} />
+          </Box>
+
           <StyledUploadSectionBox>
             <StyledUploadFlexBox>
+              {/* Old templateInfo alert — DISABLED.
               <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
                 {t("stravisCoaHierarchyUpload.templateInfo")}
+              </Alert> */}
+              <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
+                {t("stravisCoaHierarchyUpload.newTemplateInfo")}
               </Alert>
 
               <StyledSectionDivider />
@@ -1152,20 +1271,24 @@ export default function StravisCoaHierarchyUploadScreen() {
                 <StyledDownloadTemplateButton
                   variant="outlined"
                   startIcon={<GetAppIcon />}
-                  onClick={handleDownloadCoaData}
+                  onClick={handleDownloadTemplateZip}
                   disabled={downloadingCoaData}
                 >
-                  {t("stravisCoaHierarchyUpload.downloadCoaData")}
+                  {t("stravisCoaHierarchyUpload.downloadTemplateFiles")}
                 </StyledDownloadTemplateButton>
               </Box>
 
               <StyledSectionDivider />
 
+              {/* Old fileNameFormatHint + allTypesRequiredInfo alerts — DISABLED.
               <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
                 <Box>{t("stravisCoaHierarchyUpload.fileNameFormatHint")}</Box>
                 <Box sx={{ marginTop: 0.5 }}>
                   {t("stravisCoaHierarchyUpload.allTypesRequiredInfo")}
                 </Box>
+              </Alert> */}
+              <Alert severity="info" sx={UPLOAD_INFO_ALERT_SX}>
+                {t("stravisCoaHierarchyUpload.uploadRequirements")}
               </Alert>
 
               <StyledSectionDivider />
@@ -1209,7 +1332,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                   {t("upload.browseFiles")}
                 </StyledBrowseFilesButton>
                 <StyledSupportedFormatText variant="caption">
-                  {t("upload.maxFilesHint", { max: MAX_UPLOAD_FILES })}
+                  {t("stravisCoaHierarchyUpload.dragDropHint")}
                 </StyledSupportedFormatText>
               </StyledDragDropZone>
 
@@ -1235,7 +1358,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                         variant="contained"
                         size="small"
                         onClick={handleUploadClick}
-                        disabled={uploading || !hasAllRequiredTypes}
+                        disabled={uploading || !hasBothRequiredFiles}
                       >
                         {t("upload.upload")}
                       </StyledUploadButton>
@@ -1260,37 +1383,34 @@ export default function StravisCoaHierarchyUploadScreen() {
                         {t("stravisCoaHierarchyUpload.cancelUpload")}
                       </StyledCancelUploadButton>
                     </StyledFileInfoBox>
+                    {/* Old COA file-type warning alerts — DISABLED.
                     {(() => {
                       const validation = getFileNameIssue(entry.file.name);
                       if (validation.issue === "wrong-prefix") {
-                        return (
-                          <Alert severity="warning" sx={{ marginTop: 1 }}>
-                            {t(
-                              validation.typeDetected
-                                ? "stravisCoaHierarchyUpload.invalidFileNameDetected"
-                                : "stravisCoaHierarchyUpload.invalidFileNameFormat",
-                              { suggestedName: validation.suggestedName },
-                            )}
-                          </Alert>
-                        );
+                        return (<Alert severity="warning" sx={{ marginTop: 1 }}>{t(validation.typeDetected ? "stravisCoaHierarchyUpload.invalidFileNameDetected" : "stravisCoaHierarchyUpload.invalidFileNameFormat", { suggestedName: validation.suggestedName })}</Alert>);
                       }
                       if (validation.issue === "wrong-type") {
-                        return (
-                          <Alert severity="warning" sx={{ marginTop: 1 }}>
-                            {t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}
-                          </Alert>
-                        );
+                        return (<Alert severity="warning" sx={{ marginTop: 1 }}>{t("stravisCoaHierarchyUpload.invalidFileTypeInfo")}</Alert>);
                       }
                       return null;
-                    })()}
+                    })()} */}
+                    {!isValidUploadFileName(entry.file.name) && (
+                      <Alert severity="warning" sx={{ marginTop: 1 }}>
+                        {t("stravisCoaHierarchyUpload.invalidUploadFileName")}
+                      </Alert>
+                    )}
                   </StyledSelectedFileBox>
               ))}
 
+              {/* Old missingFileTypes alert — DISABLED.
               {fileUploads.length > 0 && !hasAllRequiredTypes && (
                 <Alert severity="warning" sx={UPLOAD_INFO_ALERT_SX}>
-                  {t("stravisCoaHierarchyUpload.missingFileTypes", {
-                    types: missingTypes.join(", "),
-                  })}
+                  {t("stravisCoaHierarchyUpload.missingFileTypes", { types: missingTypes.join(", ") })}
+                </Alert>
+              )} */}
+              {fileUploads.length > 0 && !hasBothRequiredFiles && (
+                <Alert severity="warning" sx={UPLOAD_INFO_ALERT_SX}>
+                  {t("stravisCoaHierarchyUpload.missingRequiredFiles")}
                 </Alert>
               )}
             </StyledUploadFlexBox>

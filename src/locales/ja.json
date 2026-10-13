@@ -540,8 +540,19 @@
     "lv1SavingDeleted": "アンカーアカウントを削除中...",
     "lv1SavingAdded": "アンカーアカウントを追加中...",
     "lv1SavingBoth": "アンカーアカウントを保存中...",
+    "lv1FetchError": "アンカーアカウントの読み込みに失敗しました。もう一度お試しください。",
     "lv1Refresh": "更新",
-    "lv1Save": "保存"
+    "lv1Save": "保存",
+    "newTemplateInfo": "テンプレートファイルをダウンロードしてデータを入力してください。Chart_of_Account_System.csv と Accounts_Definition.csv の両方を同時にアップロードする必要があります。",
+    "downloadTemplateFiles": "テンプレートファイルをダウンロード",
+    "uploadRequirements": "両ファイルを同時にアップロードする必要があります。ファイル名は正確に一致している必要があります：Chart_of_Account_System.csv および Accounts_Definition.csv。",
+    "dragDropHint": "対応ファイル：Chart_of_Account_System.csv および Accounts_Definition.csv",
+    "invalidUploadFileName": "ファイル名が正しくありません。Chart_of_Account_System.csv または Accounts_Definition.csv である必要があります。正しいファイル名を使用するまでアップロードはブロックされます。",
+    "maxTwoFiles": "アップロードできるファイルは2つまでです（Chart_of_Account_System.csv および Accounts_Definition.csv）。",
+    "duplicateFile": "{{file}} という名前のファイルはすでに追加されています。",
+    "missingRequiredFiles": "アップロードする前に Chart_of_Account_System.csv と Accounts_Definition.csv の両方を追加する必要があります。",
+    "lv1RequiredFieldsError": "保存できません。次の行に必須フィールド（ACCOUNT_LV1_CODE、ACCOUNT_LV1_EN、ACCOUNT_LV1_SORT_ORDER）が空です：行 {{rows}}。",
+    "uploadFilesTitle": "ファイルのアップロード"
   },
   "plDataApproval": {
     "title": "P&L データ承認",
