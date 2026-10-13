@@ -529,7 +529,7 @@
     "deletionFlag": "Deletion Flag",
     "lv1SearchPlaceholder": "Search...",
     "lv1ShowingRows": "Showing {{filtered}} of {{total}} rows",
-    "lv1NoRows": "No records",
+    "lv1NoRows": "No Anchor Accounts to Display",
     "lv1NoRowsHint": "No COA Level 1 records to display.",
     "lv1RowAdded": "New row added.",
     "lv1SaveSuccess": "Saved successfully.",

@@ -529,7 +529,7 @@
     "deletionFlag": "削除フラグ",
     "lv1SearchPlaceholder": "検索...",
     "lv1ShowingRows": "{{total}}件中{{filtered}}件を表示",
-    "lv1NoRows": "データなし",
+    "lv1NoRows": "表示するアンカーアカウントがありません",
     "lv1NoRowsHint": "COAレベル1レコードが存在しません。",
     "lv1RowAdded": "新しい行を追加しました。",
     "lv1SaveSuccess": "保存しました。",

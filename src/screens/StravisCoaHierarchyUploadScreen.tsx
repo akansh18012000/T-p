@@ -29,6 +29,7 @@ import {
   Clear as ClearIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
+  AppRegistration as AppRegistrationIcon,
 } from "@mui/icons-material";
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
@@ -54,6 +55,7 @@ import {
   DQ_INLINE_LIMIT,
   findDuplicateUploadFile,
   stripUploadIdSuffix,
+  triggerDatabricksSyncJob,
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
@@ -91,6 +93,7 @@ import {
   StyledToolbarButtonsBox,
   StyledSecondaryButton,
   StyledSaveButton,
+  StyledPrimaryContainedButton,
   StyledAddRowButton,
   StyledSearchBarBox,
   StyledSearchInputWrapper,
@@ -99,7 +102,6 @@ import {
   StyledSpacer,
   StyledSearchResultText,
   StyledEmptyStateTitle,
-  StyledEmptyStateSubtitle,
   StyledResultTableContainer,
   StyledResultTable,
   StyledTableHeaderCell,
@@ -322,6 +324,7 @@ export default function StravisCoaHierarchyUploadScreen() {
   const lv1FetchInProgress = useRef(false);
   const [lv1Saving, setLv1Saving] = useState(false);
   const [lv1SaveLoaderMessage, setLv1SaveLoaderMessage] = useState("");
+  const [lv1Registering, setLv1Registering] = useState(false);
   const [lv1SearchTerm, setLv1SearchTerm] = useState("");
   const [lv1SearchGeneration, setLv1SearchGeneration] = useState(0);
   const {
@@ -430,6 +433,23 @@ export default function StravisCoaHierarchyUploadScreen() {
     }
     await fetchLv1Data();
     showSnackbar(successMsg, "success");
+  };
+
+  const handleRegisterLv1 = async () => {
+    setLv1Registering(true);
+    try {
+      const success = await triggerDatabricksSyncJob(SCREEN_IDS.STRAVIS_COA_UPLOAD.id);
+      if (success) {
+        showSnackbar(t("common.syncJobStarted"), "success");
+      } else {
+        showSnackbar(t("common.syncJobFailed"), "error");
+      }
+    } catch (e) {
+      console.error(e);
+      showSnackbar(t("common.syncJobFailed"), "error");
+    } finally {
+      setLv1Registering(false);
+    }
   };
 
   const handleLv1CellEdit = (rowIndex: number, colIndex: number, value: string) => {
@@ -931,9 +951,19 @@ export default function StravisCoaHierarchyUploadScreen() {
                     size="small"
                     startIcon={<SaveIcon />}
                     onClick={() => { void handleSaveLv1(); }}
+                    disabled={lv1Registering}
                   >
                     {t("stravisCoaHierarchyUpload.lv1Save")}
                   </StyledSaveButton>
+                  <StyledPrimaryContainedButton
+                    variant="contained"
+                    size="small"
+                    startIcon={<AppRegistrationIcon />}
+                    onClick={() => { void handleRegisterLv1(); }}
+                    disabled={lv1Registering}
+                  >
+                    {t("common.register")}
+                  </StyledPrimaryContainedButton>
                 </StyledToolbarButtonsBox>
               </StyledToolbar>
 
@@ -976,7 +1006,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                 </StyledSearchInputWrapper>
               </StyledSearchBarBox>
 
-              <StyledResultTableContainer>
+              <StyledResultTableContainer sx={{ minHeight: 370 }}>
                 <StyledResultTable stickyHeader size="small">
                   <colgroup>
                     <col style={{ width: "48px" }} />
@@ -1029,9 +1059,6 @@ export default function StravisCoaHierarchyUploadScreen() {
                           <StyledEmptyStateTitle variant="h6">
                             {t("stravisCoaHierarchyUpload.lv1NoRows")}
                           </StyledEmptyStateTitle>
-                          <StyledEmptyStateSubtitle variant="body2">
-                            {t("stravisCoaHierarchyUpload.lv1NoRowsHint")}
-                          </StyledEmptyStateSubtitle>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1273,6 +1300,7 @@ export default function StravisCoaHierarchyUploadScreen() {
 
       {lv1Loading && <ResultsLoader fullScreen label={t("stravisCoaHierarchyUpload.loadingAnchorAccounts")} />}
       {lv1Saving && <ResultsLoader fullScreen label={lv1SaveLoaderMessage} />}
+      {lv1Registering && <ResultsLoader fullScreen label={t("common.syncJobInProgress")} />}
       {uploading && <ResultsLoader fullScreen label={t("upload.uploading")} />}
       {downloadingCoaData && (
         <ResultsLoader fullScreen label={t("upload.downloadingFile")} />
