@@ -541,6 +541,8 @@
     "lv1SavingAdded": "アンカーアカウントを追加中...",
     "lv1SavingBoth": "アンカーアカウントを保存中...",
     "lv1FetchError": "アンカーアカウントの読み込みに失敗しました。もう一度お試しください。",
+    "lv1SaveError": "アンカーアカウントの保存に失敗しました。もう一度お試しください。",
+    "lv1RegisterError": "同期ジョブのトリガーに失敗しました。もう一度お試しください。",
     "lv1Refresh": "更新",
     "lv1Save": "保存",
     "newTemplateInfo": "テンプレートファイルをダウンロードしてデータを入力してください。Chart_of_Account_System.csv と Accounts_Definition.csv の両方を同時にアップロードする必要があります。",

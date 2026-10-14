@@ -541,6 +541,8 @@
     "lv1SavingAdded": "Adding anchor accounts...",
     "lv1SavingBoth": "Saving anchor accounts...",
     "lv1FetchError": "Failed to load anchor accounts. Please try again.",
+    "lv1SaveError": "Failed to save anchor accounts. Please try again.",
+    "lv1RegisterError": "Failed to trigger the sync job. Please try again.",
     "lv1Refresh": "Refresh",
     "lv1Save": "Save",
     "newTemplateInfo": "Download the template files below and fill in your data. Both Chart_of_Account_System.csv and Accounts_Definition.csv must be uploaded together.",
