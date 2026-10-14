@@ -502,7 +502,7 @@ export default function StravisCoaHierarchyUploadScreen() {
       clearLv1NewRowTracking();
     } catch (error) {
       console.error("Save COA Lv1 error:", error);
-      showSnackbar(t("upload.uploadError"), "error");
+      showSnackbar(t("stravisCoaHierarchyUpload.lv1SaveError"), "error");
       return;
     } finally {
       setLv1Saving(false);
@@ -518,11 +518,11 @@ export default function StravisCoaHierarchyUploadScreen() {
       if (success) {
         showSnackbar(t("common.syncJobStarted"), "success");
       } else {
-        showSnackbar(t("common.syncJobFailed"), "error");
+        showSnackbar(t("stravisCoaHierarchyUpload.lv1RegisterError"), "error");
       }
     } catch (e) {
       console.error(e);
-      showSnackbar(t("common.syncJobFailed"), "error");
+      showSnackbar(t("stravisCoaHierarchyUpload.lv1RegisterError"), "error");
     } finally {
       setLv1Registering(false);
     }
