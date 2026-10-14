@@ -483,12 +483,14 @@ export default function StravisCoaHierarchyUploadScreen() {
     setLv1Saving(true);
     try {
       const payload = {
-        rows: lv1Rows.map((row) => ({
-          account_lv1_code: row[COL_LV1_CODE],
-          account_lv1_name_en: row[COL_LV1_EN],
-          account_lv1_short_order: row[COL_LV1_SORT_ORDER],
-          delete_flag: row[COL_LV1_DEL] || "0",
-        })),
+        rows: lv1Rows
+          .filter((row, idx) => isLv1NewRow(idx) || row[COL_LV1_DEL] === "1")
+          .map((row) => ({
+            account_lv1_code: row[COL_LV1_CODE],
+            account_lv1_name_en: row[COL_LV1_EN],
+            account_lv1_short_order: row[COL_LV1_SORT_ORDER],
+            delete_flag: row[COL_LV1_DEL] || "0",
+          })),
         screen_id: SCREEN_IDS.STRAVIS_COA_UPLOAD.id,
       };
       const res = await fetch(COA_LV1_CREATE_API_URL, {
