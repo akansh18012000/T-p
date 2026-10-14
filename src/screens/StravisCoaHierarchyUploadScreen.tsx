@@ -444,6 +444,14 @@ export default function StravisCoaHierarchyUploadScreen() {
       );
       return;
     }
+    const hasDeletedExisting = lv1Rows.some(
+      (row, idx) => !isLv1NewRow(idx) && row[COL_LV1_DEL] === "1",
+    );
+    const hasNewRows = lv1NewRowCount > 0;
+    if (!hasDeletedExisting && !hasNewRows) {
+      showSnackbar(t("stravisCoaHierarchyUpload.lv1NoChangesToSave"), "info");
+      return;
+    }
     setConfirmSaveOpen(true);
   };
 
