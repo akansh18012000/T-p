@@ -552,7 +552,10 @@
     "duplicateFile": "{{file}} という名前のファイルはすでに追加されています。",
     "missingRequiredFiles": "アップロードする前に Chart_of_Account_System.csv と Accounts_Definition.csv の両方を追加する必要があります。",
     "lv1RequiredFieldsError": "保存できません。次の行に必須フィールド（ACCOUNT_LV1_CODE、ACCOUNT_LV1_EN、ACCOUNT_LV1_SORT_ORDER）が空です：行 {{rows}}。",
-    "uploadFilesTitle": "ファイルのアップロード"
+    "uploadFilesTitle": "ファイルのアップロード",
+    "confirmSaveTitle": "CoA 変更確認",
+    "confirmSaveMessage": "既存の Stravis PnL CoA Lv1 階層を変更してよろしいですか？",
+    "confirmSaveWarning": "会計年度途中に CoA 階層を変更すると、データの不整合が発生する可能性があります。会計年度途中に CoA 階層を変更した場合は、Operate チームに通知する必要があります。"
   },
   "plDataApproval": {
     "title": "P&L データ承認",
@@ -1060,6 +1063,8 @@
     "selectAll": "全て選択",
     "cancel": "キャンセル",
     "yesDelete": "はい、削除します",
+    "yes": "はい",
+    "no": "いいえ",
     "loadingResults": "読み込み中...",
     "manufacturerDataLoadFailed": "メーカーデータの読み込みに失敗しました。ページを再読み込みしてください。",
     "gpcDataLoadFailed": "GPCデータの読み込みに失敗しました。ページを再読み込みしてください。",

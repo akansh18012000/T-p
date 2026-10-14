@@ -59,6 +59,7 @@ import {
   type UploadApiResponse,
 } from "../utils/commonUtils.js";
 import { DqErrorSnackbarContent } from "../components/shared/DqErrorSnackbarContent.js";
+import { DeleteConfirmationDialog } from "../components/shared/DeleteConfirmationDialog.js";
 import { SCREEN_IDS } from "../constants/screenIds.js";
 import { ResultsLoader } from "../components/shared/ResultsLoader.js";
 import {
@@ -110,7 +111,6 @@ import {
   StyledTableIndexCell,
   StyledTableDataCell,
   StyledCheckbox,
-  StyledTablePagination,
   StyledPanelTitle,
   StyledNewRowDeleteButton,
   StyledDeleteActionHeaderCell,
@@ -118,10 +118,6 @@ import {
 } from "../components/shared/StyledComponents.js";
 import { FlagInfoButton } from "../components/shared/FlagInfoButton.js";
 import { SearchableCell } from "../components/shared/SearchableCell.js";
-import {
-  useTablePagination,
-  TABLE_PAGINATION_ROWS_OPTIONS,
-} from "../hooks/useTablePagination.js";
 import { useNewRowTracking } from "../hooks/useNewRowTracking.js";
 
 // const MAX_UPLOAD_FILES = 8;
@@ -240,6 +236,18 @@ function _zipCrc32(data: Uint8Array): number {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
+// Prepends a UTF-8 BOM so Excel opens the CSV in UTF-8 regardless of the
+// system's default encoding. Skips the prepend if the BOM is already present.
+function ensureUtf8Bom(data: Uint8Array): Uint8Array {
+  if (data.length >= 3 && data[0] === 0xef && data[1] === 0xbb && data[2] === 0xbf) {
+    return data;
+  }
+  const out = new Uint8Array(3 + data.length);
+  out[0] = 0xef; out[1] = 0xbb; out[2] = 0xbf;
+  out.set(data, 3);
+  return out;
+}
+
 function buildStoreZip(files: Array<{ name: string; data: Uint8Array }>): Uint8Array {
   const enc = new TextEncoder();
   const locals: Uint8Array[] = [];
@@ -357,8 +365,8 @@ export default function StravisCoaHierarchyUploadScreen() {
   const [lv1Saving, setLv1Saving] = useState(false);
   const [lv1SaveLoaderMessage, setLv1SaveLoaderMessage] = useState("");
   const [lv1Registering, setLv1Registering] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [lv1SearchTerm, setLv1SearchTerm] = useState("");
-  const [lv1SearchGeneration, setLv1SearchGeneration] = useState(0);
   const {
     isNewRow: isLv1NewRow,
     markRowsAsNew: markLv1RowsAsNew,
@@ -409,14 +417,13 @@ export default function StravisCoaHierarchyUploadScreen() {
 
   const handleRefreshLv1 = () => {
     setLv1SearchTerm("");
-    setLv1SearchGeneration((n) => n + 1);
     clearLv1NewRowTracking();
     void fetchLv1Data();
     showSnackbar(t("stravisCoaHierarchyUpload.lv1Refresh"), "info");
   };
 
-  const handleSaveLv1 = async () => {
-    // Validate that every row has CODE, EN and SORT_ORDER filled before saving.
+  // Validates required fields, then opens the confirmation dialog if valid.
+  const handleSaveClick = () => {
     const invalidRowNumbers: number[] = [];
     lv1Rows.forEach((row, idx) => {
       if (
@@ -437,6 +444,11 @@ export default function StravisCoaHierarchyUploadScreen() {
       );
       return;
     }
+    setConfirmSaveOpen(true);
+  };
+
+  const handleSaveLv1 = async () => {
+    setConfirmSaveOpen(false);
 
     const hasDeletedExisting = lv1Rows.some(
       (row, idx) => !isLv1NewRow(idx) && row[COL_LV1_DEL] === "1",
@@ -933,8 +945,8 @@ export default function StravisCoaHierarchyUploadScreen() {
         accountsRes.arrayBuffer().then((b) => new Uint8Array(b)),
       ]);
       const zipBytes = buildStoreZip([
-        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_CHART_TEMPLATE_FILE}`, data: chartData },
-        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_ACCOUNTS_TEMPLATE_FILE}`, data: accountsData },
+        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_CHART_TEMPLATE_FILE}`, data: ensureUtf8Bom(chartData) },
+        { name: `${COA_TEMPLATE_FOLDER_NAME}/${COA_ACCOUNTS_TEMPLATE_FILE}`, data: ensureUtf8Bom(accountsData) },
       ]);
       const blob = new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" });
       objectUrl = URL.createObjectURL(blob);
@@ -964,23 +976,6 @@ export default function StravisCoaHierarchyUploadScreen() {
           ),
         )
     : lv1Rows.map((_, i) => i);
-
-  const {
-    page: lv1Page,
-    setPage: setLv1Page,
-    rowsPerPage: lv1RowsPerPage,
-    pageOffset: lv1PageOffset,
-    pagedItems: pagedLv1RowIndicesFromHook,
-    onRowsPerPageChange: onLv1RowsPerPageChange,
-    count: lv1PaginationCount,
-  } = useTablePagination(filteredLv1RowIndices, {
-    resetDeps: [lv1SearchTerm, lv1SearchGeneration],
-  });
-
-  const overflowLv1NewRows = filteredLv1RowIndices
-    .slice(lv1PageOffset + lv1RowsPerPage)
-    .filter((idx) => isLv1NewRow(idx));
-  const pagedLv1RowIndices = [...pagedLv1RowIndicesFromHook, ...overflowLv1NewRows];
 
   const theme = useTheme();
   const getFileIcon = (fileName: string) => {
@@ -1058,7 +1053,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                     variant="contained"
                     size="small"
                     startIcon={<SaveIcon />}
-                    onClick={() => { void handleSaveLv1(); }}
+                    onClick={handleSaveClick}
                     disabled={lv1Registering}
                   >
                     {t("stravisCoaHierarchyUpload.lv1Save")}
@@ -1114,7 +1109,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                 </StyledSearchInputWrapper>
               </StyledSearchBarBox>
 
-              <StyledResultTableContainer sx={{ minHeight: 370 }}>
+              <StyledResultTableContainer sx={{ minHeight: 370, maxHeight: 370, overflow: "auto" }}>
                 <StyledResultTable stickyHeader size="small">
                   <colgroup>
                     <col style={{ width: "48px" }} />
@@ -1170,12 +1165,12 @@ export default function StravisCoaHierarchyUploadScreen() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      pagedLv1RowIndices.map((rowIdx, i) => {
+                      filteredLv1RowIndices.map((rowIdx, i) => {
                         const row = lv1Rows[rowIdx];
                         return (
                           <StyledTableBodyRow key={rowIdx} $index={i}>
                             <StyledTableIndexCell $rowIndex={i}>
-                              {lv1PageOffset + i + 1}
+                              {i + 1}
                             </StyledTableIndexCell>
                             {lv1NewRowCount > 0 && (
                               <StyledDeleteActionCell>
@@ -1237,14 +1232,6 @@ export default function StravisCoaHierarchyUploadScreen() {
                   </TableBody>
                 </StyledResultTable>
               </StyledResultTableContainer>
-              <StyledTablePagination
-                count={lv1PaginationCount}
-                page={lv1Page}
-                onPageChange={(_, newPage) => setLv1Page(newPage)}
-                rowsPerPage={lv1RowsPerPage}
-                onRowsPerPageChange={onLv1RowsPerPageChange}
-                rowsPerPageOptions={[...TABLE_PAGINATION_ROWS_OPTIONS]}
-              />
             </StyledResultPaper>
           </StyledResultBorderBox>
 
@@ -1417,6 +1404,19 @@ export default function StravisCoaHierarchyUploadScreen() {
           </StyledUploadSectionBox>
         </StyledContentBox>
       </StyledMainPaper>
+
+      <DeleteConfirmationDialog
+        open={confirmSaveOpen}
+        title={t("stravisCoaHierarchyUpload.confirmSaveTitle")}
+        message={t("stravisCoaHierarchyUpload.confirmSaveMessage")}
+        warningMessage={t("stravisCoaHierarchyUpload.confirmSaveWarning")}
+        confirmLabel={t("common.yes")}
+        cancelLabel={t("common.no")}
+        confirmColor="primary"
+        hideConfirmIcon
+        onConfirm={() => { void handleSaveLv1(); }}
+        onClose={() => setConfirmSaveOpen(false)}
+      />
 
       {lv1Loading && <ResultsLoader fullScreen label={t("stravisCoaHierarchyUpload.loadingAnchorAccounts")} />}
       {lv1Saving && <ResultsLoader fullScreen label={lv1SaveLoaderMessage} />}

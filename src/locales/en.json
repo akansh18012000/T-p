@@ -552,7 +552,10 @@
     "duplicateFile": "A file named {{file}} is already added.",
     "missingRequiredFiles": "Both Chart_of_Account_System.csv and Accounts_Definition.csv must be added before uploading.",
     "lv1RequiredFieldsError": "Cannot save. The following rows have empty required fields (ACCOUNT_LV1_CODE, ACCOUNT_LV1_EN, ACCOUNT_LV1_SORT_ORDER): Row {{rows}}.",
-    "uploadFilesTitle": "Upload Files"
+    "uploadFilesTitle": "Upload Files",
+    "confirmSaveTitle": "CoA Modification",
+    "confirmSaveMessage": "Are you sure you want to modify the existing Stravis PnL CoA Lv1 hierarchy?",
+    "confirmSaveWarning": "Changing CoA hierarchy in between Fiscal years can lead to data discrepancies. Any changes made to CoA hierarchy in between fiscal year has to be notified to Operate Team."
   },
   "plDataApproval": {
     "title": "P&L Data Approval",
@@ -1060,6 +1063,8 @@
     "selectAll": "Select All",
     "cancel": "Cancel",
     "yesDelete": "Yes, Delete",
+    "yes": "Yes",
+    "no": "No",
     "loadingResults": "Loading results...",
     "manufacturerDataLoadFailed": "Failed to load manufacturer data. Please reload the page to try again.",
     "gpcDataLoadFailed": "Failed to load GPC data. Please reload the page to try again.",

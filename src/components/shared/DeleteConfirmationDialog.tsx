@@ -9,6 +9,7 @@ import {
   IconButton,
   Box,
   Typography,
+  Alert,
 } from "@mui/material";
 import { Close as CloseIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
@@ -31,6 +32,12 @@ export interface DeleteConfirmationDialogProps {
   confirmLabel?: string;
   /** Cancel button label. Defaults to the shared "Cancel" string. */
   cancelLabel?: string;
+  /** When provided, renders a warning Alert with bold text below the message. */
+  warningMessage?: ReactNode;
+  /** Color of the confirm button. Defaults to "error". */
+  confirmColor?: "error" | "primary" | "warning" | "success";
+  /** Hides the delete icon on the confirm button. Defaults to false. */
+  hideConfirmIcon?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -50,6 +57,9 @@ export function DeleteConfirmationDialog({
   maxItemsToList = 10,
   confirmLabel,
   cancelLabel,
+  warningMessage,
+  confirmColor = "error",
+  hideConfirmIcon = false,
   onConfirm,
   onClose,
 }: DeleteConfirmationDialogProps) {
@@ -104,6 +114,13 @@ export function DeleteConfirmationDialog({
               ))}
           </>
         )}
+        {warningMessage && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+              {warningMessage}
+            </Typography>
+          </Alert>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose} variant="outlined">
@@ -112,8 +129,8 @@ export function DeleteConfirmationDialog({
         <Button
           onClick={onConfirm}
           variant="contained"
-          color="error"
-          startIcon={<DeleteIcon />}
+          color={confirmColor}
+          startIcon={hideConfirmIcon ? undefined : <DeleteIcon />}
         >
           {confirmLabel ?? t("common.yesDelete")}
         </Button>
