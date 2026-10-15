@@ -34,6 +34,8 @@ import {
 // AI Generated Code by Deloitte + Cursor (BEGIN)
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
+import { useUser } from "../context/UserContext.js";
+import { isItAdmin } from "../constants/roles.js";
 import {
   useUploadContext,
   type UploadEntry,
@@ -324,6 +326,8 @@ export default function StravisCoaHierarchyUploadScreen() {
   const location = useLocation();
   const { t } = useTranslation();
   const screenKey = location.pathname;
+  const { user } = useUser();
+  const canEditTable = isItAdmin(user?.role_name);
   const {
     getUploadState,
     removeEntry,
@@ -1048,6 +1052,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={handleAddLv1Row}
+                    disabled={!canEditTable}
                   >
                     {t("common.addRow")}
                   </StyledAddRowButton>
@@ -1064,7 +1069,7 @@ export default function StravisCoaHierarchyUploadScreen() {
                     size="small"
                     startIcon={<SaveIcon />}
                     onClick={handleSaveClick}
-                    disabled={lv1Registering}
+                    disabled={lv1Registering || !canEditTable}
                   >
                     {t("stravisCoaHierarchyUpload.lv1Save")}
                   </StyledSaveButton>
