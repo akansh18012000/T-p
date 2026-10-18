@@ -113,6 +113,7 @@ import {
 } from "../hooks/useTablePagination.js";
 import { useUploadContext } from "../context/UploadContext.js";
 import { useSystemIdData } from "../context/SystemIdDataContext.js";
+import { useColumnIdData } from "../context/ColumnIdDataContext.js";
 import { parseCsv, stringifyCsv, validateCsvColumns, readFileWithDetectedEncoding, downloadCsvWithPicker, type CsvData } from "../utils/csvUtils.js";
 import { navigateToCsvView } from "../utils/csvViewNavigation.js";
 import {
@@ -133,26 +134,10 @@ import { PaginatedAutocompleteListbox } from "../components/shared/PaginatedAuto
 import { usePermissions } from "../hooks/usePermissions.js";
 import { isRowLocked, PROCESSING_STATUS_TO_BE_PROCESS, trimStringValues } from "../utils/commonUtils.js";
 
-type ItemWithDetails = { id: string; name: string; abstract: string };
-
 // Cap how many options are handed to MUI's Autocomplete; it eagerly builds one
 // element per option, so very large lists stall the dropdown on open. These
 // lists are search-driven, so the first chunk plus type-to-narrow is enough.
 const MAX_VISIBLE_OPTIONS = 1000;
-
-// Item ID options are sourced from this API on page load.
-const COLUMN_IDS_API_URL = "/api/v1/common-conversion-combined/get_column_ids";
-
-interface ColumnIdApiRow {
-  column_id: string;
-  column_name: string;
-  description: string | null;
-}
-
-interface ColumnIdApiEnvelope {
-  total: number;
-  data: ColumnIdApiRow[];
-}
 
 const COMMON_CONVERSION_SEARCH_API_URL =
   "/api/v1/common-conversion-combined/search";
@@ -310,12 +295,17 @@ export default function CommonConversionMasterScreen() {
   const [searchConditionExpanded, setSearchConditionExpanded] = useState(true);
   const [uploadSectionExpanded, setUploadSectionExpanded] = useState(true);
 
-  // Item ID (column id) options fetched from the API on page load.
-  const [itemIdData, setItemIdData] = useState<ItemWithDetails[]>([]);
-  const [itemIdLoading, setItemIdLoading] = useState(false);
-  // Guards the page-load fetch against React StrictMode's double-invoke so the
-  // API call fires exactly once per page load.
-  const itemIdFetchedRef = useRef(false);
+  // Item ID (column id) options come from the shared context.
+  const {
+    columnIdItems: itemIdData,
+    status: columnIdDataStatus,
+    ensureLoaded: ensureColumnIdData,
+  } = useColumnIdData();
+  const itemIdLoading = columnIdDataStatus === "loading";
+
+  useEffect(() => {
+    ensureColumnIdData();
+  }, [ensureColumnIdData]);
 
   // System ID options come from the shared context (fetched at most once per
   // session, reused across pages) — mirrors GpcMaster's manufacturer/GPC data.
@@ -470,44 +460,18 @@ export default function CommonConversionMasterScreen() {
     }
   }, [systemIdDataStatus, t]);
 
-  // Fetch Item ID (column id) options once on page load. The API returns one
-  // row per (column_id, description); collapse to a unique list keyed by
-  // column_id (first occurrence wins) for the dropdown.
+  // Surface a snackbar once when the column-id data fetch fails.
+  const columnIdErrorReportedRef = useRef(false);
   useEffect(() => {
-    // The ref persists across StrictMode's mount → unmount → mount cycle, so
-    // the second pass early-returns without scheduling a duplicate request.
-    if (itemIdFetchedRef.current) return;
-    itemIdFetchedRef.current = true;
-    const loadColumnIds = async () => {
-      setItemIdLoading(true);
-      try {
-        const res = await fetch(COLUMN_IDS_API_URL);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as ColumnIdApiEnvelope;
-        const rows = Array.isArray(json.data) ? json.data : [];
-        const byId = new Map<string, ItemWithDetails>();
-        rows.forEach((r) => {
-          if (!byId.has(r.column_id)) {
-            byId.set(r.column_id, {
-              id: r.column_id,
-              name: r.column_name ?? "",
-              abstract: r.description ?? "",
-            });
-          }
-        });
-        setItemIdData(Array.from(byId.values()));
-      } catch (e) {
-        console.error("Failed to fetch column ids:", e);
-        setItemIdData([]);
-        showSnackbar(t("commonConversionMaster.itemIdLoadFailed"), "error");
-      } finally {
-        setItemIdLoading(false);
-      }
-    };
-    void loadColumnIds();
-    // Intentionally empty deps: this fetch must run exactly once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (columnIdDataStatus === "error" && !columnIdErrorReportedRef.current) {
+      columnIdErrorReportedRef.current = true;
+      showSnackbar(t("commonConversionMaster.itemIdLoadFailed"), "error");
+    } else if (columnIdDataStatus === "loaded") {
+      columnIdErrorReportedRef.current = false;
+    }
+  }, [columnIdDataStatus, t]);
+
+
 
   // Row selection mode hooks
   const {
@@ -1119,7 +1083,7 @@ export default function CommonConversionMasterScreen() {
     freezeIndices,
     dialogOpen,
     setDialogOpen,
-    handleSave,
+    handleSave: handleFreezeColumnsSave,
     getLeftOffset,
     initialSelected,
     isLastFrozenColumn,
@@ -1602,7 +1566,7 @@ export default function CommonConversionMasterScreen() {
                             label: c.label,
                           }))}
                           initialSelected={initialSelected}
-                          onSave={handleSave}
+                          onSave={handleFreezeColumnsSave}
                         />
 
                         <StyledResultTableContainer>
