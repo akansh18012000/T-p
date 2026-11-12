@@ -35,7 +35,7 @@ import {
 import { useBreadcrumbItems } from "../context/BreadcrumbContext.js";
 // AI Generated Code by Deloitte + Cursor (END)
 import { useUser } from "../context/UserContext.js";
-import { isItAdmin } from "../constants/roles.js";
+import { getRolePermissions } from "../constants/roles.js";
 import {
   useUploadContext,
   type UploadEntry,
@@ -327,7 +327,7 @@ export default function StravisCoaHierarchyUploadScreen() {
   const { t } = useTranslation();
   const screenKey = location.pathname;
   const { user } = useUser();
-  const canEditTable = isItAdmin(user?.role_name);
+  const canEditTable = getRolePermissions(user?.role_name).canEdit;
   const {
     getUploadState,
     removeEntry,
